@@ -1,0 +1,1 @@
+/usr/local/bin/fswatch -0 /Users/LorraineSposto/nachos-csci402/code | xargs -0 -n1 /usr/local/bin/nachosync.sh

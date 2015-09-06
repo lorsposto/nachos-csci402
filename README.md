@@ -15,7 +15,7 @@ Just in case:
 Install fswatch: https://github.com/emcrisostomo/fswatch  
 (hombrew or the like)  
 
-Run this command:  
+Run this command (with nachosync.sh in your path, see below):  
 `fswatch -0 /path/to/nachos-csci402/code | xargs -0 -n1 nachosync.sh`  
 
 Right now you probably have to run it each time you restart your computer or something. I was working on a way to have it run as a daemon but so far its unsuccessful. I'll keep you posted. 
@@ -25,5 +25,5 @@ Do this:
 `cp setup/nachosync.sh /usr/local/bin/nachosync.sh`  
 `chmod a+x /usr/local/bin/nachosync.sh`
 
-This part does the sync bit.  
+This command in nachosync.sh does the sync bit.  
 `rsync -rav --delete -e "ssh -l <username>" /path/to/nachos-csci402/code/ <username>@aludra.usc.edu:path/to/nachos-csci402/code 2>&1 >> ~/rsync.log`

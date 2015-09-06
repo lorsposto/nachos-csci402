@@ -16,7 +16,7 @@ Install fswatch: https://github.com/emcrisostomo/fswatch
 (hombrew or the like)  
 
 Run this command (with nachosync.sh in your path, see below). It watches for file changes and runs the script nachosync.sh when a change occurs:  
-`fswatch -0 /path/to/nachos-csci402/code | xargs -0 -n1 nachosync.sh`  
+`fswatch -0 /path/to/nachos-csci402/code | xargs -0 -n1 nachosync.sh &`  
 
 Right now you probably have to run it each time you restart your computer or something. I was working on a way to have it run as a daemon but so far its unsuccessful. I'll keep you posted. 
 

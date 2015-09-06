@@ -16,8 +16,11 @@ Install fswatch: https://github.com/emcrisostomo/fswatch
 (hombrew or the like)  
 
 There are two bash scripts in the setup directory. nachos-fswatch.sh calls nachos-rsync.sh. Install both in /usr/local/bin or somewhere in your path.  
+
 Run this command to start the process in the background. It watches for file changes and runs the script nachos-rsync.sh when a change occurs:  
-`nachos-fswatch.sh &`
+
+`nachos-fswatch.sh &`  
+
 Right now you probably have to run it each time you restart your computer or something. I was working on a way to have it run as a persistant daemon but so far it's been unsuccessful. I'll keep you posted.
 
 # nachos-fswatch.sh

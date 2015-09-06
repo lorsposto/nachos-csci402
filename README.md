@@ -15,18 +15,15 @@ Just in case:
 Install fswatch: https://github.com/emcrisostomo/fswatch  
 (hombrew or the like)  
 
-Run this command (with nachos-rsync.sh in your path, see below). It watches for file changes and runs the script nachos-rsync.sh when a change occurs:  
+There are two bash scripts in the setup directory. nachos-fswatch.sh calls nachos-rsync.sh. Install both in /usr/local/bin or somewhere in your path.  
+Run this command to start the process in the background. It watches for file changes and runs the script nachos-rsync.sh when a change occurs:  
 `nachos-fswatch.sh &`
-Right now you probably have to run it each time you restart your computer or something. I was working on a way to have it run as a daemon but so far its unsuccessful. I'll keep you posted.
+Right now you probably have to run it each time you restart your computer or something. I was working on a way to have it run as a persistant daemon but so far it's been unsuccessful. I'll keep you posted.
 
 # nachos-fswatch.sh
-Contains:
+Edit the paths in this file accordingly.  
 `fswatch -0 /path/to/nachos-csci402/code | xargs -0 -n1 nachos-rsync.sh &`  
 
 # nachosync.sh  
-Do this:  
-`cp setup/nachos-rsync.sh /usr/local/bin/nachos-rsync.sh`  
-`chmod a+x /usr/local/bin/nachosync.sh`
-
-This command in nachosync.sh does the sync bit.  
+This command in nachos-rsync.sh does the sync bit. Edit the paths and usernames accordingly.    
 `rsync -rav --delete -e "ssh -l <username>" /path/to/nachos-csci402/code/ <username>@aludra.usc.edu:path/to/nachos-csci402/code 2>&1 >> ~/nachos-rsync.log`

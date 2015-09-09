@@ -78,7 +78,11 @@ class Lock {
 					// Condition variable ops below.
 
   private:
+    enum lock_states {BUSY, AVAILABLE}; // state representations
     char* name;				// for debugging
+    lock_states state;
+    Thread * ownerThread;
+    List * queue;
     // plus some other stuff you'll need to define
 };
 

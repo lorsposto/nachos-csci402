@@ -142,8 +142,74 @@ void Lock::Release() {
     (void) interrupt->SetLevel(oldLevel);
 }
 
-Condition::Condition(char* debugName) { }
-Condition::~Condition() { }
-void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
-void Condition::Signal(Lock* conditionLock) { }
-void Condition::Broadcast(Lock* conditionLock) { }
+Condition::Condition(char* debugName) {
+    name = debugName;
+    waitingLock = NULL;
+}
+
+Condition::~Condition() {
+    delete name;
+    delete waitingLock;
+    delete queue;
+}
+
+void Condition::Wait(Lock* conditionLock) { 
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if (conditionLock == NULL) {
+        // print message
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    if (waitingLock == NULL) {
+        // no one waiting
+        waitingLock = conditionLock;
+    }
+    if (waitingLock != conditionLock) {
+        // lock is the one being given up
+        // print message
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    // OK to wait
+    queue->Append((void *)currentThread);
+    conditionLock->Release();
+    currentThread->Sleep();
+    conditionLock->Acquire();
+}
+
+void Condition::Signal(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    if (queue->IsEmpty()) {
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    if (waitingLock != conditionLock) {
+        // print message
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    Thread* waitingThread = queue->first();
+    queue->Remove();
+    scheduler->ReadyToRun(waitingThread); // put in ready queue
+    if (queue->IsEmpty()) {
+        waitingLock = NULL;
+    }
+    (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+}
+
+void Condition::Broadcast(Lock* conditionLock) {
+    if (conditionLock == NULL) {
+        // print message
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    if (conditionLock != waitingLock) {
+        // print message
+        (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+        return;
+    }
+    (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+    while (!queue->IsEmpty()) {
+        Signal(conditionLock);
+    }
+}

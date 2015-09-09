@@ -109,12 +109,7 @@ Lock::Lock(char* debugName) {
 Lock::~Lock() {
     delete queue;
 }
-bool Lock::isHeldByCurrentThread() {
-    if (currentThread == ownerThread) {
-        return true;
-    }
-    return false;
-}
+bool Lock::isHeldByCurrentThread() { return currentThread == ownerThread; }
 void Lock::Acquire() {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
     if (isHeldByCurrentThread()) {
@@ -131,7 +126,21 @@ void Lock::Acquire() {
     }
     (void) interrupt->SetLevel(oldLevel);
 }
-void Lock::Release() {}
+void Lock::Release() {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    if(!isHeldByCurrentThread) {
+        printf("Non-owner thread cannot release lock!");
+        (void) interrupt->SetLevel(oldLevel);
+        return;
+    } else if (!queue->IsEmpty()) {
+        ownerThread = queue->remove();
+        scheduler->ReadyToRun(ownerThread);
+    } else {
+        state = AVAILABLE;
+        ownerThread = null;
+    }
+    (void) interrupt->SetLevel(oldLevel);
+}
 
 Condition::Condition(char* debugName) { }
 Condition::~Condition() { }

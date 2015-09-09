@@ -83,7 +83,6 @@ class Lock {
     lock_states state;
     Thread * ownerThread;
     List * queue;
-    // plus some other stuff you'll need to define
 };
 
 // The following class defines a "condition variable".  A condition

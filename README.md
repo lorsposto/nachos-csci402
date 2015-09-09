@@ -28,5 +28,5 @@ Edit the paths in this file accordingly.
 `fswatch -0 /path/to/nachos-csci402/code | xargs -0 -n1 nachos-rsync.sh &`  
 
 # nachosync.sh  
-This command in nachos-rsync.sh does the sync bit. Edit the paths and usernames accordingly.    
+This command in nachos-rsync.sh does the sync bit (this is one line). Edit the paths and usernames accordingly.    
 `rsync -rav --delete -e "ssh -l <username>" /path/to/nachos-csci402/code/ <username>@aludra.usc.edu:path/to/nachos-csci402/code 2>&1 >> ~/nachos-rsync.log`

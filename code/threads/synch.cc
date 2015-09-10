@@ -188,8 +188,7 @@ void Condition::Signal(Lock* conditionLock) {
         (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
         return;
     }
-    Thread* waitingThread = queue->first();
-    queue->Remove();
+    Thread* waitingThread = (Thread *)queue->Remove();
     scheduler->ReadyToRun(waitingThread); // put in ready queue
     if (queue->IsEmpty()) {
         waitingLock = NULL;
@@ -198,6 +197,7 @@ void Condition::Signal(Lock* conditionLock) {
 }
 
 void Condition::Broadcast(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
     if (conditionLock == NULL) {
         // print message
         (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts

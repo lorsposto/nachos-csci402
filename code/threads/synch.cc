@@ -128,16 +128,16 @@ void Lock::Acquire() {
 }
 void Lock::Release() {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    if(!isHeldByCurrentThread) {
+    if(!isHeldByCurrentThread()) {
         printf("Non-owner thread cannot release lock!");
         (void) interrupt->SetLevel(oldLevel);
         return;
     } else if (!queue->IsEmpty()) {
-        ownerThread = queue->remove();
+        ownerThread = (Thread *) queue->Remove();
         scheduler->ReadyToRun(ownerThread);
     } else {
         state = AVAILABLE;
-        ownerThread = null;
+        ownerThread = NULL;
     }
     (void) interrupt->SetLevel(oldLevel);
 }

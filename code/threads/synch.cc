@@ -145,6 +145,7 @@ void Lock::Release() {
 Condition::Condition(char* debugName) {
     name = debugName;
     waitingLock = NULL;
+    queue = new List;
 }
 
 Condition::~Condition() {
@@ -179,15 +180,18 @@ void Condition::Wait(Lock* conditionLock) {
 
 void Condition::Signal(Lock* conditionLock) {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+    printf("Signal 1");
     if (queue->IsEmpty()) {
         (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
         return;
     }
+    printf("Signal 2");
     if (waitingLock != conditionLock) {
         // print message
         (void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
         return;
     }
+    printf("Signal 3");
     Thread* waitingThread = (Thread *)queue->Remove();
     scheduler->ReadyToRun(waitingThread); // put in ready queue
     if (queue->IsEmpty()) {

@@ -62,7 +62,7 @@ extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
 
 #ifdef THREADS
-extern void Part2(void), TestSuite(void);
+extern void Part2(void), TestSuite(void), PassportOffice(void);
 #endif
 
 //----------------------------------------------------------------------
@@ -90,7 +90,8 @@ main(int argc, char **argv)
     
 #ifdef THREADS
     // ThreadTest();
-    TestSuite();
+//    TestSuite();
+    	PassportOffice();
 #endif
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {

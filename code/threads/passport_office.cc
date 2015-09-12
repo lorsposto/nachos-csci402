@@ -128,7 +128,7 @@ void beClerk(int clerkIndex) {
 
 		if (clerkLines[clerkIndex]->state == Clerk::AVAILABLE && clerkLines[clerkIndex]->lineCount > 0) {
 			printf("%s is available and there is someone in line.\n", clerkLines[clerkIndex]->name);
-			clerkLines[clerkIndex]->cv->Signal(&picappLineLock);
+			clerkLines[clerkIndex]->cv->Signal(clerkLines[clerkIndex]->lock);
 			clerkLines[clerkIndex]->state = Clerk::BUSY;
 		}
 //		else if (clerkLines[clerkIndex]->state == Clerk::AVAILABLE){
@@ -247,7 +247,7 @@ void beCustomer(int customerIndex) {
 			clerkLines[myLine]->lineCount++;
 			printf("%s waiting for %s.\n", customers[customerIndex]->name,
 					clerkLines[myLine]->name);
-			clerkLines[myLine]->cv->Wait(&picappLineLock);
+			clerkLines[myLine]->cv->Wait(clerkLines[myLine]->lock);
 			printf("%s done waiting for %s.\n", customers[customerIndex]->name,
 					clerkLines[myLine]->name);
 			clerkLines[myLine]->lineCount--;
@@ -256,8 +256,8 @@ void beCustomer(int customerIndex) {
 		// Clerk is now available, current customer can approach the clerk.
 		clerkLines[myLine]->state = Clerk::BUSY; // clerk is now busy
 
-		printf("%s acquired lock %s.\n", currentThread->getName(), clerkLines[myLine]->lock->getName());
-		clerkLines[myLine]->lock->Acquire();
+//		printf("%s acquired lock %s.\n", currentThread->getName(), clerkLines[myLine]->lock->getName());
+//		clerkLines[myLine]->lock->Acquire();
 
 		printf("%s releasing %s\n", customers[customerIndex]->name,
 						picappLineLock.getName());

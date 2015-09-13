@@ -93,14 +93,16 @@ void picAppInteraction(int customer, int clerk) {
 		// take picture
 		printf("%s approaches clerk %s, signaling to begin interaction.\n",
 				currentThread->getName(), clerkLines[clerk]->name);
-		clerkLines[clerk]->transactionCV->Signal(clerkLines[clerk]->transactionLock);
+		clerkLines[clerk]->transactionCV->Signal(
+				clerkLines[clerk]->transactionLock);
 
 		// Wait to be shown picture
 		// Take picture until he likes it
 		while (!customers[customer]->picDone) {
 			printf("%s waiting for clerk %s to take the picture.\n",
 					currentThread->getName(), clerkLines[clerk]->name);
-			clerkLines[clerk]->transactionCV->Wait(clerkLines[clerk]->transactionLock);
+			clerkLines[clerk]->transactionCV->Wait(
+					clerkLines[clerk]->transactionLock);
 
 			if ((rand() % 10) % 2 == 0) {
 				printf("%s doesn't like the photo, signaling to clerk %s.\n",
@@ -117,6 +119,9 @@ void picAppInteraction(int customer, int clerk) {
 			}
 		}
 		// customer liked the photo and is leaving
+		printf("%s is waiting for the photo to be filed.\n", currentThread->getName());
+		clerkLines[clerk]->transactionCV->Wait(
+								clerkLines[clerk]->transactionLock);
 	}
 
 	printf("%s is now leaving %s, releasing lock.\n", currentThread->getName(),
@@ -133,28 +138,20 @@ void beClerk(int clerkIndex) {
 		printf("%s acquired %s.\n", clerkLines[clerkIndex]->name,
 				picappLineLock.getName());
 
-		if (clerkLines[clerkIndex]->state == Clerk::AVAILABLE) {
-			printf("%s is available.\n", clerkLines[clerkIndex]->name);
-
-			if (clerkLines[clerkIndex]->lineCount > 0) {
-				printf(
-						"%s is available and there is someone in line, signaling.\n",
-						clerkLines[clerkIndex]->name);
-				clerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
-				clerkLines[clerkIndex]->state = Clerk::BUSY;
-			}
-			else {
-				printf("No one in line for %s.\n",
-						clerkLines[clerkIndex]->name);
-			}
+		if (clerkLines[clerkIndex]->lineCount > 0) {
+			printf("%s is available and there is someone in line, signaling.\n",
+					clerkLines[clerkIndex]->name);
+			clerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
+			clerkLines[clerkIndex]->state = Clerk::BUSY;
+		}
+		else {
+			printf("No one in line for %s -- available.\n", clerkLines[clerkIndex]->name);
+			clerkLines[clerkIndex]->state = Clerk::AVAILABLE;
 		}
 
-//		else if (clerkLines[clerkIndex]->state == Clerk::AVAILABLE){
-//			clerkLines[clerkIndex]->state = Clerk::AVAILABLE;
-//		}
-
 		clerkLines[clerkIndex]->transactionLock->Acquire();
-		printf("%s acquired transaction lock %s.\n", clerkLines[clerkIndex]->name,
+		printf("%s acquired transaction lock %s.\n",
+				clerkLines[clerkIndex]->name,
 				clerkLines[clerkIndex]->transactionLock->getName());
 
 		printf("%s released %s.\n", clerkLines[clerkIndex]->name,
@@ -180,12 +177,21 @@ void beClerk(int clerkIndex) {
 			clerkLines[clerkIndex]->transactionCV->Wait(
 					clerkLines[clerkIndex]->transactionLock);
 		}
+		printf("%s's picture is being filed.\n", clerkLines[clerkIndex]->customer->name);
+		// Yield for a bit
+		for(int i=0; i < randomYield(); ++i) {
+			currentThread->Yield();
+		}
+		clerkLines[clerkIndex]->transactionCV->Signal(
+							clerkLines[clerkIndex]->transactionLock);
+		printf("%s's picture is now filed.\n", clerkLines[clerkIndex]->customer->name);
 		printf("%s is done at %s. ", clerkLines[clerkIndex]->customer->name,
 				clerkLines[clerkIndex]->name);
-		printf("%s is becoming available.\n", clerkLines[clerkIndex]->name);
-		clerkLines[clerkIndex]->state = Clerk::AVAILABLE;
+//		printf("%s is becoming available.\n", clerkLines[clerkIndex]->name);
+//		clerkLines[clerkIndex]->state = Clerk::AVAILABLE;
 
-		printf("%s released transaction lock %s.\n", clerkLines[clerkIndex]->name,
+		printf("%s released transaction lock %s.\n",
+				clerkLines[clerkIndex]->name,
 				clerkLines[clerkIndex]->transactionLock->getName());
 		clerkLines[clerkIndex]->transactionLock->Release();
 	}

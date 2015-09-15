@@ -7,10 +7,13 @@
 #include "utility.h"
 #include "system.h"
 #include "synch.h"
+#include "timer.h"
 #include <time.h>
 #include <stdlib.h>
 
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
+
+void broadcastMoney(int x);
 
 struct Customer {
 	char * name;
@@ -43,6 +46,7 @@ public:
 	Lock * transactionLock;
 
 	Customer * customer;
+	int money;
 
 	Clerk() {
 		name = NULL;
@@ -53,6 +57,7 @@ public:
 		transactionCV = new Condition(name);
 		transactionLock = new Lock(name);
 		customer = NULL;
+		money = 0;
 	}
 
 	Clerk(char * n, clerkType t) {
@@ -64,19 +69,77 @@ public:
 		transactionLock = new Lock(name);
 		transactionCV = new Condition(name);
 		customer = NULL;
+		money = 0;
 	}
 };
 
-// Customer's first step, either app or pic clerk
+class Manager {
+public:
+	char * name;
+	Timer * timer;
+
+	Manager(char * n) {
+		name = n;
+		timer = new Timer((VoidFunctionPtr) broadcastMoney, 0, true);
+	}
+};
+
+// Locks for choosing a line
 Lock picappLineLock("App Pic Line Lock");
 Lock passportLineLock("Passpork Line Lock");
 
 const int NUM_CUSTOMERS = 1;
 
+// Each
 Clerk * picAppClerkLines[2];
 Clerk * passportClerkLines[1];
 
+Manager * managers[1];
+
 Customer * customers[NUM_CUSTOMERS];
+
+void broadcastMoney(int x) {
+	// TODO add the rest of the locks
+	int total = 0;
+	// Read all of the clerks/cashiers and print their sums.
+	for (int i = 0; i < ARRAY_SIZE(picAppClerkLines); ++i) {
+		picAppClerkLines[i]->transactionLock->Acquire();
+		total += picAppClerkLines[i]->money;
+		printf("MANAGER SAYS %s: $%i\n", picAppClerkLines[i]->name,
+				picAppClerkLines[i]->money);
+		picAppClerkLines[i]->transactionLock->Release();
+	}
+	for (int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
+		passportClerkLines[i]->transactionLock->Acquire();
+		total += passportClerkLines[i]->money;
+		printf("MANAGER SAYS %s: $%i\n", passportClerkLines[i]->name,
+				passportClerkLines[i]->money);
+		passportClerkLines[i]->transactionLock->Release();
+	}
+	printf("MANAGER SAYS Total: $%i\n", total);
+}
+
+void beManager(int index) {
+	// TODO add other clerk cashiers blah
+	for (int i = 0; i < ARRAY_SIZE(picAppClerkLines); ++i) {
+//		picAppClerkLines[i]->transactionCV->Wait(picAppClerkLines[i]->transactionLock);
+		picAppClerkLines[i]->transactionLock->Acquire();
+		if (picAppClerkLines[i]->state == Clerk::BREAK) {
+			picAppClerkLines[i]->state = Clerk::AVAILABLE;
+		}
+		picAppClerkLines[i]->transactionLock->Release();
+//		picAppClerkLines[i]->transactionCV->Signal(picAppClerkLines[i]->transactionLock);
+	}
+	for (int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
+//		passportClerkLines[i]->transactionCV->Wait(passportClerkLines[i]->transactionLock);
+		passportClerkLines[i]->transactionLock->Acquire();
+		if (passportClerkLines[i]->state == Clerk::BREAK) {
+			passportClerkLines[i]->state = Clerk::AVAILABLE;
+		}
+		passportClerkLines[i]->transactionLock->Release();
+//		passportClerkLines[i]->transactionCV->Signal(passportClerkLines[i]->transactionLock);
+	}
+}
 
 void picAppClerkTransaction(int customer, int clerk) {
 	// Set the clerk's current customer
@@ -172,184 +235,200 @@ void bePicAppClerk(int clerkIndex) {
 	// Picture Clerk
 	//-------------------------------------------------------------------
 	while (picAppClerkLines[clerkIndex]->type == Clerk::PIC) {
-		picappLineLock.Acquire();
-		printf("%s acquired %s.\n", picAppClerkLines[clerkIndex]->name,
-				picappLineLock.getName());
+		while (picAppClerkLines[clerkIndex]->state != Clerk::BREAK) {
+			picappLineLock.Acquire();
+			printf("%s acquired %s.\n", picAppClerkLines[clerkIndex]->name,
+					picappLineLock.getName());
 
-		if (picAppClerkLines[clerkIndex]->lineCount > 0) {
-			printf("%s is available and there is someone in line, signaling.\n",
-					picAppClerkLines[clerkIndex]->name);
-			picAppClerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
-			picAppClerkLines[clerkIndex]->state = Clerk::BUSY;
-		}
-		else {
-			printf("No one in line for %s -- available.\n",
-					picAppClerkLines[clerkIndex]->name);
-			picAppClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
-		}
+			if (picAppClerkLines[clerkIndex]->lineCount > 0) {
+				printf(
+						"%s is available and there is someone in line, signaling.\n",
+						picAppClerkLines[clerkIndex]->name);
+				picAppClerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
+				picAppClerkLines[clerkIndex]->state = Clerk::BUSY;
+			}
+			else {
+				printf("No one in line for %s -- available.\n",
+						picAppClerkLines[clerkIndex]->name);
+				picAppClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
+			}
 
-		picAppClerkLines[clerkIndex]->transactionLock->Acquire();
-		printf("%s acquired transaction lock %s.\n",
-				picAppClerkLines[clerkIndex]->name,
-				picAppClerkLines[clerkIndex]->transactionLock->getName());
-
-		printf("%s released %s.\n", picAppClerkLines[clerkIndex]->name,
-				picappLineLock.getName());
-		picappLineLock.Release();
-
-		// wait for Customer data
-		printf("%s waiting on transaction.\n",
-				picAppClerkLines[clerkIndex]->name);
-		picAppClerkLines[clerkIndex]->transactionCV->Wait(
-				picAppClerkLines[clerkIndex]->transactionLock);
-
-		// Doing job, customer waiting, signal when done
-		while (!picAppClerkLines[clerkIndex]->customer->picDone) {
-			printf("%s taking the picture for %s.\n",
+			picAppClerkLines[clerkIndex]->transactionLock->Acquire();
+			printf("%s acquired transaction lock %s.\n",
 					picAppClerkLines[clerkIndex]->name,
-					picAppClerkLines[clerkIndex]->customer->name);
-			picAppClerkLines[clerkIndex]->transactionCV->Signal(
-					picAppClerkLines[clerkIndex]->transactionLock);
-			// Waiting for customer to accept photo
-			printf("%s is waiting for %s's reaction.\n",
-					picAppClerkLines[clerkIndex]->name,
-					picAppClerkLines[clerkIndex]->customer->name);
+					picAppClerkLines[clerkIndex]->transactionLock->getName());
+
+			printf("%s released %s.\n", picAppClerkLines[clerkIndex]->name,
+					picappLineLock.getName());
+			picappLineLock.Release();
+
+			// wait for Customer data
+			printf("%s waiting on transaction.\n",
+					picAppClerkLines[clerkIndex]->name);
 			picAppClerkLines[clerkIndex]->transactionCV->Wait(
 					picAppClerkLines[clerkIndex]->transactionLock);
-		}
-		printf("%s's picture is being filed.\n",
-				picAppClerkLines[clerkIndex]->customer->name);
-		// Yield for a bit
 
-		for (int i = 0; i < rand() % 80 + 20; ++i) {
-			currentThread->Yield();
-		}
-		picAppClerkLines[clerkIndex]->transactionCV->Signal(
-				picAppClerkLines[clerkIndex]->transactionLock);
-		printf("%s's picture is now filed.\n",
-				picAppClerkLines[clerkIndex]->customer->name);
-		printf("%s is done at %s. ",
-				picAppClerkLines[clerkIndex]->customer->name,
-				picAppClerkLines[clerkIndex]->name);
+			// Doing job, customer waiting, signal when done
+			while (!picAppClerkLines[clerkIndex]->customer->picDone) {
+				printf("%s taking the picture for %s.\n",
+						picAppClerkLines[clerkIndex]->name,
+						picAppClerkLines[clerkIndex]->customer->name);
+				picAppClerkLines[clerkIndex]->transactionCV->Signal(
+						picAppClerkLines[clerkIndex]->transactionLock);
+				// Waiting for customer to accept photo
+				printf("%s is waiting for %s's reaction.\n",
+						picAppClerkLines[clerkIndex]->name,
+						picAppClerkLines[clerkIndex]->customer->name);
+				picAppClerkLines[clerkIndex]->transactionCV->Wait(
+						picAppClerkLines[clerkIndex]->transactionLock);
+			}
+			printf("%s's picture is being filed.\n",
+					picAppClerkLines[clerkIndex]->customer->name);
+			// Yield for a bit
 
-		printf("%s released transaction lock %s.\n",
-				picAppClerkLines[clerkIndex]->name,
-				picAppClerkLines[clerkIndex]->transactionLock->getName());
-		picAppClerkLines[clerkIndex]->transactionLock->Release();
+			for (int i = 0; i < rand() % 80 + 20; ++i) {
+				currentThread->Yield();
+			}
+			picAppClerkLines[clerkIndex]->transactionCV->Signal(
+					picAppClerkLines[clerkIndex]->transactionLock);
+			printf("%s's picture is now filed.\n",
+					picAppClerkLines[clerkIndex]->customer->name);
+			printf("%s is done at %s. ",
+					picAppClerkLines[clerkIndex]->customer->name,
+					picAppClerkLines[clerkIndex]->name);
+
+			printf("%s released transaction lock %s.\n",
+					picAppClerkLines[clerkIndex]->name,
+					picAppClerkLines[clerkIndex]->transactionLock->getName());
+			picAppClerkLines[clerkIndex]->transactionLock->Release();
+		}
 	}
 	//-------------------------------------------------------------------
 	// Application Clerk
 	//-------------------------------------------------------------------
 	while (picAppClerkLines[clerkIndex]->type == Clerk::APP) {
-		picappLineLock.Acquire();
-		printf("%s acquired %s.\n", picAppClerkLines[clerkIndex]->name,
-				picappLineLock.getName());
+		while (picAppClerkLines[clerkIndex]->state != Clerk::BREAK) {
+			picappLineLock.Acquire();
+			printf("%s acquired %s.\n", picAppClerkLines[clerkIndex]->name,
+					picappLineLock.getName());
 
-		if (picAppClerkLines[clerkIndex]->lineCount > 0) {
-			printf("%s is available and there is someone in line, signaling.\n",
+			if (picAppClerkLines[clerkIndex]->lineCount > 0) {
+				printf(
+						"%s is available and there is someone in line, signaling.\n",
+						picAppClerkLines[clerkIndex]->name);
+				picAppClerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
+				picAppClerkLines[clerkIndex]->state = Clerk::BUSY;
+			}
+			else {
+				printf("No one in line for %s -- available.\n",
+						picAppClerkLines[clerkIndex]->name);
+				picAppClerkLines[clerkIndex]->state = Clerk::BREAK;
+			}
+
+			picAppClerkLines[clerkIndex]->transactionLock->Acquire();
+			printf("%s acquired transaction lock %s.\n",
+					picAppClerkLines[clerkIndex]->name,
+					picAppClerkLines[clerkIndex]->transactionLock->getName());
+
+			printf("%s released %s.\n", picAppClerkLines[clerkIndex]->name,
+					picappLineLock.getName());
+			picappLineLock.Release();
+
+			// wait for Customer data
+			printf("%s waiting on transaction.\n",
 					picAppClerkLines[clerkIndex]->name);
-			picAppClerkLines[clerkIndex]->lineCV->Signal(&picappLineLock);
-			picAppClerkLines[clerkIndex]->state = Clerk::BUSY;
-		}
-		else {
-			printf("No one in line for %s -- available.\n",
+			picAppClerkLines[clerkIndex]->transactionCV->Wait(
+					picAppClerkLines[clerkIndex]->transactionLock);
+
+			// Doing job, customer waiting, signal when done
+			printf("%s filing application for %s.\n",
+					picAppClerkLines[clerkIndex]->name,
+					picAppClerkLines[clerkIndex]->customer->name);
+			// Yield for a bit
+			for (int i = 0; i < rand() % 80 + 20; ++i) {
+				currentThread->Yield();
+			}
+			// set application as complete
+			picAppClerkLines[clerkIndex]->customer->appDone = true;
+			picAppClerkLines[clerkIndex]->transactionCV->Signal(
+					picAppClerkLines[clerkIndex]->transactionLock);
+			printf("%s's application is now filed.\n",
+					picAppClerkLines[clerkIndex]->customer->name);
+			printf("%s is done at %s. ",
+					picAppClerkLines[clerkIndex]->customer->name,
 					picAppClerkLines[clerkIndex]->name);
-			picAppClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
+
+			printf("%s released transaction lock %s.\n",
+					picAppClerkLines[clerkIndex]->name,
+					picAppClerkLines[clerkIndex]->transactionLock->getName());
+			picAppClerkLines[clerkIndex]->transactionLock->Release();
 		}
-
-		picAppClerkLines[clerkIndex]->transactionLock->Acquire();
-		printf("%s acquired transaction lock %s.\n",
-				picAppClerkLines[clerkIndex]->name,
-				picAppClerkLines[clerkIndex]->transactionLock->getName());
-
-		printf("%s released %s.\n", picAppClerkLines[clerkIndex]->name,
-				picappLineLock.getName());
-		picappLineLock.Release();
-
-		// wait for Customer data
-		printf("%s waiting on transaction.\n",
-				picAppClerkLines[clerkIndex]->name);
-		picAppClerkLines[clerkIndex]->transactionCV->Wait(
-				picAppClerkLines[clerkIndex]->transactionLock);
-
-		// Doing job, customer waiting, signal when done
-		printf("%s filing application for %s.\n",
-				picAppClerkLines[clerkIndex]->name,
-				picAppClerkLines[clerkIndex]->customer->name);
-		// Yield for a bit
-		for (int i = 0; i < rand() % 80 + 20; ++i) {
-			currentThread->Yield();
-		}
-		// set application as complete
-		picAppClerkLines[clerkIndex]->customer->appDone = true;
-		picAppClerkLines[clerkIndex]->transactionCV->Signal(
-				picAppClerkLines[clerkIndex]->transactionLock);
-		printf("%s's application is now filed.\n",
-				picAppClerkLines[clerkIndex]->customer->name);
-		printf("%s is done at %s. ",
-				picAppClerkLines[clerkIndex]->customer->name,
-				picAppClerkLines[clerkIndex]->name);
-
-		printf("%s released transaction lock %s.\n",
-				picAppClerkLines[clerkIndex]->name,
-				picAppClerkLines[clerkIndex]->transactionLock->getName());
-		picAppClerkLines[clerkIndex]->transactionLock->Release();
 	}
 }
 
 void bePassportClerk(int clerkIndex) {
-	passportLineLock.Acquire();
-	printf("%s acquired %s.\n", passportClerkLines[clerkIndex]->name,
-			passportLineLock.getName());
+	while (true) {
+		while (passportClerkLines[clerkIndex]->state != Clerk::BREAK) {
+			passportLineLock.Acquire();
+			printf("%s acquired %s.\n", passportClerkLines[clerkIndex]->name,
+					passportLineLock.getName());
 
-	if (passportClerkLines[clerkIndex]->lineCount > 0) {
-		printf("%s is available and there is someone in line, signaling.\n",
-				passportClerkLines[clerkIndex]->name);
-		passportClerkLines[clerkIndex]->lineCV->Signal(&passportLineLock);
-		passportClerkLines[clerkIndex]->state = Clerk::BUSY;
+			if (passportClerkLines[clerkIndex]->lineCount > 0) {
+				printf(
+						"%s is available and there is someone in line, signaling.\n",
+						passportClerkLines[clerkIndex]->name);
+				passportClerkLines[clerkIndex]->lineCV->Signal(
+						&passportLineLock);
+				passportClerkLines[clerkIndex]->state = Clerk::BUSY;
+			}
+			else {
+				printf("No one in line for %s -- available.\n",
+						passportClerkLines[clerkIndex]->name);
+				passportClerkLines[clerkIndex]->state = Clerk::BREAK;
+			}
+
+			passportClerkLines[clerkIndex]->transactionLock->Acquire();
+			printf("%s acquired transaction lock %s.\n",
+					passportClerkLines[clerkIndex]->name,
+					passportClerkLines[clerkIndex]->transactionLock->getName());
+
+			printf("%s released %s.\n", passportClerkLines[clerkIndex]->name,
+					passportLineLock.getName());
+			passportLineLock.Release();
+
+			// wait for Customer data
+			printf("%s waiting on transaction.\n",
+					passportClerkLines[clerkIndex]->name);
+			passportClerkLines[clerkIndex]->transactionCV->Wait(
+					passportClerkLines[clerkIndex]->transactionLock);
+
+			// Doing job, customer waiting, signal when done
+			printf("%s certifying complete application and picture for %s.\n",
+					passportClerkLines[clerkIndex]->name,
+					passportClerkLines[clerkIndex]->customer->name);
+
+			// Yield for a bit
+			for (int i = 0; i < rand() % 900 + 100; ++i) {
+				currentThread->Yield();
+			}
+			// set application as complete
+			ASSERT(
+					passportClerkLines[clerkIndex]->customer->appDone
+							&& passportClerkLines[clerkIndex]->customer->picDone);
+			passportClerkLines[clerkIndex]->transactionCV->Signal(
+					passportClerkLines[clerkIndex]->transactionLock);
+			printf("%s's application and picture are approved.\n",
+					passportClerkLines[clerkIndex]->customer->name);
+			printf("%s is done at %s. ",
+					passportClerkLines[clerkIndex]->customer->name,
+					passportClerkLines[clerkIndex]->name);
+
+			printf("%s released transaction lock %s.\n",
+					passportClerkLines[clerkIndex]->name,
+					passportClerkLines[clerkIndex]->transactionLock->getName());
+			passportClerkLines[clerkIndex]->transactionLock->Release();
+		}
 	}
-	else {
-		printf("No one in line for %s -- available.\n",
-				passportClerkLines[clerkIndex]->name);
-		passportClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
-	}
-
-	passportClerkLines[clerkIndex]->transactionLock->Acquire();
-	printf("%s acquired transaction lock %s.\n",
-			passportClerkLines[clerkIndex]->name,
-			passportClerkLines[clerkIndex]->transactionLock->getName());
-
-	printf("%s released %s.\n", passportClerkLines[clerkIndex]->name,
-			passportLineLock.getName());
-	passportLineLock.Release();
-
-	// wait for Customer data
-	printf("%s waiting on transaction.\n", passportClerkLines[clerkIndex]->name);
-	passportClerkLines[clerkIndex]->transactionCV->Wait(
-			passportClerkLines[clerkIndex]->transactionLock);
-
-	// Doing job, customer waiting, signal when done
-	printf("%s certifying complete application and picture for %s.\n",
-			passportClerkLines[clerkIndex]->name,
-			passportClerkLines[clerkIndex]->customer->name);
-
-	// Yield for a bit
-	for (int i = 0; i < rand() % 900 + 100; ++i) {
-		currentThread->Yield();
-	}
-	// set application as complete
-	ASSERT(passportClerkLines[clerkIndex]->customer->appDone && passportClerkLines[clerkIndex]->customer->picDone);
-	passportClerkLines[clerkIndex]->transactionCV->Signal(
-			passportClerkLines[clerkIndex]->transactionLock);
-	printf("%s's application and picture are approved.\n",
-			passportClerkLines[clerkIndex]->customer->name);
-	printf("%s is done at %s. ", passportClerkLines[clerkIndex]->customer->name,
-			passportClerkLines[clerkIndex]->name);
-
-	printf("%s released transaction lock %s.\n",
-			passportClerkLines[clerkIndex]->name,
-			passportClerkLines[clerkIndex]->transactionLock->getName());
-	passportClerkLines[clerkIndex]->transactionLock->Release();
 }
 
 // The customer functionality
@@ -486,11 +565,20 @@ void PassportOffice() {
 	picAppClerkLines[0] = new Clerk("Pic Clerk 0", Clerk::PIC);
 	picAppClerkLines[1] = new Clerk("App Clerk 1", Clerk::APP);
 
+	managers[0] = new Manager("Manager 0");
+
 	for (i = 0; i < 1; ++i) {
 		name = passportClerkLines[i]->name;
 		t = new Thread(name);
 		printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePassportClerk, i);
+	}
+
+	for (i = 0; i < 1; ++i) {
+		name = managers[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beManager, i);
 	}
 
 	for (i = 0; i < 2; ++i) {

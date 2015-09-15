@@ -104,13 +104,16 @@ Lock::~Lock() {
 	delete queue;
 }
 bool Lock::isHeldByCurrentThread() {
-	return currentThread == ownerThread;
+//	printf("Current thread: %s\n", currentThread->getName());
+//	if(ownerThread != NULL) printf("Owner thread: %s\n", ownerThread->getName());
+//	else printf("Owner thread: null\n");
+	return (currentThread == ownerThread || ownerThread == NULL);
 }
 void Lock::Acquire() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	if (isHeldByCurrentThread()) {
-		printf("\tThread %s already has the lock %s!\n", currentThread->getName(),
-				name);
+//		printf("\tThread %s already has the lock %s!\n", currentThread->getName(),
+//				name);
 		(void) interrupt->SetLevel(oldLevel);
 		return;
 	}
@@ -127,8 +130,8 @@ void Lock::Acquire() {
 void Lock::Release() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	if (!isHeldByCurrentThread()) {
-		printf("\tNon-owner thread %s cannot release lock %s!\n",
-				currentThread->getName(), name);
+//		printf("\tNon-owner thread %s cannot release lock %s!\n",
+//				currentThread->getName(), name);
 		(void) interrupt->SetLevel(oldLevel);
 		return;
 	}

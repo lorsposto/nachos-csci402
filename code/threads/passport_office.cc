@@ -2,7 +2,8 @@
  * passport_office.cc
  *
  *  Created on: Sep 11, 2015
- *      Author: LorraineSposto
+ *  Authors: Erika Johnson, Heather Persson, Lorraine Sposto
+ *
  */
 #include "utility.h"
 #include "system.h"
@@ -146,7 +147,7 @@ public:
 // Customer's first step, either app or pic clerk
 Lock picLineLock("Pic Line Lock");
 Lock appLineLock("App Line Lock");
-Lock passportLineLock("Passpork Line Lock");
+Lock passportLineLock("Passport Line Lock");
 Lock cashierLineLock("Cashier Line Lock");
 
 const int NUM_CUSTOMERS = 1;
@@ -482,68 +483,66 @@ void bePassportClerk(int clerkIndex) {
 	//-------------------------------------------------------------------
 	// Passport Clerk
 	//-------------------------------------------------------------------
-	// while (true) {
-		while (passportClerkLines[clerkIndex]->state != Clerk::BREAK) {
-			passportLineLock.Acquire();
-			printf("%s acquired %s.\n", passportClerkLines[clerkIndex]->name,
-					passportLineLock.getName());
-			if (passportClerkLines[clerkIndex]->bribeLineCount > 0) {
-				printf("%s is available and there is someone in bribe line, signaling.\n",
-						passportClerkLines[clerkIndex]->name);
-				passportClerkLines[clerkIndex]->bribeLineCV->Signal(&passportLineLock);
-				passportClerkLines[clerkIndex]->state = Clerk::BUSY;
-			} else  if (passportClerkLines[clerkIndex]->regularLineCount > 0) {
-				printf("%s is available and there is someone in regular line, signaling.\n",
-				passportClerkLines[clerkIndex]->name);
-				passportClerkLines[clerkIndex]->regularLineCV->Signal(&passportLineLock);
-				passportClerkLines[clerkIndex]->state = Clerk::BUSY;
-			} else {
-				printf("No one in line for %s -- available.\n",
+	while (passportClerkLines[clerkIndex]->state != Clerk::BREAK) {
+		passportLineLock.Acquire();
+		printf("%s acquired %s.\n", passportClerkLines[clerkIndex]->name,
+				passportLineLock.getName());
+		if (passportClerkLines[clerkIndex]->bribeLineCount > 0) {
+			printf("%s is available and there is someone in bribe line, signaling.\n",
 					passportClerkLines[clerkIndex]->name);
-				passportClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
-			}
+			passportClerkLines[clerkIndex]->bribeLineCV->Signal(&passportLineLock);
+			passportClerkLines[clerkIndex]->state = Clerk::BUSY;
+		} else  if (passportClerkLines[clerkIndex]->regularLineCount > 0) {
+			printf("%s is available and there is someone in regular line, signaling.\n",
+			passportClerkLines[clerkIndex]->name);
+			passportClerkLines[clerkIndex]->regularLineCV->Signal(&passportLineLock);
+			passportClerkLines[clerkIndex]->state = Clerk::BUSY;
+		} else {
+			printf("No one in line for %s -- available.\n",
+				passportClerkLines[clerkIndex]->name);
+			passportClerkLines[clerkIndex]->state = Clerk::AVAILABLE;
+		}
 
-			passportClerkLines[clerkIndex]->transactionLock->Acquire();
-			printf("%s acquired transaction lock %s.\n",
+		passportClerkLines[clerkIndex]->transactionLock->Acquire();
+		printf("%s acquired transaction lock %s.\n",
+			passportClerkLines[clerkIndex]->name,
+			passportClerkLines[clerkIndex]->transactionLock->getName());
+
+		printf("%s released %s.\n", passportClerkLines[clerkIndex]->name,
+			passportLineLock.getName());
+		passportLineLock.Release();
+
+		// wait for Customer data
+		printf("%s waiting on transaction.\n", passportClerkLines[clerkIndex]->name);
+		passportClerkLines[clerkIndex]->transactionCV->Wait(
+				passportClerkLines[clerkIndex]->transactionLock);
+
+		// Doing job, customer waiting, signal when done
+		printf("%s certifying complete application and picture for %s.\n",
+				passportClerkLines[clerkIndex]->name,
+				passportClerkLines[clerkIndex]->customer->name);
+
+		// Yield for a bit
+		for (int i = 0; i < rand() % 900 + 100; ++i) {
+			currentThread->Yield();
+		}
+		// set application as complete
+		ASSERT(passportClerkLines[clerkIndex]->customer->appDone
+						&& passportClerkLines[clerkIndex]->customer->picDone);
+		passportClerkLines[clerkIndex]->customer->certified = true;
+		passportClerkLines[clerkIndex]->transactionCV->Signal(
+				passportClerkLines[clerkIndex]->transactionLock);
+		printf("%s's application and picture are approved.\n",
+				passportClerkLines[clerkIndex]->customer->name);
+		printf("%s is done at %s. ",
+				passportClerkLines[clerkIndex]->customer->name,
+				passportClerkLines[clerkIndex]->name);
+
+		printf("%s released transaction lock %s.\n",
 				passportClerkLines[clerkIndex]->name,
 				passportClerkLines[clerkIndex]->transactionLock->getName());
-
-			printf("%s released %s.\n", passportClerkLines[clerkIndex]->name,
-				passportLineLock.getName());
-			passportLineLock.Release();
-
-			// wait for Customer data
-			printf("%s waiting on transaction.\n", passportClerkLines[clerkIndex]->name);
-			passportClerkLines[clerkIndex]->transactionCV->Wait(
-					passportClerkLines[clerkIndex]->transactionLock);
-
-			// Doing job, customer waiting, signal when done
-			printf("%s certifying complete application and picture for %s.\n",
-					passportClerkLines[clerkIndex]->name,
-					passportClerkLines[clerkIndex]->customer->name);
-
-			// Yield for a bit
-			for (int i = 0; i < rand() % 900 + 100; ++i) {
-				currentThread->Yield();
-			}
-			// set application as complete
-			ASSERT(passportClerkLines[clerkIndex]->customer->appDone
-							&& passportClerkLines[clerkIndex]->customer->picDone);
-			passportClerkLines[clerkIndex]->customer->certified = true;
-			passportClerkLines[clerkIndex]->transactionCV->Signal(
-					passportClerkLines[clerkIndex]->transactionLock);
-			printf("%s's application and picture are approved.\n",
-					passportClerkLines[clerkIndex]->customer->name);
-			printf("%s is done at %s. ",
-					passportClerkLines[clerkIndex]->customer->name,
-					passportClerkLines[clerkIndex]->name);
-
-			printf("%s released transaction lock %s.\n",
-					passportClerkLines[clerkIndex]->name,
-					passportClerkLines[clerkIndex]->transactionLock->getName());
-			passportClerkLines[clerkIndex]->transactionLock->Release();
-		}
-	// }
+		passportClerkLines[clerkIndex]->transactionLock->Release();
+	}
 }
 
 void beCashier(int cashierIndex) {
@@ -768,7 +767,6 @@ void beCustomer(int customerIndex) {
 	//-------------------------------------------------------------------
 	// Step 2: Going to passport clerk
 	//-------------------------------------------------------------------
-
 	while (customers[customerIndex]->appDone
 			&& customers[customerIndex]->picDone
 			&& !customers[customerIndex]->certified) {
@@ -811,7 +809,6 @@ void beCustomer(int customerIndex) {
 	//-------------------------------------------------------------------
 	// Step 3: Going to cashier
 	//-------------------------------------------------------------------
-
 	while (customers[customerIndex]->certified && !customers[customerIndex]->gotPassport) {
 		// choose shortest cashier line
 		cashierLineLock.Acquire();

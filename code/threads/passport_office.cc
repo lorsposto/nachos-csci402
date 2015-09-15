@@ -19,14 +19,16 @@ struct Customer {
 	char * name;
 	bool picDone;
 	bool appDone;
-	bool passportDone;
+	bool certified;
+	bool gotPassport;
 	int money;
 
 	Customer(char * n) {
 		name = n;
 		picDone = false;
 		appDone = false;
-		passportDone = false;
+		certified = false;
+		gotPassport = false;
 		switch (rand() % 4) {
         case 0: 
         	money = 100; 
@@ -315,6 +317,29 @@ void passportClerkTransaction(int customer, int clerk) {
 	passportClerkLines[clerk]->transactionLock->Release();
 }
 
+void cashierTransaction(int customer, int cashier) {
+	// Set the cashier's current customer
+	cashierLines[cashier]->transactionLock->Acquire();
+	cashierLines[cashier]->customer = customers[customer];
+	printf("%s acquired lock %s and set himself as the customer.\n",
+			customers[customer]->name,
+			cashierLines[cashier]->transactionLock->getName());
+
+	printf("%s approaches cashier %s to give him money.\n",
+	currentThread->getName(), cashierLines[cashier]->name);
+	cashierLines[cashier]->transactionCV->Signal(
+		cashierLines[cashier]->transactionLock);
+
+	printf("%s waiting for cashier %s to accept money and provide passport.\n",
+	currentThread->getName(), cashierLines[cashier]->name);
+	cashierLines[cashier]->transactionCV->Wait(
+		cashierLines[cashier]->transactionLock);
+
+	printf("%s is now leaving %s, releasing lock.\n", currentThread->getName(),
+			cashierLines[cashier]->name);
+	cashierLines[cashier]->transactionLock->Release();
+}
+
 void bePicClerk(int clerkIndex) {
 	//-------------------------------------------------------------------
 	// Picture Clerk
@@ -501,7 +526,7 @@ void bePassportClerk(int clerkIndex) {
 			// set application as complete
 			ASSERT(passportClerkLines[clerkIndex]->customer->appDone
 							&& passportClerkLines[clerkIndex]->customer->picDone);
-			passportClerkLines[clerkIndex]->customer->passportDone = true;
+			passportClerkLines[clerkIndex]->customer->certified = true;
 			passportClerkLines[clerkIndex]->transactionCV->Signal(
 					passportClerkLines[clerkIndex]->transactionLock);
 			printf("%s's application and picture are approved.\n",
@@ -515,6 +540,61 @@ void bePassportClerk(int clerkIndex) {
 					passportClerkLines[clerkIndex]->transactionLock->getName());
 			passportClerkLines[clerkIndex]->transactionLock->Release();
 		}
+	}
+}
+
+void beCashier(int cashierIndex) {
+	while (true) {
+		cashierLineLock.Acquire();
+		printf("%s acquired %s.\n", cashierLines[cashierIndex]->name,
+				cashierLineLock.getName());
+
+		if (cashierLines[cashierIndex]->lineCount > 0) {
+			printf("%s is available and there is someone in line, signaling.\n",
+					cashierLines[cashierIndex]->name);
+			cashierLines[cashierIndex]->lineCV->Signal(&cashierLineLock);
+			cashierLines[cashierIndex]->state = Cashier::BUSY;
+		}
+		else {
+			printf("No one in line for %s -- available.\n",
+					cashierLines[cashierIndex]->name);
+			cashierLines[cashierIndex]->state = Cashier::AVAILABLE;
+		}
+
+		cashierLines[cashierIndex]->transactionLock->Acquire();
+		printf("%s acquired transaction lock %s.\n",
+				cashierLines[cashierIndex]->name,
+				cashierLines[cashierIndex]->transactionLock->getName());
+
+		printf("%s released %s.\n", cashierLines[cashierIndex]->name,
+				cashierLineLock.getName());
+		cashierLineLock.Release();
+
+		// wait for Customer data
+		printf("%s waiting on transaction.\n",
+				cashierLines[cashierIndex]->name);
+		cashierLines[cashierIndex]->transactionCV->Wait(
+				cashierLines[cashierIndex]->transactionLock);
+
+		// Doing job, customer waiting, signal when done
+		printf("%s accepting money from %s.\n",
+				cashierLines[cashierIndex]->name,
+				cashierLines[cashierIndex]->customer->name);
+
+		// set passport as received by customer
+		cashierLines[cashierIndex]->customer->gotPassport = true;
+		cashierLines[cashierIndex]->transactionCV->Signal(
+				cashierLines[cashierIndex]->transactionLock);
+		printf("%s's money has been accepted.\n",
+				cashierLines[cashierIndex]->customer->name);
+		printf("%s is done at %s. ",
+				cashierLines[cashierIndex]->customer->name,
+				cashierLines[cashierIndex]->name);
+
+		printf("%s released transaction lock %s.\n",
+				cashierLines[cashierIndex]->name,
+				cashierLines[cashierIndex]->transactionLock->getName());
+		cashierLines[cashierIndex]->transactionLock->Release();
 	}
 }
 
@@ -681,7 +761,7 @@ void beCustomer(int customerIndex) {
 
 	while (customers[customerIndex]->appDone
 			&& customers[customerIndex]->picDone
-			&& !customers[customerIndex]->passportDone) {
+			&& !customers[customerIndex]->certified) {
 		// choose shortest passport clerk line
 		passportLineLock.Acquire();
 		myLine = -1;

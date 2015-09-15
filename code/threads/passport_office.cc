@@ -105,16 +105,54 @@ public:
 	}
 };
 
+struct Cashier {
+public:
+	enum cashierState {
+		AVAILABLE, BUSY, BREAK
+	};
+	char * name;
+	int lineCount;
+	int money;
+	cashierState state;
+	Condition * lineCV;
+	Condition * transactionCV;
+	Lock * transactionLock;
+
+	Customer * customer;
+
+	Cashier() {
+		name = NULL;
+		lineCount = 0;
+		state = AVAILABLE;
+		lineCV = new Condition(name);
+		transactionCV = new Condition(name);
+		transactionLock = new Lock(name);
+		customer = NULL;
+	}
+
+	Cashier(char * n) {
+		name = n;
+		lineCount = 0;
+		state = AVAILABLE;
+		lineCV = new Condition(name);
+		transactionLock = new Lock(name);
+		transactionCV = new Condition(name);
+		customer = NULL;
+	}
+};
+
 // Customer's first step, either app or pic clerk
 Lock picLineLock("Pic Line Lock");
 Lock appLineLock("App Line Lock");
 Lock passportLineLock("Passpork Line Lock");
+Lock cashierLineLock("Cashier Line Lock");
 
 const int NUM_CUSTOMERS = 1;
 
 Clerk * picClerkLines[1];
 Clerk * appClerkLines[1];
 Clerk * passportClerkLines[1];
+Cashier * cashierLines[1];
 
 Manager * managers[1];
 

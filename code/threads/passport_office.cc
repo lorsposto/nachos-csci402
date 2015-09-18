@@ -168,22 +168,22 @@ void broadcastMoney(int x) {
 	for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines); ++i) {
 		picClerkLines[i]->transactionLock->Acquire();
 		total += picClerkLines[i]->money;
-		/*printf("MANAGER SAYS %s: $%i\n", picClerkLines[i]->name,
-				picClerkLines[i]->money);*/
+		printf("MANAGER SAYS %s: $%i\n", picClerkLines[i]->name,
+				picClerkLines[i]->money);
 		picClerkLines[i]->transactionLock->Release();
 	}
 	for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines); ++i) {
 		appClerkLines[i]->transactionLock->Acquire();
 		total += appClerkLines[i]->money;
-		/*printf("MANAGER SAYS %s: $%i\n", appClerkLines[i]->name,
-				appClerkLines[i]->money);*/
+		printf("MANAGER SAYS %s: $%i\n", appClerkLines[i]->name,
+				appClerkLines[i]->money);
 		appClerkLines[i]->transactionLock->Release();
 	}
 	for (unsigned int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
 		passportClerkLines[i]->transactionLock->Acquire();
 		total += passportClerkLines[i]->money;
-		/*printf("MANAGER SAYS %s: $%i\n", passportClerkLines[i]->name,
-				passportClerkLines[i]->money);*/
+		printf("MANAGER SAYS %s: $%i\n", passportClerkLines[i]->name,
+				passportClerkLines[i]->money);
 		passportClerkLines[i]->transactionLock->Release();
 	}
 	//printf("MANAGER SAYS Total: $%i\n", total);
@@ -708,14 +708,37 @@ void beCustomer(int customerIndex) {
 
 			//Must wait for Clerk to be available
 			if (picClerkLines[myLine]->state != Clerk::AVAILABLE) {
-				//TODO: change depending on whether or not they bribe
-				picClerkLines[myLine]->regularLineCount++;
-				printf("%s waiting for %s.\n", customers[customerIndex]->name,
+				
+				if(customers[customerIndex]->money >= 600) {
+					//IF enough money, 20% chance of bribing
+					int bribeChance = rand() % 5;
+
+					//decided to bribe
+					if(bribeChance == 0) {
+						picClerkLines[myLine]->bribeLineCount++;
+						printf("%s has gotten in bribe line for %s.\n", customers[customerIndex]->name,
+							picClerkLines[myLine]->name);
+						customers[customerIndex]->money -= 500;
+						picClerkLines[myLine]->bribeLineCV->Wait(&picLineLock);
+						picClerkLines[myLine]->bribeLineCount--;
+					}
+					//did not decide to bribe
+					else {
+						picClerkLines[myLine]->regularLineCount++;
+						printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+							picClerkLines[myLine]->name);
+						picClerkLines[myLine]->regularLineCV->Wait(&picLineLock);
+						picClerkLines[myLine]->regularLineCount--;
+					}
+
+				}
+				else {
+					picClerkLines[myLine]->regularLineCount++;
+					printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
 						picClerkLines[myLine]->name);
-				picClerkLines[myLine]->regularLineCV->Wait(&picLineLock);
-				printf("%s done waiting for %s.\n", customers[customerIndex]->name,
-						picClerkLines[myLine]->name);
-				picClerkLines[myLine]->regularLineCount--;
+					picClerkLines[myLine]->regularLineCV->Wait(&picLineLock);
+					picClerkLines[myLine]->regularLineCount--;
+				}
 			}
 
 			// Clerk is now available, current customer can approach the clerk.
@@ -725,26 +748,46 @@ void beCustomer(int customerIndex) {
 			//		printf("%s acquired lock %s.\n", currentThread->getName(), clerkLines[myLine]->lock->getName());
 			//		clerkLines[myLine]->lock->Acquire();
 
-			printf("%s releasing %s\n", customers[customerIndex]->name,
-			picLineLock.getName());
+			/*printf("%s releasing %s\n", customers[customerIndex]->name,
+			picLineLock.getName());*/
 			picLineLock.Release();
 			// interaction begins
 			picClerkTransaction(customerIndex, myLine);
 		} else { //Customer is trying to submit Application
 
-			printf("%s chose %s.\n", customers[customerIndex]->name,
-				appClerkLines[myLine]->name);
+			/*printf("%s chose %s.\n", customers[customerIndex]->name,
+				appClerkLines[myLine]->name);*/
 
 			//Must wait for Clerk to be available
 			if (appClerkLines[myLine]->state != Clerk::AVAILABLE) {
-				//TODO: change depending on whether or not they bribe
-				appClerkLines[myLine]->regularLineCount++;
-				printf("%s waiting for %s.\n", customers[customerIndex]->name,
-						appClerkLines[myLine]->name);
-				appClerkLines[myLine]->regularLineCV->Wait(&appLineLock);
-				printf("%s done waiting for %s.\n", customers[customerIndex]->name,
-						appClerkLines[myLine]->name);
-				appClerkLines[myLine]->regularLineCount--;
+
+				if(customers[customerIndex]->money >= 600) {
+					//IF enough money, 20% chance of bribing
+					int bribeChance = rand() % 5;
+
+					//decided to bribe
+					if(bribeChance == 0) { 
+						appClerkLines[myLine]->bribeLineCount++;
+						printf("%s has gotten in bribe line for %s.\n", customers[customerIndex]->name,
+								appClerkLines[myLine]->name);
+						customers[customerIndex]->money -= 500;
+						appClerkLines[myLine]->bribeLineCV->Wait(&appLineLock);
+						appClerkLines[myLine]->bribeLineCount--;
+					} else { //did not decide to bribe
+						appClerkLines[myLine]->regularLineCount++;
+						printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+								appClerkLines[myLine]->name);
+						appClerkLines[myLine]->regularLineCV->Wait(&appLineLock);
+						appClerkLines[myLine]->regularLineCount--;
+					}
+				} else { //not enough funds to bribe
+						appClerkLines[myLine]->regularLineCount++;
+						printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+								appClerkLines[myLine]->name);
+						appClerkLines[myLine]->regularLineCV->Wait(&appLineLock);
+						appClerkLines[myLine]->regularLineCount--;
+				}
+
 			}
 
 			// Clerk is now available, current customer can approach the clerk.
@@ -788,13 +831,30 @@ void beCustomer(int customerIndex) {
 		// Customer must wait for clerk to become available.
 
 		if (passportClerkLines[myLine]->state != Clerk::AVAILABLE) {
-			passportClerkLines[myLine]->regularLineCount++;
-			printf("%s waiting for %s.\n", customers[customerIndex]->name,
-					passportClerkLines[myLine]->name);
-			passportClerkLines[myLine]->regularLineCV->Wait(&passportLineLock);
-			printf("%s done waiting for %s.\n", customers[customerIndex]->name,
-					passportClerkLines[myLine]->name);
-			passportClerkLines[myLine]->regularLineCount--;
+			if(customers[customerIndex]->money >= 600) {
+				//IF enough money, 20% chance of bribing
+				int bribeChance = rand() % 5;
+				if(bribeChance == 0) { //decided to bribe
+					passportClerkLines[myLine]->bribeLineCount++;
+					printf("%s has gotten in bribe line for %s.\n", customers[customerIndex]->name,
+							passportClerkLines[myLine]->name);
+					customers[customerIndex]->money -= 500;
+					passportClerkLines[myLine]->bribeLineCV->Wait(&passportLineLock);
+					passportClerkLines[myLine]->bribeLineCount--;
+				} else { //decided not to bribe
+					passportClerkLines[myLine]->regularLineCount++;
+					printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+							passportClerkLines[myLine]->name);
+					passportClerkLines[myLine]->regularLineCV->Wait(&passportLineLock);
+					passportClerkLines[myLine]->regularLineCount--;
+				}
+			} else { //insufficient funds to bribe
+				passportClerkLines[myLine]->regularLineCount++;
+				printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+						passportClerkLines[myLine]->name);
+				passportClerkLines[myLine]->regularLineCV->Wait(&passportLineLock);
+				passportClerkLines[myLine]->regularLineCount--;
+			}
 		}
 
 		// Clerk is now available, current customer can approach the clerk.
@@ -829,23 +889,21 @@ void beCustomer(int customerIndex) {
 
 		if (cashierLines[myLine]->state != Cashier::AVAILABLE) {
 			cashierLines[myLine]->lineCount++;
-			printf("%s waiting for %s.\n", customers[customerIndex]->name,
+			printf("%s has gotten in line for %s.\n", customers[customerIndex]->name,
 					cashierLines[myLine]->name);
 			cashierLines[myLine]->lineCV->Wait(&cashierLineLock);
-			printf("%s done waiting for %s.\n", customers[customerIndex]->name,
-					cashierLines[myLine]->name);
 			cashierLines[myLine]->lineCount--;
 		}
 
 		// Cashier is now available, current customer can approach the cashier.
 		cashierLines[myLine]->state = Cashier::BUSY; // cashier is now busy
 
-		printf("%s releasing %s\n", customers[customerIndex]->name,
-				cashierLineLock.getName());
 		cashierLineLock.Release();
 		// interaction begins
 		cashierTransaction(customerIndex, myLine);
 	}
+
+	printf("%s is leaving the Passport Office.\n", customers[customerIndex]->name);	
 }
 
 void PassportOffice() {

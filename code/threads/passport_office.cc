@@ -918,7 +918,8 @@ void beCustomer(int customerIndex) {
 							printf("%s has gotten in bribe line for %s.\n",
 									customers[customerIndex]->name,
 									picClerkLines[myLine]->name);
-							customers[customerIndex]->money -= 500;
+							customers[customerIndex]->money += 500;
+							picClerkLines[myLine]->money -= 500;
 							picClerkLines[myLine]->bribeLineCV->Wait(
 									&picLineLock);
 							picClerkLines[myLine]->bribeLineCount--;
@@ -967,7 +968,8 @@ void beCustomer(int customerIndex) {
 							printf("%s has gotten in bribe line for %s.\n",
 									customers[customerIndex]->name,
 									appClerkLines[myLine]->name);
-							customers[customerIndex]->money -= 500;
+							customers[customerIndex]->money += 500;
+							picClerkLines[myLine]->money -= 500;
 							appClerkLines[myLine]->bribeLineCV->Wait(
 									&appLineLock);
 							appClerkLines[myLine]->bribeLineCount--;
@@ -1039,7 +1041,8 @@ void beCustomer(int customerIndex) {
 						printf("%s has gotten in bribe line for %s.\n",
 								customers[customerIndex]->name,
 								passportClerkLines[myLine]->name);
-						customers[customerIndex]->money -= 500;
+						customers[customerIndex]->money += 500;
+						picClerkLines[myLine]->money -= 500;
 						passportClerkLines[myLine]->bribeLineCV->Wait(
 								&passportLineLock);
 						passportClerkLines[myLine]->bribeLineCount--;

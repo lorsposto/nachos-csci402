@@ -284,9 +284,8 @@ void beManager(int index) {
 			picClerkLines[i]->transactionLock->Acquire();
 			picClerkLines[i]->breakLock->Acquire();
 			if (picClerkLines[i]->state == Clerk::BREAK
-//					&& (picClerkLines[i]->bribeLineCount
-//							+ picClerkLines[i]->regularLineCount) > 0
-					) {
+					&& (picClerkLines[i]->bribeLineCount
+							+ picClerkLines[i]->regularLineCount) > 0) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
 				picClerkLines[i]->breakCV->Signal(picClerkLines[i]->breakLock);
 				printf("Manager has woken up a PictureClerk\n");
@@ -301,9 +300,8 @@ void beManager(int index) {
 			appClerkLines[i]->transactionLock->Acquire();
 			appClerkLines[i]->breakLock->Acquire();
 			if (appClerkLines[i]->state == Clerk::BREAK
-//					&& (appClerkLines[i]->bribeLineCount
-//							+ appClerkLines[i]->regularLineCount) > 0
-					) {
+					&& (appClerkLines[i]->bribeLineCount
+							+ appClerkLines[i]->regularLineCount) > 0) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
 				appClerkLines[i]->breakCV->Signal(appClerkLines[i]->breakLock);
 				printf("Manager has woken up an ApplicationClerk\n");
@@ -317,9 +315,8 @@ void beManager(int index) {
 			passportClerkLines[i]->breakLock->Acquire();
 			passportClerkLines[i]->transactionLock->Acquire();
 			if (passportClerkLines[i]->state == Clerk::BREAK
-//					&& (passportClerkLines[i]->bribeLineCount
-//							+ passportClerkLines[i]->regularLineCount) > 0
-					) {
+					&& (passportClerkLines[i]->bribeLineCount
+							+ passportClerkLines[i]->regularLineCount) > 0) {
 				passportClerkLines[i]->state = Clerk::AVAILABLE;
 				passportClerkLines[i]->breakCV->Signal(
 						passportClerkLines[i]->breakLock);
@@ -334,8 +331,7 @@ void beManager(int index) {
 			cashierLines[i]->transactionLock->Acquire();
 			cashierLines[i]->breakLock->Acquire();
 			if (cashierLines[i]->state == Cashier::BREAK
-//					&& cashierLines[i]->lineCount > 0
-					) {
+					&& cashierLines[i]->lineCount > 0) {
 				cashierLines[i]->state = Cashier::AVAILABLE;
 				cashierLines[i]->breakCV->Signal(cashierLines[i]->breakLock);
 				printf("Manager has woken up a Cashier\n");
@@ -344,7 +340,8 @@ void beManager(int index) {
 			cashierLines[i]->transactionLock->Release();
 			cashierLineLock.Release();
 		}
-		for(int i=0; i < 500; ++i) currentThread->Yield();
+		for (int i = 0; i < 500; ++i)
+			currentThread->Yield();
 	}
 }
 
@@ -1265,20 +1262,20 @@ void PassportOffice() {
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		name = new char[20];
-//		if (i % 2 == 0) {
-//			sprintf(name, "Senator %i", i);
-//			t = new Thread(name);
-//			customers[i] = new Customer(name, i, Customer::SENATOR);
-//			printf("%s has just entered the passport office.\n", t->getName());
-//			t->Fork((VoidFunctionPtr) beCustomer, i);
-//		}
-//		else {
-		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
-		customers[i] = new Customer(name, i, Customer::REGULAR);
-		printf("%s has just entered the passport office.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beCustomer, i);
-//		}
+		if (i % 2 == 0) {
+			sprintf(name, "Senator %i", i);
+			t = new Thread(name);
+			customers[i] = new Customer(name, i, Customer::SENATOR);
+			printf("%s has just entered the passport office.\n", t->getName());
+			t->Fork((VoidFunctionPtr) beCustomer, i);
+		}
+		else {
+			sprintf(name, "Customer %i", i);
+			t = new Thread(name);
+			customers[i] = new Customer(name, i, Customer::REGULAR);
+			printf("%s has just entered the passport office.\n", t->getName());
+			t->Fork((VoidFunctionPtr) beCustomer, i);
+		}
 
 	}
 }

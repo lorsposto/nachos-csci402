@@ -330,7 +330,7 @@ void beManager(int index) {
 			picClerkLines[i]->breakLock->Acquire();
 			if (picClerkLines[i]->state == Clerk::BREAK
 					&& (picClerkLines[i]->bribeLineCount
-							+ picClerkLines[i]->regularLineCount) > 0) {
+							+ picClerkLines[i]->regularLineCount) > 3) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
 				picClerkLines[i]->breakCV->Signal(picClerkLines[i]->breakLock);
 				printf("Manager has woken up a PictureClerk\n");
@@ -345,7 +345,7 @@ void beManager(int index) {
 			appClerkLines[i]->breakLock->Acquire();
 			if (appClerkLines[i]->state == Clerk::BREAK
 					&& (appClerkLines[i]->bribeLineCount
-							+ appClerkLines[i]->regularLineCount) > 0) {
+							+ appClerkLines[i]->regularLineCount) > 3) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
 				appClerkLines[i]->breakCV->Signal(appClerkLines[i]->breakLock);
 				printf("Manager has woken up an ApplicationClerk\n");
@@ -360,7 +360,7 @@ void beManager(int index) {
 			passportClerkLines[i]->transactionLock->Acquire();
 			if (passportClerkLines[i]->state == Clerk::BREAK
 					&& (passportClerkLines[i]->bribeLineCount
-							+ passportClerkLines[i]->regularLineCount) > 0) {
+							+ passportClerkLines[i]->regularLineCount) > 3) {
 				passportClerkLines[i]->state = Clerk::AVAILABLE;
 				passportClerkLines[i]->breakCV->Signal(
 						passportClerkLines[i]->breakLock);
@@ -547,7 +547,7 @@ void bePicClerk(int clerkIndex) {
 			else {
 				picClerkLines[clerkIndex]->breakLock->Acquire();
 				picLineLock.Release();
-				printf("No one in line for %s.\n",
+				printf("%s has no on in line.\n",
 						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
@@ -651,7 +651,7 @@ void beAppClerk(int clerkIndex) {
 			else {
 				appClerkLines[clerkIndex]->breakLock->Acquire();
 				appLineLock.Release();
-				printf("No one in line for %s.\n",
+				printf("%s has no on in line.\n",
 						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
@@ -740,7 +740,7 @@ void bePassportClerk(int clerkIndex) {
 			}
 			else {
 				passportClerkLines[clerkIndex]->breakLock->Acquire();
-				printf("No one in line for %s.\n",
+				printf("%s has no on in line.\n",
 						passportClerkLines[clerkIndex]->name);
 				passportLineLock.Release();
 				passportClerkLines[clerkIndex]->state = Clerk::BREAK;
@@ -798,7 +798,7 @@ void bePassportClerk(int clerkIndex) {
 			else {
 				passportClerkLines[clerkIndex]->approved = false;
 				printf("%s is not approved to be certified -- Rejected.\n",
-										passportClerkLines[clerkIndex]->name);
+						passportClerkLines[clerkIndex]->name);
 				passportClerkLines[clerkIndex]->transactionCV->Signal(
 						passportClerkLines[clerkIndex]->transactionLock);
 
@@ -831,7 +831,7 @@ void beCashier(int cashierIndex) {
 			else {
 				cashierLines[cashierIndex]->breakLock->Acquire();
 				cashierLineLock.Release();
-				printf("No one in line for %s.\n",
+				printf("%s has no on in line.\n",
 						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->state = Cashier::BREAK;
 				printf("%s is now on break.\n",
@@ -1394,7 +1394,128 @@ void testCase3() {
 		customers[i] = new Customer(name, i, Customer::REGULAR);
 		customers[i]->picDone = true;
 		customers[i]->appDone = true;
-		customers[i]->certified = (i%2 == 0 ? true : false);;
+		customers[i]->certified = (i % 2 == 0 ? true : false);
+		customers[i]->money = 100;
+		t->Fork((VoidFunctionPtr) cashierCustomerProcess, i);
+	}
+	for (i = 0; i < NUM_MANAGERS; ++i) {
+		managers[i] = new Manager("Manager ", i);
+
+		name = managers[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beManager, i);
+	}
+}
+
+//----------------------------------------------------------------
+// "Clerks go on break when they have no one waiting in their line"
+//
+// This test creates clerks of all types, but the customers only go
+// to the cashier. All of the other clerks will go on break.
+
+//----------------------------------------------------------------
+void testCase4() {
+	Thread * t;
+	char * name;
+	unsigned int i;
+
+	srand(time(NULL));
+
+	NUM_CUSTOMERS = 10;
+	NUM_PP_CLERKS = 3;
+	NUM_PIC_CLERKS = 2;
+	NUM_APP_CLERKS = 3;
+	NUM_CASHIERS = 3;
+	NUM_MANAGERS = 1;
+
+	for (i = 0; i < NUM_PP_CLERKS; ++i) {
+		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
+		name = passportClerkLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) bePassportClerk, i);
+	}
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		cashierLines[i] = new Cashier("Cashier ", i);
+		name = cashierLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beCashier, i);
+	}
+
+	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
+		name = picClerkLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) bePicClerk, i);
+	}
+
+	for (i = 0; i < NUM_APP_CLERKS; ++i) {
+		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
+		name = appClerkLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beAppClerk, i);
+	}
+
+	for (i = 0; i < NUM_MANAGERS; ++i) {
+		managers[i] = new Manager("Manager ", i);
+
+		name = managers[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beManager, i);
+	}
+
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+		name = new char[20];
+		sprintf(name, "Customer %i", i);
+		t = new Thread(name);
+		customers[i] = new Customer(name, i, Customer::REGULAR);
+		customers[i]->picDone = true;
+		customers[i]->appDone = true;
+		customers[i]->certified = true;
+		customers[i]->money = 100;
+		t->Fork((VoidFunctionPtr) cashierCustomerProcess, i);
+	}
+}
+
+//----------------------------------------------------------------
+// "Managers get Clerks off their break when lines get too long"
+// There will be one cashier and 10 customers. Once the line accumulates
+// more than 3 customers, the manager wakes up the clerk.
+//----------------------------------------------------------------
+void testCase5() {
+	Thread * t;
+	char * name;
+	unsigned int i;
+
+	srand(time(NULL));
+
+	NUM_CUSTOMERS = 10;
+	NUM_CASHIERS = 1;
+	NUM_MANAGERS = 1;
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		cashierLines[i] = new Cashier("Cashier ", i);
+		cashierLines[i]->lineCount = i;
+		name = cashierLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beCashier, i);
+	}
+
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+		name = new char[20];
+		sprintf(name, "Customer %i", i);
+		t = new Thread(name);
+		customers[i] = new Customer(name, i, Customer::REGULAR);
+		customers[i]->picDone = true;
+		customers[i]->appDone = true;
+		customers[i]->certified = (i % 2 == 0 ? true : false);
 		customers[i]->money = 100;
 		t->Fork((VoidFunctionPtr) cashierCustomerProcess, i);
 	}
@@ -1415,9 +1536,7 @@ void PassportOffice() {
 
 	srand(time(NULL));
 
-//	testCase1();
-
-//	testCase3();
+	testCase5();
 
 //	printf("Please choose from the following options:\n");
 //	printf(
@@ -1461,11 +1580,11 @@ void PassportOffice() {
 //			break;
 //		case 4:
 //			validinput = true;
-//			printf("%i", option);
+//			testCase4();
 //			break;
 //		case 5:
 //			validinput = true;
-//			printf("%i", option);
+//			testCase5();
 //			break;
 //		case 6:
 //			validinput = true;

@@ -14,7 +14,7 @@
 
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
 
-void broadcastMoney(int x);
+void broadcastMoney();
 
 struct Customer {
 	enum customerType {
@@ -145,12 +145,14 @@ class Manager {
 public:
 	char * name;
 	int index;
+	int counter;
 
 	Manager(char * n, int i) {
 		name = new char[50];
 		sprintf(name, n);
 		index = i;
 		sprintf(name, strcat(name, "%i"), index);
+		counter = 0;
 	}
 };
 
@@ -280,7 +282,7 @@ void broadcastMoney() {
 	}
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	printf("\nManager has counted a total amount of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
+	printf("\nManager has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
 			picClerkTotal, appClerkTotal, passClerkTotal, cashierTotal, officeTotal);
 
 	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
@@ -302,6 +304,10 @@ void broadcastMoney() {
 
 void beManager(int index) {
 	while (true) {
+		if (managers[index]->counter % 2 == 0) {
+			broadcastMoney();
+		}
+		managers[index]->counter++;
 		for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 			picLineLock.Acquire();
 			picClerkLines[i]->transactionLock->Acquire();
@@ -312,7 +318,6 @@ void beManager(int index) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
 				picClerkLines[i]->breakCV->Signal(picClerkLines[i]->breakLock);
 				printf("Manager has woken up a PictureClerk\n");
-				broadcastMoney();
 			}
 			picClerkLines[i]->breakLock->Release();
 			picClerkLines[i]->transactionLock->Release();
@@ -328,7 +333,6 @@ void beManager(int index) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
 				appClerkLines[i]->breakCV->Signal(appClerkLines[i]->breakLock);
 				printf("Manager has woken up an ApplicationClerk\n");
-				broadcastMoney();
 			}
 			appClerkLines[i]->breakLock->Release();
 			appClerkLines[i]->transactionLock->Release();
@@ -345,7 +349,6 @@ void beManager(int index) {
 				passportClerkLines[i]->breakCV->Signal(
 						passportClerkLines[i]->breakLock);
 				printf("Manager has woken up a PassportClerk\n");
-				broadcastMoney();
 			}
 			passportClerkLines[i]->breakLock->Release();
 			passportClerkLines[i]->transactionLock->Release();
@@ -360,13 +363,12 @@ void beManager(int index) {
 				cashierLines[i]->state = Cashier::AVAILABLE;
 				cashierLines[i]->breakCV->Signal(cashierLines[i]->breakLock);
 				printf("Manager has woken up a Cashier\n");
-				broadcastMoney();
 			}
 			cashierLines[i]->breakLock->Release();
 			cashierLines[i]->transactionLock->Release();
 			cashierLineLock.Release();
 		}
-		for (int i = 0; i < 500; ++i)
+		for (int i = 0; i < 5000; ++i)
 			currentThread->Yield();
 	}
 }

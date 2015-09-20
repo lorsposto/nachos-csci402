@@ -261,7 +261,7 @@ void broadcastMoney(int x) {
 	int cashierTotal = 0;
 
 	// Read all of the clerks/cashiers and print their sums.
-	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines); ++i) {
 		picClerkLines[i]->transactionLock->Acquire();
 		picClerkTotal += picClerkLines[i]->money;
 		picClerkLines[i]->transactionLock->Release();
@@ -269,7 +269,7 @@ void broadcastMoney(int x) {
 	printf("Manager has counted a total amount of $%i for PictureClerks\n",
 			picClerkTotal);
 
-	for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines); ++i) {
 		appClerkLines[i]->transactionLock->Acquire();
 		appClerkTotal += appClerkLines[i]->money;
 		appClerkLines[i]->transactionLock->Release();
@@ -277,7 +277,7 @@ void broadcastMoney(int x) {
 	printf("Manager has counted a total amount of $%i for ApplicationClerks\n",
 			appClerkTotal);
 
-	for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
 		passportClerkLines[i]->transactionLock->Acquire();
 		passClerkTotal += passportClerkLines[i]->money;
 		passportClerkLines[i]->transactionLock->Release();
@@ -285,7 +285,7 @@ void broadcastMoney(int x) {
 	printf("Manager has counted a total amount of $%i for PassportClerks\n",
 			passClerkTotal);
 
-	for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(cashierLines); ++i) {
 		cashierLines[i]->transactionLock->Acquire();
 		cashierTotal += cashierLines[i]->money;
 		cashierLines[i]->transactionLock->Release();
@@ -300,7 +300,7 @@ void broadcastMoney(int x) {
 
 void beManager(int index) {
 	while (true) {
-		for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
+		for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines); ++i) {
 			picLineLock.Acquire();
 			picClerkLines[i]->transactionLock->Acquire();
 			picClerkLines[i]->breakLock->Acquire();
@@ -316,7 +316,7 @@ void beManager(int index) {
 			picClerkLines[i]->transactionLock->Release();
 			picLineLock.Release();
 		}
-		for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
+		for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines); ++i) {
 			appLineLock.Acquire();
 			appClerkLines[i]->transactionLock->Acquire();
 			appClerkLines[i]->breakLock->Acquire();
@@ -331,7 +331,7 @@ void beManager(int index) {
 			appClerkLines[i]->transactionLock->Release();
 			appLineLock.Release();
 		}
-		for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
+		for (unsigned int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
 			passportLineLock.Acquire();
 			passportClerkLines[i]->breakLock->Acquire();
 			passportClerkLines[i]->transactionLock->Acquire();
@@ -347,7 +347,7 @@ void beManager(int index) {
 			passportClerkLines[i]->transactionLock->Release();
 			passportLineLock.Release();
 		}
-		for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
+		for (unsigned int i = 0; i < ARRAY_SIZE(cashierLines); ++i) {
 			cashierLineLock.Acquire();
 			cashierLines[i]->transactionLock->Acquire();
 			cashierLines[i]->breakLock->Acquire();
@@ -922,7 +922,7 @@ void beCustomer(int customerIndex) {
 
 						chosePic = 1;
 
-						for (unsigned int i = 0; i < NUM_PIC_CLERKS;
+						for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines);
 								++i) {
 							if (picClerkLines[i]->regularLineCount
 									+ picClerkLines[i]->bribeLineCount
@@ -944,7 +944,7 @@ void beCustomer(int customerIndex) {
 
 						chosePic = 0;
 
-						for (unsigned int i = 0; i < NUM_APP_CLERKS;
+						for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines);
 								++i) {
 							if (appClerkLines[i]->regularLineCount
 									+ appClerkLines[i]->bribeLineCount
@@ -964,7 +964,7 @@ void beCustomer(int customerIndex) {
 
 					chosePic = 1;
 
-					for (unsigned int i = 0; i < NUM_PIC_CLERKS;
+					for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines);
 							++i) {
 						if (picClerkLines[i]->regularLineCount
 								+ picClerkLines[i]->bribeLineCount < lineSize) {
@@ -980,7 +980,7 @@ void beCustomer(int customerIndex) {
 
 					chosePic = 0;
 
-					for (unsigned int i = 0; i < NUM_APP_CLERKS;
+					for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines);
 							++i) {
 						if (appClerkLines[i]->regularLineCount
 								+ appClerkLines[i]->bribeLineCount < lineSize) {
@@ -1114,7 +1114,7 @@ void beCustomer(int customerIndex) {
 				lineSize = 1000;
 
 				//TODO: need to decide whether to bribe. Assumes regular line right now.
-				for (unsigned int i = 0; i < NUM_PP_CLERKS;
+				for (unsigned int i = 0; i < ARRAY_SIZE(passportClerkLines);
 						++i) {
 					if (passportClerkLines[i]->regularLineCount < lineSize) {
 						myLine = i;
@@ -1181,7 +1181,7 @@ void beCustomer(int customerIndex) {
 				lineSize = 1000;
 
 				//TODO: need to decide whether to bribe. Assumes regular line right now.
-				for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
+				for (unsigned int i = 0; i < ARRAY_SIZE(cashierLines); ++i) {
 					if (cashierLines[i]->lineCount < lineSize) {
 						myLine = i;
 						lineSize = cashierLines[i]->lineCount;
@@ -1252,17 +1252,8 @@ void PassportOffice() {
 
 	srand(time(NULL));
 
-//	passportClerkLines[0] = new Clerk("Passport Clerk ", Clerk::PP);
-//
-//	cashierLines[0] = new Cashier("Cashier 0");
-//
-//	picClerkLines[0] = new Clerk("Pic Clerk 0", Clerk::PIC);
-//	appClerkLines[0] = new Clerk("App Clerk 0", Clerk::APP);
-
-//	managers[0] = new Manager("Manager 0");
-
-	for (i = 0; i < NUM_PP_CLERKS; ++i) {
-		passportClerkLines[i] = new Clerk("Passport Clerk 0 ",i, Clerk::PP);
+	for (i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
+		passportClerkLines[i] = new Clerk("Passport Clerk ",i, Clerk::PP);
 
 		name = passportClerkLines[i]->name;
 		t = new Thread(name);
@@ -1270,7 +1261,7 @@ void PassportOffice() {
 		t->Fork((VoidFunctionPtr) bePassportClerk, i);
 	}
 
-	for (i = 0; i < NUM_CASHIERS; ++i) {
+	for (i = 0; i < ARRAY_SIZE(cashierLines); ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 
 		name = cashierLines[i]->name;
@@ -1279,7 +1270,7 @@ void PassportOffice() {
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
-	for (i = 0; i < NUM_MANAGERS; ++i) {
+	for (i = 0; i < ARRAY_SIZE(managers); ++i) {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
@@ -1288,7 +1279,7 @@ void PassportOffice() {
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
 
-	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+	for (i = 0; i < ARRAY_SIZE(picClerkLines); ++i) {
 		picClerkLines[i] = new Clerk("Pic Clerk ",i, Clerk::PIC);
 
 		name = picClerkLines[i]->name;
@@ -1297,7 +1288,7 @@ void PassportOffice() {
 		t->Fork((VoidFunctionPtr) bePicClerk, i);
 	}
 
-	for (i = 0; i < NUM_APP_CLERKS; ++i) {
+	for (i = 0; i < ARRAY_SIZE(appClerkLines); ++i) {
 		appClerkLines[0] = new Clerk("Application Clerk ",i, Clerk::APP);
 
 		name = appClerkLines[i]->name;
@@ -1306,7 +1297,7 @@ void PassportOffice() {
 		t->Fork((VoidFunctionPtr) beAppClerk, i);
 	}
 
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+	for (i = 0; i < ARRAY_SIZE(customers); ++i) {
 		name = new char[20];
 		if (i % 2 == 0) {
 			sprintf(name, "Senator %i", i);
@@ -1322,7 +1313,6 @@ void PassportOffice() {
 			printf("%s has just entered the passport office.\n", t->getName());
 			t->Fork((VoidFunctionPtr) beCustomer, i);
 		}
-
 	}
 }
 

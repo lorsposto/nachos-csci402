@@ -145,14 +145,12 @@ class Manager {
 public:
 	char * name;
 	int index;
-	Timer * timer;
 
 	Manager(char * n, int i) {
 		name = new char[50];
 		sprintf(name, n);
 		index = i;
 		sprintf(name, strcat(name, "%i"), index);
-//		timer = new Timer((VoidFunctionPtr) broadcastMoney, 50, true);
 	}
 };
 
@@ -252,7 +250,7 @@ Manager * managers[100];
 
 Customer * customers[100];
 
-void broadcastMoney(int x) {
+void broadcastMoney() {
 	// TODO add the rest of the locks
 	int officeTotal = 0;
 	int appClerkTotal = 0;
@@ -264,38 +262,42 @@ void broadcastMoney(int x) {
 	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 		picClerkLines[i]->transactionLock->Acquire();
 		picClerkTotal += picClerkLines[i]->money;
-		picClerkLines[i]->transactionLock->Release();
 	}
-	printf("Manager has counted a total amount of $%i for PictureClerks\n",
-			picClerkTotal);
 
 	for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i]->transactionLock->Acquire();
 		appClerkTotal += appClerkLines[i]->money;
-		appClerkLines[i]->transactionLock->Release();
 	}
-	printf("Manager has counted a total amount of $%i for ApplicationClerks\n",
-			appClerkTotal);
 
 	for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i]->transactionLock->Acquire();
 		passClerkTotal += passportClerkLines[i]->money;
-		passportClerkLines[i]->transactionLock->Release();
 	}
-	printf("Manager has counted a total amount of $%i for PassportClerks\n",
-			passClerkTotal);
 
 	for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i]->transactionLock->Acquire();
 		cashierTotal += cashierLines[i]->money;
-		cashierLines[i]->transactionLock->Release();
 	}
-	printf("Manager has counted a total amount of $%i for Cashiers\n",
-			passClerkTotal);
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	printf("Manager has counted a total of $%i for the passport office\n",
-			officeTotal);
+	printf("\nManager has counted a total amount of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
+			picClerkTotal, appClerkTotal, passClerkTotal, cashierTotal, officeTotal);
+
+	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
+		picClerkLines[i]->transactionLock->Release();
+	}
+
+	for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
+		appClerkLines[i]->transactionLock->Release();
+	}
+
+	for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
+		passportClerkLines[i]->transactionLock->Release();
+	}
+
+	for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
+		cashierLines[i]->transactionLock->Release();
+	}
 }
 
 void beManager(int index) {
@@ -310,7 +312,7 @@ void beManager(int index) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
 				picClerkLines[i]->breakCV->Signal(picClerkLines[i]->breakLock);
 				printf("Manager has woken up a PictureClerk\n");
-
+				broadcastMoney();
 			}
 			picClerkLines[i]->breakLock->Release();
 			picClerkLines[i]->transactionLock->Release();
@@ -326,6 +328,7 @@ void beManager(int index) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
 				appClerkLines[i]->breakCV->Signal(appClerkLines[i]->breakLock);
 				printf("Manager has woken up an ApplicationClerk\n");
+				broadcastMoney();
 			}
 			appClerkLines[i]->breakLock->Release();
 			appClerkLines[i]->transactionLock->Release();
@@ -342,6 +345,7 @@ void beManager(int index) {
 				passportClerkLines[i]->breakCV->Signal(
 						passportClerkLines[i]->breakLock);
 				printf("Manager has woken up a PassportClerk\n");
+				broadcastMoney();
 			}
 			passportClerkLines[i]->breakLock->Release();
 			passportClerkLines[i]->transactionLock->Release();
@@ -356,6 +360,7 @@ void beManager(int index) {
 				cashierLines[i]->state = Cashier::AVAILABLE;
 				cashierLines[i]->breakCV->Signal(cashierLines[i]->breakLock);
 				printf("Manager has woken up a Cashier\n");
+				broadcastMoney();
 			}
 			cashierLines[i]->breakLock->Release();
 			cashierLines[i]->transactionLock->Release();
@@ -1004,8 +1009,8 @@ void beCustomer(int customerIndex) {
 								printf("%s has gotten in bribe line for %s.\n",
 										customers[customerIndex]->name,
 										picClerkLines[myLine]->name);
-								customers[customerIndex]->money += 500;
-								picClerkLines[myLine]->money -= 500;
+								customers[customerIndex]->money -= 500;
+								picClerkLines[myLine]->money += 500;
 								picClerkLines[myLine]->bribeLineCV->Wait(
 										&picLineLock);
 								picClerkLines[myLine]->bribeLineCount--;
@@ -1056,8 +1061,8 @@ void beCustomer(int customerIndex) {
 								printf("%s has gotten in bribe line for %s.\n",
 										customers[customerIndex]->name,
 										appClerkLines[myLine]->name);
-								customers[customerIndex]->money += 500;
-								picClerkLines[myLine]->money -= 500;
+								customers[customerIndex]->money -= 500;
+								picClerkLines[myLine]->money += 500;
 								appClerkLines[myLine]->bribeLineCV->Wait(
 										&appLineLock);
 								appClerkLines[myLine]->bribeLineCount--;
@@ -1129,8 +1134,8 @@ void beCustomer(int customerIndex) {
 							printf("%s has gotten in bribe line for %s.\n",
 									customers[customerIndex]->name,
 									passportClerkLines[myLine]->name);
-							customers[customerIndex]->money += 500;
-							picClerkLines[myLine]->money -= 500;
+							customers[customerIndex]->money -= 500;
+							picClerkLines[myLine]->money += 500;
 							passportClerkLines[myLine]->bribeLineCV->Wait(
 									&passportLineLock);
 							passportClerkLines[myLine]->bribeLineCount--;

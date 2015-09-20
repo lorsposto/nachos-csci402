@@ -344,8 +344,7 @@ void beManager(int index) {
 			cashierLines[i]->transactionLock->Release();
 			cashierLineLock.Release();
 		}
-//		for(int i=0; i < 10; ++i)
-		currentThread->Yield();
+		for(int i=0; i < 500; ++i) currentThread->Yield();
 	}
 }
 
@@ -1025,6 +1024,7 @@ void beCustomer(int customerIndex) {
 					picClerkLines[myLine]->state = Clerk::BUSY; // clerk is now busy
 
 					// interaction begins
+					picLineLock.Release();
 					picClerkTransaction(customerIndex, myLine);
 				}
 				else { //Customer is trying to submit Application

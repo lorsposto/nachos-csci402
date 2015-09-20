@@ -170,7 +170,7 @@ void Thread::Yield() {
 	ASSERT(this == currentThread);
 
 	DEBUG('t', "Yielding thread \"%s\"\n", getName());
-	printf("\tYielding thread \"%s\"\n", getName());
+//	printf("\tYielding thread \"%s\"\n", getName());
 
 	nextThread = scheduler->FindNextToRun();
 	if (nextThread != NULL) {
@@ -206,6 +206,7 @@ void Thread::Sleep() {
 	ASSERT(interrupt->getLevel() == IntOff);
 
 	DEBUG('t', "Sleeping thread \"%s\"\n", getName());
+//	printf("\tSleeping thread \"%s\"\n", getName());
 
 	status = BLOCKED;
 	while ((nextThread = scheduler->FindNextToRun()) == NULL)

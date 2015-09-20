@@ -111,6 +111,8 @@ bool Lock::isHeldByCurrentThread() {
 }
 void Lock::Acquire() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
+//	printf("%s is trying to acquire lock %s.\n", currentThread->getName(),
+//			name);
 	if (isHeldByCurrentThread()) {
 //		printf("\tThread %s already has the lock %s!\n", currentThread->getName(),
 //				name);
@@ -164,7 +166,8 @@ Condition::~Condition() {
 
 void Condition::Wait(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
-	printf("%s is waiting on %s.\n", currentThread->getName(), conditionLock->getName());
+//	printf("%s is waiting on %s.\n", currentThread->getName(),
+//			conditionLock->getName());
 	ASSERT(conditionLock->isHeldByCurrentThread());
 	if (conditionLock == NULL) {
 		// print message
@@ -177,7 +180,8 @@ void Condition::Wait(Lock* conditionLock) {
 	}
 	if (waitingLock != conditionLock) {
 		// lock is the one being given up
-		printf("\tWaiting lock %s is not the same as lock %s.\n", waitingLock->getName(), conditionLock->getName());
+		printf("\tWaiting lock %s is not the same as lock %s.\n",
+				waitingLock->getName(), conditionLock->getName());
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 		return;
 	}
@@ -191,7 +195,8 @@ void Condition::Wait(Lock* conditionLock) {
 
 void Condition::Signal(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
-	printf("%s is signaling on %s.\n", currentThread->getName(), conditionLock->getName());
+//	printf("%s is signaling on %s.\n", currentThread->getName(),
+//			conditionLock->getName());
 	ASSERT(conditionLock->isHeldByCurrentThread());
 	if (queue->IsEmpty()) {
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
@@ -199,7 +204,8 @@ void Condition::Signal(Lock* conditionLock) {
 	}
 	if (waitingLock != conditionLock) {
 		// print message
-		printf("\tWaiting lock %s is not the same as lock %s.\n", waitingLock->getName(), conditionLock->getName());
+		printf("\tWaiting lock %s is not the same as lock %s.\n",
+				waitingLock->getName(), conditionLock->getName());
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 		return;
 	}

@@ -107,7 +107,7 @@ bool Lock::isHeldByCurrentThread() {
 //	printf("Current thread: %s\n", currentThread->getName());
 //	if(ownerThread != NULL) printf("Owner thread: %s\n", ownerThread->getName());
 //	else printf("Owner thread: null\n");
-	return (currentThread == ownerThread || ownerThread == NULL);
+	return (currentThread == ownerThread);
 }
 void Lock::Acquire() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
@@ -130,8 +130,8 @@ void Lock::Acquire() {
 void Lock::Release() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	if (!isHeldByCurrentThread()) {
-//		printf("\tNon-owner thread %s cannot release lock %s!\n",
-//				currentThread->getName(), name);
+		printf("\tNon-owner thread %s cannot release lock %s!\n",
+				currentThread->getName(), name);
 		(void) interrupt->SetLevel(oldLevel);
 		return;
 	}
@@ -146,6 +146,7 @@ void Lock::Release() {
 //		printf("%s released lock %s.\n", ownerThread->getName(), name);
 		ownerThread = NULL;
 	}
+//			printf("%s released lock %s.\n", currentThread->getName(), name);
 	(void) interrupt->SetLevel(oldLevel);
 }
 
@@ -163,6 +164,7 @@ Condition::~Condition() {
 
 void Condition::Wait(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+	printf("%s is waiting on %s.\n", currentThread->getName(), conditionLock->getName());
 	ASSERT(conditionLock->isHeldByCurrentThread());
 	if (conditionLock == NULL) {
 		// print message
@@ -189,6 +191,7 @@ void Condition::Wait(Lock* conditionLock) {
 
 void Condition::Signal(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+	printf("%s is signaling on %s.\n", currentThread->getName(), conditionLock->getName());
 	ASSERT(conditionLock->isHeldByCurrentThread());
 	if (queue->IsEmpty()) {
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts

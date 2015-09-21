@@ -1169,7 +1169,7 @@ void cashierCustomerProcess(int customerIndex) {
 
 	// Customer must wait for cashier to become available.
 	cashierLines[myLine]->lineCount++;
-	printf("%s has gotten in regular line for %s.\n",
+	printf("%s has gotten in line for %s.\n",
 			customers[customerIndex]->name, cashierLines[myLine]->name);
 	cashierLines[myLine]->lineCV->Wait(&cashierLineLock);
 	cashierLines[myLine]->lineCount--;
@@ -1276,16 +1276,16 @@ void testCase1() {
 
 	srand(time(NULL));
 
-	NUM_CUSTOMERS = 20;
-	NUM_CASHIERS = 5;
+	NUM_CUSTOMERS = 25;
+	NUM_CASHIERS = 6;
 	NUM_MANAGERS = 1;
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
-		cashierLines[i]->lineCount = i;
+		cashierLines[i]->lineCount = rand()%7 + 10;
 		name = cashierLines[i]->name;
 		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
+		printf("%s on duty with %i people \"in line\".\n", t->getName(), cashierLines[i]->lineCount);
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
@@ -1309,6 +1309,11 @@ void testCase1() {
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
 
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+		customerCounterLock.Acquire();
+		customersServed++;
+		customerCounterLock.Release();
+	}
 }
 
 //----------------------------------------------------------------
@@ -1614,7 +1619,7 @@ void PassportOffice() {
 
 	srand(time(NULL));
 
-	testCase8();
+	testCase1();
 //	printf("Please choose from the following options:\n");
 //	printf(
 //			"\t1. Test Case 1 -- Customers always take the shortest line, but no 2 customers ever choose the same shortest line at the same time.\n");

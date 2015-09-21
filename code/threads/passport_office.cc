@@ -480,6 +480,15 @@ void passportClerkTransaction(int customer, int clerk) {
 			passportClerkLines[clerk]->transactionCV->Wait(
 					passportClerkLines[clerk]->transactionLock);
 
+			//	ASSERT(customers[customer]->appDone && customers[customer]->picDone);
+			printf("%s is leaving %s's counter.\n", currentThread->getName(),
+					passportClerkLines[clerk]->name);
+
+			passportClerkLines[clerk]->transactionCV->Signal(
+					passportClerkLines[clerk]->transactionLock);
+			
+			passportClerkLines[clerk]->transactionLock->Release();
+
 			break;
 		}
 		// the 5% chance of the passport clerk "making a mistake" happened and we must get back into line
@@ -506,13 +515,6 @@ void passportClerkTransaction(int customer, int clerk) {
 			passportClerkLines[clerk]->regularLineCount--;
 		}
 	}
-
-//	ASSERT(customers[customer]->appDone && customers[customer]->picDone);
-	printf("%s is leaving %s's counter.\n", currentThread->getName(),
-			passportClerkLines[clerk]->name);
-	passportClerkLines[clerk]->transactionCV->Signal(
-			passportClerkLines[clerk]->transactionLock);
-	passportClerkLines[clerk]->transactionLock->Release();
 }
 
 void cashierTransaction(int customer, int cashier) {
@@ -1816,42 +1818,42 @@ void testCase7() {
 // custom case
 void testCase8() {
 	char c;
-	printf("Enter the number of Managers:");
-	scanf("%u", &NUM_MANAGERS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Picture clerks:");
-	scanf("%u", &NUM_PIC_CLERKS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Application clerks:");
-	scanf("%u", &NUM_APP_CLERKS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Passport clerks:");
-	scanf("%u", &NUM_PP_CLERKS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Cashiers:");
-	scanf("%u", &NUM_CASHIERS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Customers:");
-	scanf("%ui", &NUM_CUSTOMERS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
-	printf("Enter the number of Senators:");
-	scanf("%ui", &NUM_SENATORS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
+	// printf("Enter the number of Managers:");
+	// scanf("%u", &NUM_MANAGERS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Picture clerks:");
+	// scanf("%u", &NUM_PIC_CLERKS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Application clerks:");
+	// scanf("%u", &NUM_APP_CLERKS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Passport clerks:");
+	// scanf("%u", &NUM_PP_CLERKS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Cashiers:");
+	// scanf("%u", &NUM_CASHIERS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Customers:");
+	// scanf("%ui", &NUM_CUSTOMERS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
+	// printf("Enter the number of Senators:");
+	// scanf("%ui", &NUM_SENATORS);
+	// while ((c = getchar()) != '\n' && c != EOF)
+	// 	;
 
-//	NUM_CUSTOMERS = 15;
-//	NUM_SENATORS = 1;
-//	NUM_PIC_CLERKS = 2;
-//	NUM_APP_CLERKS = 1;
-//	NUM_PP_CLERKS = 1;
-//	NUM_CASHIERS = 1;
-//	NUM_MANAGERS = 1;
+	NUM_CUSTOMERS = 15;
+	NUM_SENATORS = 1;
+	NUM_PIC_CLERKS = 2;
+	NUM_APP_CLERKS = 1;
+	NUM_PP_CLERKS = 1;
+	NUM_CASHIERS = 1;
+	NUM_MANAGERS = 1;
 
 	Thread * t;
 	char * name;

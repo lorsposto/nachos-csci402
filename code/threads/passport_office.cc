@@ -227,6 +227,7 @@ Lock picLineLock("Pic Line Lock");
 Lock appLineLock("App Line Lock");
 Lock passportLineLock("Passport Line Lock");
 Lock cashierLineLock("Cashier Line Lock");
+Lock customerCounterLock("Customer Counter Lock");
 
 Lock senatorLock("Senator lock");
 Semaphore senatorSema("Senator Semaphore", 1);
@@ -238,6 +239,7 @@ const unsigned int NUM_APP_CLERKS = 1;
 const unsigned int NUM_PP_CLERKS = 1;
 const unsigned int NUM_CASHIERS = 1;
 const unsigned int NUM_MANAGERS = 1;
+int customersServed = 0;
 
 bool senatorInProcess = false;
 
@@ -301,10 +303,10 @@ void broadcastMoney() {
 }
 
 void beManager(int index) {
-	while (true) {
+	while(customersServed < NUM_CUSTOMERS) {
+		//printf("we've served %i\n", customersServed);
 		for (unsigned int i = 0; i < ARRAY_SIZE(picClerkLines); ++i) {
 			picLineLock.Acquire();
-			picClerkLines[i]->transactionLock->Acquire();
 			picClerkLines[i]->breakLock->Acquire();
 			if (picClerkLines[i]->state == Clerk::BREAK
 					&& (picClerkLines[i]->bribeLineCount
@@ -315,12 +317,10 @@ void beManager(int index) {
 				broadcastMoney();
 			}
 			picClerkLines[i]->breakLock->Release();
-			picClerkLines[i]->transactionLock->Release();
 			picLineLock.Release();
 		}
 		for (unsigned int i = 0; i < ARRAY_SIZE(appClerkLines); ++i) {
 			appLineLock.Acquire();
-			appClerkLines[i]->transactionLock->Acquire();
 			appClerkLines[i]->breakLock->Acquire();
 			if (appClerkLines[i]->state == Clerk::BREAK
 					&& (appClerkLines[i]->bribeLineCount
@@ -331,13 +331,11 @@ void beManager(int index) {
 				broadcastMoney();
 			}
 			appClerkLines[i]->breakLock->Release();
-			appClerkLines[i]->transactionLock->Release();
 			appLineLock.Release();
 		}
 		for (unsigned int i = 0; i < ARRAY_SIZE(passportClerkLines); ++i) {
 			passportLineLock.Acquire();
 			passportClerkLines[i]->breakLock->Acquire();
-			passportClerkLines[i]->transactionLock->Acquire();
 			if (passportClerkLines[i]->state == Clerk::BREAK
 					&& (passportClerkLines[i]->bribeLineCount
 							+ passportClerkLines[i]->regularLineCount) > 0) {
@@ -348,12 +346,10 @@ void beManager(int index) {
 				broadcastMoney();
 			}
 			passportClerkLines[i]->breakLock->Release();
-			passportClerkLines[i]->transactionLock->Release();
 			passportLineLock.Release();
 		}
 		for (unsigned int i = 0; i < ARRAY_SIZE(cashierLines); ++i) {
 			cashierLineLock.Acquire();
-			cashierLines[i]->transactionLock->Acquire();
 			cashierLines[i]->breakLock->Acquire();
 			if (cashierLines[i]->state == Cashier::BREAK
 					&& cashierLines[i]->lineCount > 0) {
@@ -363,7 +359,6 @@ void beManager(int index) {
 				broadcastMoney();
 			}
 			cashierLines[i]->breakLock->Release();
-			cashierLines[i]->transactionLock->Release();
 			cashierLineLock.Release();
 		}
 		for (int i = 0; i < 500; ++i)
@@ -1224,6 +1219,10 @@ void beCustomer(int customerIndex) {
 	}
 	printf("%s is leaving the Passport Office.\n",
 			customers[customerIndex]->name);
+
+	customerCounterLock.Acquire();
+	customersServed++;
+	customerCounterLock.Release();
 
 	// the senator finishes up, so broadcast everyone the coast is clear
 	if (customers[customerIndex]->type == Customer::SENATOR

@@ -1,0 +1,111 @@
+The lines starting with an index number, such as I, II, III, etc., and starting with '+' are section and subsection headings. You must retain these headings in your WRITEUP file, placing your specific writeup description within the headings. 
+
+The words starting with '-' are instructions about what to put in those section/subsection headings.  Do no include them in the writeup file you submit.
+
+Title:  Writeup for Project 1, Fall 2015
+Date:   09/20/15
+Group:	Erika Johnson	erikajoh@usc.edu	
+		Heather Persson	hpersson@usc.edu	
+		Lorraine Sposto	lsposto@usc.edu	
+ 
+I. Requirements:
+- Implement locks and condition variables.
+- Simulate the United States Passport Office with the following types of people: Customer, ApplicationClerk, PictureClerk, PassportClerk, Cashier, Manager and Senator.
+- In normal operation, the Customer enters the passport office trying to acquire a completed passport. Then, the Customer chooses to visit either the ApplicationClerk or the PictureClerk, and then the other after. The ApplicationClerk accepts a completed Application, consisting of an application and social security number from the Customer. The PictureClerk takes pictures of Customers. Next, the Customer visits the Cashier to pay $100 to receive a passport. Managers tell the various Clerks when to start working and also broadcast the total amount of money that the passport office has at fairly regular intervals of time.
+- Customers have a random percentage to not like their picture.
+- Once a Customer has paid for their passport by the Cashier, they are done and should leave the passport office.
+- Customers randomly decide whether to get their application taken or picture taken first.
+- Customers go to the shortest line for the clerk they are visiting.
+- Customers start with a randomly determined amount of money in increments of $100, $600, $1100 and $1600, up to a total of $1600.
+- Customers can "bribe" any clerk with $500 to move up to the front of the line.
+- Clerks have a money amount that goes up when they receive a "bribe".
+- Clerks go on break if they have no Customers in their line.
+- Customers have some nonzero percentage chance of not liking their picture.
+- If a Customer shows up to a PassportClerk before both the application and picture are completed, they must wait a random amount time (from 100-1000 Yield() calls).
+- Cashiers only take the $100 passport fee from the Customer if they see a "certification" by the PassportClerk; otherwise the Customer must wait a random amount of time (from 100-1000 Yield() calls).
+- Cashiers have a money amount that goes up when they receive a payment.
+- Managers must wake up Clerks onb reak when more than 3 Customers get in line.
+- Managers must fairly regularly broadcast how much money the passport office has made.
+- Senators get to use the passport office by themselves; all Customers not being served must leave the office (and those being served must be served and then leave) when a Senator arrives.
+- Customers who were evicted by the Senator's arrival must get back in the same type of line they were in before, after the Senator finishes and leaves.
+- Customers who show up while a Senator is being served must wait in an "outside" line.
+- No race conditions in the passport office.
+- The simulation must work for up to 50 Customers, 1-5 Clerks and Cashier, 1 Manager, and up to 10 Senators.
+
+II. Assumptions:
+- The manager knows how many customers are in the passport office at any given time, so when there are no customers left the office can close (i.e. the program terminates).
+
+III. Design:
+- Components: Semaphore, Lock, Condition, Customer (incl. Senator), Clerk (incl. App, Pic and Passport), Cashier, Manager.
+- Locks and Condition variables (and Semaphore for Senator) will be used to prevent race conditions and ensure mutual exclusion.
+- Components will be created and forked into their own threads in the main function, where their "be" function (e.g. beManager, beCustomer, etc.) will be called.
+- "Be" functions will start various components in the passport office in continuous execution until they have finished carrying out their roles.
+- "Transaction" functions will help execute actions and handle simulated messaging between the various components.
+
+IV. Implementation:
++ Files Modified
+- synch.h, synch.cc: lock and condition code.
+- threadtest.cc: testing code.
++ Files added
+- passport_office.cc: passport simulation code.
++ Data Structures added, and the file they were added to.
+- Customer struct (in passport_office.cc): can be REGULAR or SENATOR type. Can have state AVAILABLE, BUSY or BREAK. Has name, SSN, picDone, appDone, certified, gotPassport, money and type. Constructed with name, ssn and type specified.
+- Clerk struct (in passport_office.cc): can be APP, PIC or PP type. Has name, index, approved, bribeLineCount, regularLineCount, type, state, regularLineCV, bribeLineCV, transactionCV, transactionLock, breakCV, breakLock, customer and money. Can be constructed with name, index and type specified; otherwise, defaults to no name, -1 index and APP type.
+- Cashier struct (in passport_office.cc): can have state AVAILABLE, BUSY or BREAK. Has name, index, approved, lineCount, money, state, lineCV, transactionCV, transactionLock, breakCV, breakLock and customer. Can be constructed with name and index specified; otherwise, defaults to no name and -1 index.
+- Manager struct (in passport_office.cc): has name, index and counter. Constructed with name and index specified; counter starts at 0.
+- Locks (in passport_office.cc): picLineLock, appLineLock, passportLineLock, cashierLineLock, customerCounterLock, senatorLock. Used to prevent race conditions.
+- Senator also has senatorSema and senatorCV in addition to the lock, to ensure mutual exclusion.
+- Lines/Arrays (in passport_office.cc): picClerkLines, appClerkLines,passportClerkLines, cashierLines, managers and customers. Used to keep track of the multiple instances of each type.
++ Data Structures modified, and the file they were added to.
+- Lock class (in synch.h, synch.cc): implemented constructor, destructor and member functions (see "functions modified" section below).
+- Condition class (in synch.h, synch.cc): implemented constructor, destructor and member functions (see "functions modified" section below).
++ Functions added and in which file.
+- void broadcastMoney() (in passport_office.cc): called by Manager, to print out ("announce") the subtotals of money each clerk/cashier has and the grand total of money the passport office has.
+- void beCustomer(int customerIndex) (in passport_office.cc): starts continuous Customer execution and has Customer go through the steps to obtain a passport, sending mesages to various clerks/cashier as needed along the way.
+- void bePicClerk(int clerkIndex) (in passport_office.cc): starts continuous Pic Clerk execution and handles messages from Customer.
+- void beAppClerk(int clerkIndex) (in passport_office.cc): starts continuous App Clerk execution and handles messages from Customer.
+- void bePassportClerk(int clerkIndex) (in passport_office.cc): starts continuous Passport Clerk execution and handles messages from Customer.
+- void beCashier(int cashierIndex) (in passport_office.cc): starts continuous Cashier execution and handles messages from Customer.
+- void beManager(int index) (in passport_office.cc): starts continuous Manager execution and handles waking up clerks/cashier when needed. Terminates when there are no more customers in the passport office.
+- void picClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and Pic Clerk.
+- void appClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and App Clerk.
+- void passportClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and Passport Clerk.
+- void cashierTransaction(int customer, int cashier) (in passport_office.cc): handles messaging between Customer and Cashier.
+- void picAppCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Pic/App part of the Customer's process, for testing.
+- void passportCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Passport part of the Customer's process, for testing.
+- void cashierCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Cashier part of the Customer's process, for testing.
+- void testCase1() (in passport_office.cc): tests that Customers always take the shortest line, but no 2 customers ever choose the same shortest line at the same time (see "testing" section below).
+- void testCase2() (in passport_office.cc): tests that Managers only read from one Clerks' total money received at any given time (see "testing" section below).
+- void testCase3() (in passport_office.cc): tests that Customers do not leave until they are given their passport by the Cashier, and that the Cashier doesn't start serving another Customer until the last Customer has left (see "testing" section below).
+- void testCase4() (in passport_office.cc): tests that Clerks go on break when they have no Customers waiting in their line (see "testing" section below).
+- void testCase5() (in passport_office.cc): tests that Managers wake Clerks up from breaks when lines get too long (see "testing" section below).
+- void testCase6() (in passport_office.cc): tests that the entire simulation never suffers from a race condition (see "testing" section below).
+- void testCase7() (in passport_office.cc): tests that Customers behave properly when Senators arrive (see "testing" section below).
+- void testCase8() (in passport_office.cc): tests the entire simulation.
+- void PassportOffice() (in passport_office.cc): runs the simulation under normal circumstances.
++ Functions modified and in which file.
+- Lock::Lock(char* debugName) (in synch.cc): Lock constructor. Initializes name, state (AVAILABLE), ownerThread (NULL) and queue.
+- Lock::~Lock() (in synch.cc): Lock destructor. Deletes queue.
+- bool Lock::isHeldByCurrentThread() (in synch.cc): checks if currentThread and ownerThread are the same and returns true or false accordingly.
+- void Lock::Acquire() (in synch.cc): acquires the Lock if possible, sets state to BUSY and sets ownerThread to currentThread.
+- void Lock::Release() (in synch.cc): releases the Lock if possible, sets state to AVAILABLE and sets ownerThread to NULL.
+- Condition::Condition(char* debugName) (in synch.cc): Condition constructor. Initializes name, waitingLock (NULL) and queue.
+- Condition::~Condition() (in synch.cc): Condition destructor. Deletes name, waitingLock and queue.
+- void Condition::Wait(Lock* conditionLock) (in synch.cc): waits for condition if possible. Disables interrupts, then adds currentThread to queue, releases Lock, puts currentThread to sleep, acquires conditionLock and finally re-enables interrupts.
+- void Condition::Signal(Lock* conditionLock) (in synch.cc): signals one thread to wake up, if possible. Disables interrupts, then removes and schedules one thread from the queue, sets waitingLock to NULL and finally re-enables interrupts.
+- void Condition::Broadcast(Lock *conditionLock) (in synch.cc): broadcasts to all threads to wake up, if possible. Calls Signal() until queue is empty.
+
+V. Testing:  (For each test case, you must show)
++ How to test
+- How to run the test cases, the commands, the arguments and so on.
++ Test Output
+- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output. The grader of your submission will be wanting to compare the output they get with what you say the output is.
+
+VI. Discussion:
++ Experiment expectation.  (What is supposed to happen.)
++ Experiment result.  (What actually happened.)
++ Explanation
+- Explain your experiment result - how it proves what you were supposed to prove.
+
+VIII. Miscellaneous:
+- Whatever else you want the grader know about your development.  You can create your own subsections headings here.

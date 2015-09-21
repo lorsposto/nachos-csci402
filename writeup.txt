@@ -1,7 +1,3 @@
-The lines starting with an index number, such as I, II, III, etc., and starting with '+' are section and subsection headings. You must retain these headings in your WRITEUP file, placing your specific writeup description within the headings. 
-
-The words starting with '-' are instructions about what to put in those section/subsection headings.  Do no include them in the writeup file you submit.
-
 Title:  Writeup for Project 1, Fall 2015
 Date:   09/20/15
 Group:	Erika Johnson	erikajoh@usc.edu	

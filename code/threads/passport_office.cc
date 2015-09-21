@@ -517,8 +517,10 @@ void bePicClerk(int clerkIndex) {
 	while (true) {
 		while (picClerkLines[clerkIndex]->state != Clerk::BREAK) {
 			picLineLock.Acquire();
-			/*printf("%s acquired %s.\n", picClerkLines[clerkIndex]->name,
-			 picLineLock.getName());*/
+			printf("%s has %i ppl in line.\n",
+					picClerkLines[clerkIndex]->name,
+					picClerkLines[clerkIndex]->bribeLineCount
+							+ picClerkLines[clerkIndex]->regularLineCount);
 
 			if (picClerkLines[clerkIndex]->bribeLineCount > 0) {
 				printf(
@@ -537,7 +539,7 @@ void bePicClerk(int clerkIndex) {
 			else {
 				picClerkLines[clerkIndex]->breakLock->Acquire();
 				picLineLock.Release();
-				printf("%s has no on in line.\n",
+				printf("%s has no one in line.\n",
 						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
@@ -623,6 +625,9 @@ void beAppClerk(int clerkIndex) {
 			/*printf("%s acquired %s.\n", appClerkLines[clerkIndex]->name,
 			 appLineLock.getName());*/
 
+			printf("%s has %i ppl in line.\n", appClerkLines[clerkIndex]->name,
+					appClerkLines[clerkIndex]->bribeLineCount
+							+ appClerkLines[clerkIndex]->regularLineCount);
 			if (appClerkLines[clerkIndex]->bribeLineCount > 0) {
 				printf(
 						"%s has signalled a Customer to come to their counter.\n",
@@ -640,7 +645,7 @@ void beAppClerk(int clerkIndex) {
 			else {
 				appClerkLines[clerkIndex]->breakLock->Acquire();
 				appLineLock.Release();
-				printf("%s has no on in line.\n",
+				printf("%s has no one in line.\n",
 						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
@@ -711,6 +716,10 @@ void bePassportClerk(int clerkIndex) {
 	while (true) {
 		while (passportClerkLines[clerkIndex]->state != Clerk::BREAK) {
 			passportLineLock.Acquire();
+			printf("%s has %i ppl in line.\n",
+					passportClerkLines[clerkIndex]->name,
+					passportClerkLines[clerkIndex]->bribeLineCount
+							+ passportClerkLines[clerkIndex]->regularLineCount);
 			if (passportClerkLines[clerkIndex]->bribeLineCount > 0) {
 				printf(
 						"%s has signalled a Customer to come to their counter.\n",
@@ -729,7 +738,7 @@ void bePassportClerk(int clerkIndex) {
 			}
 			else {
 				passportClerkLines[clerkIndex]->breakLock->Acquire();
-				printf("%s has no on in line.\n",
+				printf("%s has no one in line.\n",
 						passportClerkLines[clerkIndex]->name);
 				passportLineLock.Release();
 				passportClerkLines[clerkIndex]->state = Clerk::BREAK;
@@ -811,6 +820,9 @@ void beCashier(int cashierIndex) {
 			cashierLineLock.Acquire();
 
 			if (cashierLines[cashierIndex]->lineCount > 0) {
+				printf("%s has %i ppl in line.\n",
+						cashierLines[cashierIndex]->name,
+						cashierLines[cashierIndex]->lineCount);
 				printf(
 						"%s has signalled a Customer to come to their counter.\n",
 						cashierLines[cashierIndex]->name);
@@ -820,7 +832,7 @@ void beCashier(int cashierIndex) {
 			else {
 				cashierLines[cashierIndex]->breakLock->Acquire();
 				cashierLineLock.Release();
-				printf("%s has no on in line.\n",
+				printf("%s has no one in line.\n",
 						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->state = Cashier::BREAK;
 				printf("%s is now on break.\n",
@@ -1198,7 +1210,8 @@ void beCustomer(int customerIndex) {
 			senatorLock.Release();
 		}
 		if ((customers[customerIndex]->type == Customer::SENATOR
-				&& senatorInProcess && currentSenator == customers[customerIndex])
+				&& senatorInProcess
+				&& currentSenator == customers[customerIndex])
 				|| !senatorInProcess) {
 
 			//--------------------------------------------------
@@ -1560,7 +1573,8 @@ void testCase8() {
 	}
 
 	int sen = NUM_SENATORS;
-	for (i = 0; i < NUM_CUSTOMERS+NUM_SENATORS; ++i) {
+	NUM_CUSTOMERS += NUM_SENATORS;
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		name = new char[20];
 		if (sen > 0) {
 			sprintf(name, "Senator %i", i);

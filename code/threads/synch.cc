@@ -166,9 +166,12 @@ Condition::~Condition() {
 
 void Condition::Wait(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
-//	printf("%s is waiting on %s.\n", currentThread->getName(),
-//			conditionLock->getName());
-	ASSERT(conditionLock->isHeldByCurrentThread());
+
+	if(!conditionLock->isHeldByCurrentThread()) {
+		printf("Trying to call Wait on Lock not owned by %s", currentThread->getName());
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return;
+	}
 	if (conditionLock == NULL) {
 		// print message
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
@@ -197,7 +200,11 @@ void Condition::Signal(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
 //	printf("%s is signaling on %s.\n", currentThread->getName(),
 //			conditionLock->getName());
-	ASSERT(conditionLock->isHeldByCurrentThread());
+	if(!conditionLock->isHeldByCurrentThread()) {
+		printf("Trying to call Signal on Lock not owned by %s", currentThread->getName());
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return;
+	}
 	if (queue->IsEmpty()) {
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 		return;
@@ -219,7 +226,11 @@ void Condition::Signal(Lock* conditionLock) {
 
 void Condition::Broadcast(Lock* conditionLock) {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
-	ASSERT(conditionLock->isHeldByCurrentThread());
+	if(!conditionLock->isHeldByCurrentThread()) {
+		printf("Trying to call Broadcast on Lock not owned by %s", currentThread->getName());
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return;
+	}
 	if (conditionLock == NULL) {
 		// print message
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts

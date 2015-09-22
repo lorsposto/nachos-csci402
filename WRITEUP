@@ -20,7 +20,8 @@ I. Requirements:
 - If a Customer shows up to a PassportClerk before both the application and picture are completed, they must wait a random amount time (from 100-1000 Yield() calls).
 - Cashiers only take the $100 passport fee from the Customer if they see a "certification" by the PassportClerk; otherwise the Customer must wait a random amount of time (from 100-1000 Yield() calls).
 - Cashiers have a money amount that goes up when they receive a payment.
-- Managers must wake up Clerks onb reak when more than 3 Customers get in line.
+- Managers must wake up Clerks on break when more than 3 Customers get in line.
+- The exception to the above statement occurs when all clerks of a given type are on break and there is at least one customer waiting in line. This is prevent the state at the end with a few straggling customers never being served.
 - Managers must fairly regularly broadcast how much money the passport office has made.
 - Senators get to use the passport office by themselves; all Customers not being served must leave the office (and those being served must be served and then leave) when a Senator arrives.
 - Customers who were evicted by the Senator's arrival must get back in the same type of line they were in before, after the Senator finishes and leaves.
@@ -30,6 +31,7 @@ I. Requirements:
 
 II. Assumptions:
 - The manager knows how many customers are in the passport office at any given time, so when there are no customers left the office can close (i.e. the program terminates).
+- The manager can wake up a clerk with < 3 customers in line if and only if all other clerks of the same type are on break to ensure the straggling customers at the end of the simulation can be served.
 
 III. Design:
 - Components: Semaphore, Lock, Condition, Customer (incl. Senator), Clerk (incl. App, Pic and Passport), Cashier, Manager.

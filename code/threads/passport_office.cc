@@ -294,7 +294,7 @@ void broadcastMoney() {
 	}
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	printf("%s has counted amounts of $%i for PictureClerks\n",
+	/*printf("%s has counted amounts of $%i for PictureClerks\n",
 			currentThread->getName(), picClerkTotal);
 
 	printf("%s has counted amounts of $%i for ApplicationClerks\n",
@@ -307,7 +307,7 @@ void broadcastMoney() {
 			currentThread->getName(), cashierTotal);
 
 	printf("%s has counted amounts of $%i for the passport office\n",
-			currentThread->getName(), officeTotal);
+			currentThread->getName(), officeTotal);*/
 }
 
 void beManager(int index) {
@@ -315,63 +315,154 @@ void beManager(int index) {
 		if (managers[index]->counter % 2 == 0) {
 			broadcastMoney();
 		}
+
+		/*checks if all clerks are on break. Because the manager terminates when all customers are served,
+		if there are still customers to be served and all clerks of a type are on break we know there are
+		<3 people in line who must be served*/
+		bool allOnBreak = true;
 		managers[index]->counter++;
+
+		//printf("getting pic lock manager");
+		picLineLock.Acquire();
+		//printf("got pic lock manager");
 		for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
-			picLineLock.Acquire();
+
 			//picClerkLines[i]->breakLock->Acquire();
 			if (picClerkLines[i]->state == Clerk::BREAK
 					&& (picClerkLines[i]->bribeLineCount
-							+ picClerkLines[i]->regularLineCount > 0
+							+ picClerkLines[i]->regularLineCount > 2
 							|| senatorInProcess)) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
 				picClerkLines[i]->breakCV->Signal(&picLineLock);
 				printf("%s has woken up a PictureClerk\n",
 						managers[index]->name);
+				allOnBreak = false;
+			} else {
+				if(picClerkLines[i]->state != Clerk::BREAK)
+					allOnBreak = false;
 			}
-			//picClerkLines[i]->breakLock->Release();
-			picLineLock.Release();
 		}
+		//all picture clerks are on break because they have < 3 in line, but there are still customers waiting to be served
+		if(allOnBreak) {
+			for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
+				if(picClerkLines[i]->bribeLineCount
+						+ picClerkLines[i]->regularLineCount > 0) {
+					picClerkLines[i]->state = Clerk::AVAILABLE;
+					picClerkLines[i]->breakCV->Signal(&picLineLock);
+					printf("%s has woken up a PictureClerk\n",
+						managers[index]->name);
+				}
+			}
+		}
+
+		allOnBreak = true;
+
+		picLineLock.Release();
+
+		/************************************************/
+		//printf("getting app lock manager");
+		appLineLock.Acquire();
+		//printf("got app lock manager");
 		for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
-			appLineLock.Acquire();
 			//appClerkLines[i]->breakLock->Acquire();
 			if (appClerkLines[i]->state == Clerk::BREAK
 					&& (appClerkLines[i]->bribeLineCount
-							+ appClerkLines[i]->regularLineCount > 0
+							+ appClerkLines[i]->regularLineCount > 2
 							|| senatorInProcess)) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
 				appClerkLines[i]->breakCV->Signal(&appLineLock);
 				printf("%s has woken up an ApplicationClerk\n",
 						managers[index]->name);
+				allOnBreak = false;
+			} else {
+				if(appClerkLines[i]->state != Clerk::BREAK)
+					allOnBreak = false;
 			}
-			//appClerkLines[i]->breakLock->Release();
-			appLineLock.Release();
 		}
+		//all app clerks are on break because they have < 3 in line, but there are still customers waiting to be served
+		if(allOnBreak) {
+			for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
+				if(appClerkLines[i]->bribeLineCount
+						+ appClerkLines[i]->regularLineCount > 0) {
+					appClerkLines[i]->state = Clerk::AVAILABLE;
+					appClerkLines[i]->breakCV->Signal(&appLineLock);
+					printf("%s has woken up an ApplicationClerk\n",
+						managers[index]->name);
+				}
+			}
+		}
+
+		allOnBreak = true;
+		//appClerkLines[i]->breakLock->Release();
+		appLineLock.Release();
+		
+		passportLineLock.Acquire();
+
 		for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
-			passportLineLock.Acquire();
 			//passportClerkLines[i]->breakLock->Acquire();
 			if (passportClerkLines[i]->state == Clerk::BREAK
 					&& (passportClerkLines[i]->bribeLineCount
-							+ passportClerkLines[i]->regularLineCount > 0
+							+ passportClerkLines[i]->regularLineCount > 2
 							|| senatorInProcess)) {
 				passportClerkLines[i]->state = Clerk::AVAILABLE;
 				passportClerkLines[i]->breakCV->Signal(&passportLineLock);
 				printf("%s has woken up a PassportClerk\n",
 						managers[index]->name);
+				allOnBreak = false;
+			} else {
+				if(passportClerkLines[i]->state != Clerk::BREAK)
+					allOnBreak = false;
 			}
-			//passportClerkLines[i]->breakLock->Release();
-			passportLineLock.Release();
 		}
+
+		//all passport clerks are on break because they have < 3 in line, but there are still customers waiting to be served
+		if(allOnBreak) {
+			for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
+				if(passportClerkLines[i]->bribeLineCount
+						+ passportClerkLines[i]->regularLineCount > 0) {
+					passportClerkLines[i]->state = Clerk::AVAILABLE;
+					passportClerkLines[i]->breakCV->Signal(&passportLineLock);
+					printf("%s has woken up an PassportClerk\n",
+						managers[index]->name);
+				}
+			}
+		}
+
+		allOnBreak = true;
+
+		//passportClerkLines[i]->breakLock->Release();
+		passportLineLock.Release();
+		cashierLineLock.Acquire();
+
 		for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
-			cashierLineLock.Acquire();
 
 			if (cashierLines[i]->state == Cashier::BREAK
-					&& (cashierLines[i]->lineCount > 0 || senatorInProcess)) {
+					&& (cashierLines[i]->lineCount > 2 || senatorInProcess)) {
 				cashierLines[i]->state = Cashier::AVAILABLE;
 				cashierLines[i]->breakCV->Signal(&cashierLineLock);
 				printf("%s has woken up a Cashier\n", managers[index]->name);
+				allOnBreak = false;
+			} else {
+				if(cashierLines[i]->state != Cashier::BREAK)
+					allOnBreak = false;
 			}
-			cashierLineLock.Release();
 		}
+
+		//all cashier clerks are on break because they have < 3 in line, but there are still customers waiting to be served
+		if(allOnBreak) {
+			for (unsigned int j = 0; j < NUM_CASHIERS; ++j) {
+				if(cashierLines[j]->lineCount > 0) {
+					cashierLines[j]->state = Cashier::AVAILABLE;
+					cashierLines[j]->breakCV->Signal(&cashierLineLock);
+					printf("%s has woken up a Cashier\n",
+						managers[index]->name);
+				}
+			}
+		}
+
+		allOnBreak = true;
+		cashierLineLock.Release();
+
 		for (int i = 0; i < rand() % 500; ++i)
 			currentThread->Yield();
 	}
@@ -1759,7 +1850,7 @@ void testCase8() {
 	// while ((c = getchar()) != '\n' && c != EOF)
 	// 	;
 
-	NUM_CUSTOMERS = 5;
+	NUM_CUSTOMERS = 20;
 	NUM_SENATORS = 0;
 	NUM_PIC_CLERKS = 1;
 	NUM_APP_CLERKS = 1;

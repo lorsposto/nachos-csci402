@@ -26,6 +26,7 @@ struct Customer {
 	bool appDone;
 	bool certified;
 	bool gotPassport;
+	bool earlybird;
 	int money;
 	customerType type;
 
@@ -35,6 +36,7 @@ struct Customer {
 		appDone = false;
 		certified = false;
 		gotPassport = false;
+		earlybird = false;
 		type = t;
 		SSN = ssn;
 		switch (rand() % 4) {
@@ -313,7 +315,7 @@ void broadcastMoney() {
 void beManager(int index) {
 	while (customersServed < NUM_CUSTOMERS) {
 		if (managers[index]->counter % 2 == 0) {
-			broadcastMoney();
+			// broadcastMoney();
 		}
 
 		/*checks if all clerks are on break. Because the manager terminates when all customers are served,
@@ -917,13 +919,11 @@ void bePassportClerk(int clerkIndex) {
 					passportClerkLines[clerkIndex]->customer->name);
 
 				passportClerkLines[clerkIndex]->approved = true;
-				
 
 				passportClerkLines[clerkIndex]->transactionCV->Signal(
 						passportClerkLines[clerkIndex]->transactionLock);
 				passportClerkLines[clerkIndex]->transactionCV->Wait(
 						passportClerkLines[clerkIndex]->transactionLock);
-
 
 				// Doing job, customer waiting, signal when done
 
@@ -931,14 +931,21 @@ void bePassportClerk(int clerkIndex) {
 				for (int i = 0; i < rand() % 900 + 100; ++i) {
 					currentThread->Yield();
 				}
-				// set application as complete
-				passportClerkLines[clerkIndex]->customer->certified = true;
-				passportClerkLines[clerkIndex]->transactionCV->Signal(
-						passportClerkLines[clerkIndex]->transactionLock);
 
-				printf("%s has recorded %s passport documentation\n",
-						passportClerkLines[clerkIndex]->name,
-						passportClerkLines[clerkIndex]->customer->name);
+				if (true /* rand() % 100 < 5 */) {
+					passportClerkLines[clerkIndex]->customer->earlybird = true;
+					passportClerkLines[clerkIndex]->transactionCV->Signal(
+						passportClerkLines[clerkIndex]->transactionLock);
+				} else {
+					// set application as complete
+					passportClerkLines[clerkIndex]->customer->certified = true;
+					passportClerkLines[clerkIndex]->transactionCV->Signal(
+							passportClerkLines[clerkIndex]->transactionLock);
+
+					printf("%s has recorded %s passport documentation\n",
+							passportClerkLines[clerkIndex]->name,
+							passportClerkLines[clerkIndex]->customer->name);
+				}
 			}
 			else {
 				passportClerkLines[clerkIndex]->approved = false;
@@ -1046,6 +1053,16 @@ void beCashier(int cashierIndex) {
 						"%s has recorded that %s has been given their completed passport\n",
 						cashierLines[cashierIndex]->name,
 						cashierLines[cashierIndex]->customer->name);
+			}
+			else if (cashierLines[cashierIndex]->customer->appDone
+					&& cashierLines[cashierIndex]->customer->picDone
+					&& cashierLines[cashierIndex]->customer->earlybird) {
+				printf("%s has received the $100 from %s before certification. They are to go to the back of line\n",
+				cashierLines[cashierIndex]->name, cashierLines[cashierIndex]->customer->name);
+				cashierLines[cashierIndex]->approved = false;
+				cashierLines[cashierIndex]->customer->certified = true; // artificially allow customer to go next time
+				cashierLines[cashierIndex]->transactionCV->Signal(
+					cashierLines[cashierIndex]->transactionLock);
 			}
 			else {
 				cashierLines[cashierIndex]->approved = false;

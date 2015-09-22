@@ -459,7 +459,13 @@ void appClerkTransaction(int customer, int clerk) {
 
 void passportClerkTransaction(int customer, int clerk) {
 
+	printf("%s is trying to start to do business with %s\n", customers[customer]->name,
+			passportClerkLines[clerk]->name);
+
 	while (!passportClerkLines[clerk]->approved) {
+
+		printf("%s is trying to do business with %s\n", customers[customer]->name,
+				passportClerkLines[clerk]->name);
 
 		passportClerkLines[clerk]->transactionLock->Acquire();
 		passportClerkLines[clerk]->customer = customers[customer];
@@ -491,13 +497,15 @@ void passportClerkTransaction(int customer, int clerk) {
 			passportClerkLines[clerk]->transactionCV->Signal(
 					passportClerkLines[clerk]->transactionLock);
 
+			passportClerkLines[clerk]->approved = false;
+			
 			passportClerkLines[clerk]->transactionLock->Release();
 
 			break;
 		}
 		// the 5% chance of the passport clerk "making a mistake" happened and we must get back into line
-		passportLineLock.Acquire();
 		passportClerkLines[clerk]->transactionLock->Release();
+		passportLineLock.Acquire();
 
 		//do we bribe our way to the front of the line again?
 		int bribeChance = rand() % 5;
@@ -792,9 +800,11 @@ void bePassportClerk(int clerkIndex) {
 				break;
 			}
 
-			passportClerkLines[clerkIndex]->transactionLock->Acquire();
 			passportLineLock.Release();
-
+			passportClerkLines[clerkIndex]->transactionLock->Acquire();
+			printf(
+				"%s has gotten a transaction lock.\n",
+				passportClerkLines[clerkIndex]->name);
 			// wait for Customer data
 			passportClerkLines[clerkIndex]->transactionCV->Wait(
 					passportClerkLines[clerkIndex]->transactionLock);
@@ -1847,7 +1857,7 @@ void testCase8() {
 	// while ((c = getchar()) != '\n' && c != EOF)
 	// 	;
 
-	NUM_CUSTOMERS = 1;
+	NUM_CUSTOMERS = 5;
 	NUM_SENATORS = 0;
 	NUM_PIC_CLERKS = 1;
 	NUM_APP_CLERKS = 1;

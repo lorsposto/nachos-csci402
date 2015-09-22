@@ -1401,7 +1401,9 @@ void beCustomer(int customerIndex) {
 			// if there's a senator, you gotta wait
 			if (customers[customerIndex]->type != Customer::SENATOR
 					&& senatorInProcess) {
+				senatorLock.Acquire();
 				senatorCV.Wait(&senatorLock);
+				senatorLock.Release();
 			}
 		}
 	}

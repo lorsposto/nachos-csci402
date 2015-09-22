@@ -501,7 +501,9 @@ void passportClerkTransaction(int customer, int clerk) {
 			printf("%s has gotten in bribe line for %s.\n",
 					customers[customer]->name, passportClerkLines[clerk]->name);
 			customers[clerk]->money -= 500;
-			picClerkLines[clerk]->money += 500;
+			passportClerkLines[clerk]->money += 500;
+			printf("%s has received $500 from %s.\n",
+					passportClerkLines[clerk]->name, customers[customer]->name);
 			passportClerkLines[clerk]->bribeLineCV->Wait(&passportLineLock);
 			passportClerkLines[clerk]->bribeLineCount--;
 		}
@@ -584,6 +586,8 @@ void bePicClerk(int clerkIndex) {
 				printf("%s is going on break.\n",
 						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->breakCV->Wait(&picLineLock);
+				printf("%s is coming off break.\n",
+					picClerkLines[clerkIndex]->name);
 				picLineLock.Release();
 				//picClerkLines[clerkIndex]->breakLock->Release();
 				break;
@@ -685,6 +689,8 @@ void beAppClerk(int clerkIndex) {
 				printf("%s is going on break.\n",
 						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->breakCV->Wait(&appLineLock);
+				printf("%s is coming off break.\n",
+					appClerkLines[clerkIndex]->name);
 				appLineLock.Release();
 				//appClerkLines[clerkIndex]->breakLock->Release();
 				break;
@@ -775,6 +781,8 @@ void bePassportClerk(int clerkIndex) {
 						passportClerkLines[clerkIndex]->name);
 				passportClerkLines[clerkIndex]->breakCV->Wait(
 						&passportLineLock);
+				printf("%s is coming off break.\n",
+					passportClerkLines[clerkIndex]->name);
 				passportLineLock.Release();
 				//passportClerkLines[clerkIndex]->breakLock->Release();
 				break;
@@ -882,6 +890,8 @@ void beCashier(int cashierIndex) {
 				printf("%s is going on break.\n",
 						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->breakCV->Wait(&cashierLineLock);
+				printf("%s is coming off break.\n",
+						cashierLines[cashierIndex]->name);
 				cashierLineLock.Release();
 				//cashierLines[cashierIndex]->breakLock->Release();
 				break;// lol get it break haha
@@ -1053,6 +1063,8 @@ void picAppCustomerProcess(int customerIndex) {
 						picClerkLines[myLine]->name);
 				customers[customerIndex]->money -= 500;
 				picClerkLines[myLine]->money += 500;
+				printf("%s has received $500 from %s.\n",
+					picClerkLines[myLine]->name, customers[customerIndex]->name);
 				picClerkLines[myLine]->bribeLineCV->Wait(&picLineLock);
 				picClerkLines[myLine]->bribeLineCount--;
 			}
@@ -1098,7 +1110,9 @@ void picAppCustomerProcess(int customerIndex) {
 						customers[customerIndex]->name,
 						appClerkLines[myLine]->name);
 				customers[customerIndex]->money -= 500;
-				picClerkLines[myLine]->money += 500;
+				appClerkLines[myLine]->money += 500;
+				printf("%s has received $500 from %s.\n",
+					appClerkLines[myLine]->name, customers[customerIndex]->name);
 				appClerkLines[myLine]->bribeLineCV->Wait(&appLineLock);
 				appClerkLines[myLine]->bribeLineCount--;
 			}
@@ -1153,7 +1167,9 @@ void passportCustomerProcess(int customerIndex) {
 					customers[customerIndex]->name,
 					passportClerkLines[myLine]->name);
 			customers[customerIndex]->money -= 500;
-			picClerkLines[myLine]->money += 500;
+			passportClerkLines[myLine]->money += 500;
+			printf("%s has received $500 from %s.\n",
+				passportClerkLines[myLine]->name, customers[customerIndex]->name);
 			passportClerkLines[myLine]->bribeLineCV->Wait(&passportLineLock);
 			passportClerkLines[myLine]->bribeLineCount--;
 		}

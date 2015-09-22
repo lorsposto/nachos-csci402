@@ -2,7 +2,7 @@ Title:  Writeup for Project 1, Fall 2015
 Date:   09/20/15
 Group:	Erika Johnson	erikajoh@usc.edu	
 		Heather Persson	hpersson@usc.edu	
-		Lorraine Sposto	lsposto@usc.edu	
+		Lorraine Sposto	llsposto@usc.edu	
  
 I. Requirements:
 - Implement locks and condition variables.
@@ -94,9 +94,11 @@ IV. Implementation:
 V. Testing:  (For each test case, you must show)
 + How to test
 - Run the following command:
-- nachos -T
+	nachos
 - A menu will print from standard out, from which you can choose one of the test cases.
-- Test Case 8 is defined as a custom test case, meaning normal execution of the passport office once given input of Clerk, Cashier, Customer, Senator, and Manager counts.
+- Test cases do no require input, except for #8 - custom execution.
+- Custom test case is normal execution of the passport office once given input of Clerk, Cashier, Customer, Senator, and Manager counts.
+
 + Test Output
 - Test Case 1: Customers always take the shortest line, but no 2 customers ever choose the same shortest line at the same time.
 - Application Clerk 0 begins with 0 people in line 
@@ -114,20 +116,6 @@ V. Testing:  (For each test case, you must show)
 	Customer 7 has gotten in regular line for Application Clerk 2.
 	Customer 8 has gotten in regular line for Application Clerk 0.
 	Customer 9 has gotten in regular line for Application Clerk 1.
-- The following proves this case:
-- Customers 0-4 (and possibly 5) should choose Application Clerk 0 first because for those customers, the line count will be less than or equal to the line counts of the other Application Clerks.
-- Customers 5-9 will choose different lines, even though after Customer 5 the lines could have equal values.
-- Given the above output, one can easily prove the test.
-- Customer 0 chooses the shortest line, AppClerk 0 out of the set of line counts (0,5,5)
-- Customer 1 chooses the shortest line, AppClerk 0 out of the set (1,5,5)
-- Customer 2 chooses the shortest line, AppClerk 0 out of the set (2,5,5)
-- Customer 3 chooses the shortest line, AppClerk 0 out of the set (3,5,5)
-- Customer 4 chooses the shortest line, AppClerk 0 out of the set (4,5,5)
-- Customer 5 chooses the shortest line, AppClerk 0 out of the set (5,5,5)
-- Customer 6 chooses the shortest line, AppClerk 1 out of the set (6,5,5)
-- Customer 7 chooses the shortest line, AppClerk 2 out of the set (6,6,5)
-- Customer 8 chooses the shortest line, AppClerk 0 out of the set (6,6,6)
-- Customer 9 chooses the shortest line, AppClerk 1 out of the set (7,6,6)
 
 - Test Case 2: Managers only read one from one Clerk's total money received, at a time.
 - 1 Picture Clerks
@@ -135,8 +123,6 @@ V. Testing:  (For each test case, you must show)
 - 1 Passport Clerk
 - 1 Cashier
 - 1 Manager
-- In this test, the main thread loops through each clerk of each type to increment their money values by $100, interrupted by occasional and random yields.
-- Each time the manager makes an announcement, he reads and stores each value one at a time.
 - Expected output:
 	Manager 0 has counted amounts of $0 for PictureClerks
 	Manager 0 has counted amounts of $0 for ApplicationClerks
@@ -165,12 +151,9 @@ V. Testing:  (For each test case, you must show)
 	Manager 0 has counted amounts of $2000 for the passport office
 
 - Test Case 3: Customers do not leave until they are given their passport by the Cashier. The Cashier does not start on another customer until they know that the last Customer has left their area
-- 3 Customers, 1 Cashier, and 1 Manager are executed.
-- Each customer gets in line for the Cashier, and the Cashier approves each of their passports in order.
-- The Customer only leaves the Cashier, and subsequently, the Passport Office, after they have received their passport from the Cashier.
-- After a Customer leaves, the Cashier signals another to his desk.
-- No Customer arrives at a Cashier before the previous Customer leaves.
-- No Customer gets past the Cashier to leave the Office without being approved by the Cashier.
+- 3 Customers
+- 1 Cashier
+- 1 Manager 
 - Expected output:
 	Cashier 0 is going on break.
 	Customer 0 has gotten in regular line for Cashier 0.
@@ -212,31 +195,29 @@ V. Testing:  (For each test case, you must show)
 	Cashier 0 is going on break.
 
 - Test Case 4: Clerks go on break when they have no one waiting in their line
+- 1 Picture Clerks
+- 1 Application Clerks
+- 1 Passport Clerk
+- 1 Cashier
 - Expected output:
 	Passport Clerk 0 is going on break.
 	Cashier 0 is going on break.
 	Pic Clerk 0 is going on break.
 	Application Clerk 0 is going on break.
-- In this test, one of each type of clerk/cashier is launched with no customers launched. Since no Customers are present to wait in their lines, each goes on break because there line counts are 0.
 
 - Test Case 5: Managers get Clerks off their break when lines get too long
-- 1 Cashier is launched, beginning with line count of 0. The cashier immediately goes on break.
-- A loop gradually updates the line count to increment. Once the manager gets his turn in the CPU and sees that the line count is above 3, he wakes the cashier.
-- The test holds true for each clerk type as well.
+- 1 Cashier
+- 0 Customers
 - Expected output:
 	Cashier 0 is going on break.
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $0 for Cashiers
-	Manager 0 has counted amounts of $0 for the passport office
 	Manager 0 has woken up a Cashier
+	Cashier 0 is coming off break.
 	Cashier 0 has signalled a Customer to come to their counter.
 
-
 - Test Case 6: Total sales never suffers from a race condition
-- In this test, 10 Customers, 3 Managers, and one Cashier are launched. Each Customer goes to the Cashier to complete his passport.
-- For each Manager announcement, one can count the amount of money ($100 incremements), exchanged for each transaction that is completed.
+- 5 Customers
+- 3 Managers
+- 1 Cashier
 - Expected output:
 	Cashier 0 is going on break.
 	Customer 0 has gotten in regular line for Cashier 0.
@@ -316,9 +297,6 @@ V. Testing:  (For each test case, you must show)
 - 1 Senator
 - 3 Customers
 - 1 Cashier
-- Customers 0,1,2 leave because the Senator is about to start his passport process. Once he leaves, the Customers return to complete their processes
-- This proves the test because all customers stop what they are doing and leave when the Senator arrives, and when they return they pick up at the step where they left off. 
-
 - Expected output:
 	Cashier 0 is going on break.
 	Senator 0 has gotten in regular line for Cashier 0.
@@ -374,13 +352,34 @@ V. Testing:  (For each test case, you must show)
 	Customer 3 is leaving the Passport Office.
 	Cashier 0 is going on break.
 
-- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output. The grader of your submission will be wanting to compare the output they get with what you say the output is.
-
 VI. Discussion:
 + Experiment expectation.  (What is supposed to happen.)
+- Test Case 1 - Customers are expected to choose the shortest of the availables lines, but more than one customer will not choose a certain line at the same time.
+- Test Case 2 - Managers only read money from one clerk at a time, not all clerks at once.
+- Test Case 3 - Customers do not leave until they are approved to receive a passport by the cashier. This involves having taken and picture and submitting an application, thus being certified to get a passport, and then paying the fee. The next customer in line does not approach the counter until the current customer leaves the counter.
+- Test Case 4 - Clerks are expected to go on break when there are 0 people in line.
+- Test Case 5 - Managers get Clerks off their break when lines get too long. When a manager detects the clerk's line has risen above 3, they wake up the clerk.
+- Test Case 6 - Total sales never suffers from a race condition. Each clerk announcement should sum up to each office-wide announcement, and the money total at the end should be accurate to the previously announced sums.
+- Test Case 7 - When a senator arrives, customers in the office finish the steps they are on and leave the office. Once the senator completes getting a passport, the customers return to the office and begin where they left off
+
 + Experiment result.  (What actually happened.)
+- Test Case 1 - Customers choose the least populated line until all lines were equal in length. After that, customers choose different lines in sequential order, and never the same line at once.
+- Test Case 2 - Managers read values for each clerk, of each type, individually. Their sums at each announcement add up correctly.
+- Test Case 3 - Each customer approaches the cashier. Only after the cashier checks that the picture, application, and certification step are complete can the customer get a passport. The only way the customer can pass this point is to wait for the cashier's approval and receive a passport; then the customer can leave. The next customer in line waits for the clerk to signal them to the counter, which occurs after the customer has left.
+- Test Case 4 - Each of the launched clerks immediately goes on break because their line counts are 0, since there are no customers to get in line.
+- Test Case 5 - A Cashier begins with a line count = 0, which is gradually incremented. Managers wake up a cashier when line count > 3
+- Test Case 6 - Total sales at each announcement sum up correctly, and at the end of execution the values sum up.
+- Test Case 7 - Customers and Senator enter the passport office. Customers leave because the Senator is about to start his passport process. Once the Senator leaves, the Customers return to complete their processes.
+
 + Explanation
-- Explain your experiment result - how it proves what you were supposed to prove.
+- Test Case 1 - This makes sense and is in agreement with what is to be proven because to choose a line, customers traverse each line sequentially to choose the shortest. If multiple lines have equivalent and minimum values, the customer will choose the first occuring line. Customers cannot choose the same line at one time because they must acquire a lock before they can assess the length of the lines. If more than one customer could perform this process at one time, one customers choice could affect the line count and make the other customer's choice incorrect. Since customers can only choose lines one at a time, it is guaranteed that the line count each customer is viewing is accurate.
+- Test Case 2 - When a manager is reading the money of a clerk, the manager acquires (and subsquently releases) a lock specific to that clerk. The manager does not acquire every lock for every clerk, and then read all the values and make an annoucement. Therefore, it is possible that the Total of money at the time of a manager's announcement could have changed. However, the manager's announcement would not reveal any inaccuracies because the manager would be oblivious to these update -- he has already read and stored values before making the announcements.
+- Test Case 3 - Customers cannot leave until they receive their passport because they must satisfy the three requirements of 1. picture, 2. application, and 3. cerification. They must also satisfy the condition of having a passport to be able to leave the office. The only way to certify all of these conditions is through the cashier, from whom they receive their passport. Thus, customers cannot bypass this step to leave the passport office. Additionally, customers must be signaled by cashiers to come up to the counter; the cashier does not do so until the previous customer has left.
+- Test Case 4 - Because no customers are launched in this case, each clerk type goes on break and is never awoken by a manager. This means that all of the clerk line counts are 0, which is the criteria to go on break. Because there are no customers to get in line, the criteria for a manager to wake up clerks is not satisfied either.
+- Test Case 5 - Because the initial line count of the cashier = 0, the cashier will immediately go on break. The line count begins incrementing, but the increasing line size does not affect the cashier directly. When the manager thread runs, and the manager notices the line count > 3, the manager will wake up the cashier. 
+- Test Case 6 - It is apparent that there are no race conditions because the money amounts being announced by the manager increment in a logical order. They do not toggle up and down or take on strange values because only one thread can access these money counts at a time. Write access to the money fields is controlled by acquiring locks to update these values upon a transaction.
+- Test Case 7 - Even though the Customers can enter the passport office, by first checking on whether a Senator is present before looking for a line, they know to leave the passport office when they detect a Senator. They do so by waiting on a condition variable, and when the senator is finished he signals all customers to return. Because customer state is maintained by fields that indicate which steps they have completed, when they return to the office they automatically return to the next correct step they need to complete. Customers only check for senators when they are choosing a line, so each customer will complete his current itneraction before leaving the office.
+
 
 VIII. Miscellaneous:
 - Whatever else you want the grader know about your development.  You can create your own subsections headings here.

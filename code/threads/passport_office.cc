@@ -295,10 +295,10 @@ void broadcastMoney() {
 	}
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	printf(
+	/*printf(
 			"\%s has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
 			currentThread->getName(), picClerkTotal, appClerkTotal,
-			passClerkTotal, cashierTotal, officeTotal);
+			passClerkTotal, cashierTotal, officeTotal);*/
 
 //	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 //		picClerkLines[i]->transactionLock->Release();
@@ -325,65 +325,70 @@ void beManager(int index) {
 		managers[index]->counter++;
 		for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 			picLineLock.Acquire();
-			picClerkLines[i]->breakLock->Acquire();
+			//picClerkLines[i]->breakLock->Acquire();
 			if (picClerkLines[i]->state == Clerk::BREAK
 					&& (picClerkLines[i]->bribeLineCount
-							+ picClerkLines[i]->regularLineCount > 3
+							+ picClerkLines[i]->regularLineCount > 0
 							|| senatorInProcess)) {
 				picClerkLines[i]->state = Clerk::AVAILABLE;
-				picClerkLines[i]->breakCV->Signal(picClerkLines[i]->breakLock);
+				picClerkLines[i]->breakCV->Signal(&picLineLock);
 				printf("%s has woken up a PictureClerk\n",
 						managers[index]->name);
 			}
-			picClerkLines[i]->breakLock->Release();
+			//picClerkLines[i]->breakLock->Release();
 			picLineLock.Release();
 		}
 		for (unsigned int i = 0; i < NUM_APP_CLERKS; ++i) {
 			appLineLock.Acquire();
-			appClerkLines[i]->breakLock->Acquire();
+			//appClerkLines[i]->breakLock->Acquire();
 			if (appClerkLines[i]->state == Clerk::BREAK
 					&& (appClerkLines[i]->bribeLineCount
-							+ appClerkLines[i]->regularLineCount > 3
+							+ appClerkLines[i]->regularLineCount > 0
 							|| senatorInProcess)) {
 				appClerkLines[i]->state = Clerk::AVAILABLE;
-				appClerkLines[i]->breakCV->Signal(appClerkLines[i]->breakLock);
+				appClerkLines[i]->breakCV->Signal(&appLineLock);
 				printf("%s has woken up an ApplicationClerk\n",
 						managers[index]->name);
 			}
-			appClerkLines[i]->breakLock->Release();
+			//appClerkLines[i]->breakLock->Release();
 			appLineLock.Release();
 		}
 		for (unsigned int i = 0; i < NUM_PP_CLERKS; ++i) {
 			passportLineLock.Acquire();
-			passportClerkLines[i]->breakLock->Acquire();
+			//passportClerkLines[i]->breakLock->Acquire();
 			if (passportClerkLines[i]->state == Clerk::BREAK
 					&& (passportClerkLines[i]->bribeLineCount
-							+ passportClerkLines[i]->regularLineCount > 3
+							+ passportClerkLines[i]->regularLineCount > 0
 							|| senatorInProcess)) {
 				passportClerkLines[i]->state = Clerk::AVAILABLE;
 				passportClerkLines[i]->breakCV->Signal(
-						passportClerkLines[i]->breakLock);
+						&passportLineLock);
 				printf("%s has woken up a PassportClerk\n",
 						managers[index]->name);
 			}
-			passportClerkLines[i]->breakLock->Release();
+			//passportClerkLines[i]->breakLock->Release();
 			passportLineLock.Release();
 		}
 		for (unsigned int i = 0; i < NUM_CASHIERS; ++i) {
+			//ssprintf("******1\n");
 			cashierLineLock.Acquire();
-			cashierLines[i]->breakLock->Acquire();
+			//cashierLines[i]->breakLock->Acquire();
+			//printf("CASHIER HAS: %i in line\n", cashierLines[i]->lineCount);
 			if (cashierLines[i]->state == Cashier::BREAK
-					&& (cashierLines[i]->lineCount > 3 || senatorInProcess)) {
+					&& (cashierLines[i]->lineCount > 0 || senatorInProcess)) {
+				//printf("******2\n");
 				cashierLines[i]->state = Cashier::AVAILABLE;
-				cashierLines[i]->breakCV->Signal(cashierLines[i]->breakLock);
+				cashierLines[i]->breakCV->Signal(&cashierLineLock);
 				printf("%s has woken up a Cashier\n", managers[index]->name);
 			}
-			cashierLines[i]->breakLock->Release();
+			//printf("******3\n");
+			//cashierLines[i]->breakLock->Release();
 			cashierLineLock.Release();
 		}
 		for (int i = 0; i < rand() % 1000; ++i)
 			currentThread->Yield();
 	}
+	printf("MANAGER'S WORK HERE IS DONE\n");
 }
 
 void picClerkTransaction(int customer, int clerk) {
@@ -514,6 +519,8 @@ void passportClerkTransaction(int customer, int clerk) {
 			passportClerkLines[clerk]->regularLineCV->Wait(&passportLineLock);
 			passportClerkLines[clerk]->regularLineCount--;
 		}
+
+		passportLineLock.Release();
 	}
 }
 
@@ -578,16 +585,17 @@ void bePicClerk(int clerkIndex) {
 				picClerkLines[clerkIndex]->state = Clerk::BUSY;
 			}
 			else {
-				picClerkLines[clerkIndex]->breakLock->Acquire();
-				picLineLock.Release();
+				//picClerkLines[clerkIndex]->breakLock->Acquire();
+				//picLineLock.Release();
 				printf("%s has no one in line.\n",
 						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->breakCV->Wait(
-						picClerkLines[clerkIndex]->breakLock);
-				picClerkLines[clerkIndex]->breakLock->Release();
+						&picLineLock);
+				picLineLock.Release();
+				//picClerkLines[clerkIndex]->breakLock->Release();
 				break;
 			}
 
@@ -684,16 +692,16 @@ void beAppClerk(int clerkIndex) {
 				appClerkLines[clerkIndex]->state = Clerk::BUSY;
 			}
 			else {
-				appClerkLines[clerkIndex]->breakLock->Acquire();
-				appLineLock.Release();
+				//appClerkLines[clerkIndex]->breakLock->Acquire();
 				printf("%s has no one in line.\n",
 						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->breakCV->Wait(
-						appClerkLines[clerkIndex]->breakLock);
-				appClerkLines[clerkIndex]->breakLock->Release();
+						&appLineLock);
+				appLineLock.Release();
+				//appClerkLines[clerkIndex]->breakLock->Release();
 				break;
 			}
 
@@ -778,16 +786,16 @@ void bePassportClerk(int clerkIndex) {
 				passportClerkLines[clerkIndex]->state = Clerk::BUSY;
 			}
 			else {
-				passportClerkLines[clerkIndex]->breakLock->Acquire();
+				//passportClerkLines[clerkIndex]->breakLock->Acquire();
 				printf("%s has no one in line.\n",
 						passportClerkLines[clerkIndex]->name);
-				passportLineLock.Release();
 				passportClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						passportClerkLines[clerkIndex]->name);
 				passportClerkLines[clerkIndex]->breakCV->Wait(
-						passportClerkLines[clerkIndex]->breakLock);
-				passportClerkLines[clerkIndex]->breakLock->Release();
+						&passportLineLock);
+				passportLineLock.Release();
+				//passportClerkLines[clerkIndex]->breakLock->Release();
 				break;
 			}
 
@@ -884,16 +892,16 @@ void beCashier(int cashierIndex) {
 				cashierLines[cashierIndex]->state = Cashier::BUSY;
 			}
 			else {
-				cashierLines[cashierIndex]->breakLock->Acquire();
-				cashierLineLock.Release();
+				//cashierLines[cashierIndex]->breakLock->Acquire();
 				printf("%s has no one in line.\n",
 						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->state = Cashier::BREAK;
 				printf("%s is now on break.\n",
 						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->breakCV->Wait(
-						cashierLines[cashierIndex]->breakLock);
-				cashierLines[cashierIndex]->breakLock->Release();
+						&cashierLineLock);
+				cashierLineLock.Release();
+				//cashierLines[cashierIndex]->breakLock->Release();
 				break; // lol get it break haha
 			}
 
@@ -1847,9 +1855,9 @@ void testCase8() {
 	// while ((c = getchar()) != '\n' && c != EOF)
 	// 	;
 
-	NUM_CUSTOMERS = 15;
-	NUM_SENATORS = 1;
-	NUM_PIC_CLERKS = 2;
+	NUM_CUSTOMERS = 1;
+	NUM_SENATORS = 0;
+	NUM_PIC_CLERKS = 1;
 	NUM_APP_CLERKS = 1;
 	NUM_PP_CLERKS = 1;
 	NUM_CASHIERS = 1;

@@ -932,7 +932,8 @@ void bePassportClerk(int clerkIndex) {
 					currentThread->Yield();
 				}
 
-				if (true /* rand() % 100 < 5 */) {
+				if (rand() % 100 < 5) {
+					/* less than 5% chance that the customer will leave the passport clerk too soon */
 					passportClerkLines[clerkIndex]->customer->earlybird = true;
 					passportClerkLines[clerkIndex]->transactionCV->Signal(
 						passportClerkLines[clerkIndex]->transactionLock);
@@ -1061,6 +1062,8 @@ void beCashier(int cashierIndex) {
 				cashierLines[cashierIndex]->name, cashierLines[cashierIndex]->customer->name);
 				cashierLines[cashierIndex]->approved = false;
 				cashierLines[cashierIndex]->customer->certified = true; // artificially allow customer to go next time
+				printf("%s has gone to %s too soon. They are going to the back of the line\n",
+					cashierLines[cashierIndex]->customer->name, cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->transactionCV->Signal(
 					cashierLines[cashierIndex]->transactionLock);
 			}
@@ -1382,13 +1385,15 @@ void beCustomer(int customerIndex) {
 			//-------------------------------------------------------------------
 			else if (customers[customerIndex]->appDone
 					&& customers[customerIndex]->picDone
-					&& !customers[customerIndex]->certified) {
+					&& !customers[customerIndex]->certified
+					&& !customers[customerIndex]->earlybird) {
 				passportCustomerProcess(customerIndex);
 			}
 			//-------------------------------------------------------------------
 			// Step 3: Going to cashier
 			//-------------------------------------------------------------------
 			else if (customers[customerIndex]->certified
+					|| customers[customerIndex]->earlybird
 					&& !customers[customerIndex]->gotPassport) {
 				cashierCustomerProcess(customerIndex);
 			}
@@ -1436,6 +1441,10 @@ void testCase1(int x) {
 	NUM_CUSTOMERS = 10;
 	NUM_APP_CLERKS = 3;
 
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
+
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
 		name = appClerkLines[i]->name;
@@ -1480,6 +1489,10 @@ void testCase2(int d) {
 	unsigned int i;
 
 	srand(time(NULL));
+
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
@@ -1582,6 +1595,10 @@ void testCase3() {
 	NUM_CASHIERS = 1;
 	NUM_MANAGERS = 1;
 
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
+
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 		cashierLines[i]->lineCount = i;
@@ -1631,6 +1648,10 @@ void testCase4(int x) {
 	NUM_APP_CLERKS = 1;
 	NUM_CASHIERS = 1;
 	NUM_PIC_CLERKS = 1;
+
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
@@ -1684,6 +1705,10 @@ void testCase5(int x) {
 	NUM_CASHIERS = 1;
 	NUM_MANAGERS = 1;
 	NUM_CUSTOMERS = 5;
+
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
@@ -1742,6 +1767,10 @@ void testCase6(int x) {
 
 	srand(time(NULL));
 
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
+
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 
@@ -1789,6 +1818,10 @@ void testCase7() {
 	unsigned int i;
 
 	srand(time(NULL));
+
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
@@ -1838,48 +1871,52 @@ void testCase7() {
 // custom case
 void testCase8() {
 	char c;
-	// printf("Enter the number of Managers:");
-	// scanf("%u", &NUM_MANAGERS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Picture clerks:");
-	// scanf("%u", &NUM_PIC_CLERKS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Application clerks:");
-	// scanf("%u", &NUM_APP_CLERKS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Passport clerks:");
-	// scanf("%u", &NUM_PP_CLERKS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Cashiers:");
-	// scanf("%u", &NUM_CASHIERS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Customers:");
-	// scanf("%ui", &NUM_CUSTOMERS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
-	// printf("Enter the number of Senators:");
-	// scanf("%ui", &NUM_SENATORS);
-	// while ((c = getchar()) != '\n' && c != EOF)
-	// 	;
+	printf("Enter the number of Managers:");
+	scanf("%u", &NUM_MANAGERS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Picture clerks:");
+	scanf("%u", &NUM_PIC_CLERKS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Application clerks:");
+	scanf("%u", &NUM_APP_CLERKS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Passport clerks:");
+	scanf("%u", &NUM_PP_CLERKS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Cashiers:");
+	scanf("%u", &NUM_CASHIERS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Customers:");
+	scanf("%ui", &NUM_CUSTOMERS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
+	printf("Enter the number of Senators:");
+	scanf("%ui", &NUM_SENATORS);
+	while ((c = getchar()) != '\n' && c != EOF)
+		;
 
-	NUM_CUSTOMERS = 20;
-	NUM_SENATORS = 0;
-	NUM_PIC_CLERKS = 1;
-	NUM_APP_CLERKS = 1;
-	NUM_PP_CLERKS = 1;
-	NUM_CASHIERS = 1;
-	NUM_MANAGERS = 1;
+	// NUM_CUSTOMERS = 20;
+	// NUM_SENATORS = 0;
+	// NUM_PIC_CLERKS = 1;
+	// NUM_APP_CLERKS = 1;
+	// NUM_PP_CLERKS = 1;
+	// NUM_CASHIERS = 1;
+	// NUM_MANAGERS = 1;
 
 	Thread * t;
 	char * name;
 	unsigned int i;
 
 	srand(time(NULL));
+
+	printf("Number of Customers = %i\nNumber of ApplicationClerks = %i\nNumber of PictureClerks = %i\nNumber of PassportClerks = %i\nNumber of Cashiers = %i\nNumber of Senators = %i\n\n",
+		NUM_CUSTOMERS, NUM_APP_CLERKS, NUM_PIC_CLERKS,
+		NUM_PP_CLERKS, NUM_CASHIERS, NUM_SENATORS);
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
@@ -1954,8 +1991,6 @@ void PassportOffice() {
 	int i;
 
 	srand(time(NULL));
-
-//	testCase2();
 
 	printf("Please choose from the following options:\n");
 	printf(

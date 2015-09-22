@@ -249,7 +249,7 @@ unsigned int NUM_APP_CLERKS = 0;
 unsigned int NUM_PP_CLERKS = 0;
 unsigned int NUM_CASHIERS = 0;
 unsigned int NUM_MANAGERS = 0;
-int customersServed = 0;
+unsigned int customersServed = 0;
 
 bool senatorInProcess = false;
 Customer * currentSenator = NULL;

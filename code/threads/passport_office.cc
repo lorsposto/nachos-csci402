@@ -1361,52 +1361,30 @@ void testCase2(int d) {
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
-
 		name = passportClerkLines[i]->name;
-		passportClerkLines[i]->money = rand() % 500;
 		t = new Thread(name);
-		//printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) bePassportClerk, i);
+		printf("%s on duty.\n", t->getName());
 	}
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
-
-		cashierLines[i]->money = rand() % 500;
 		name = cashierLines[i]->name;
 		t = new Thread(name);
 		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
 	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
 		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
-		picClerkLines[i]->money = rand() % 500;
 		name = picClerkLines[i]->name;
 		t = new Thread(name);
-		//printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) bePicClerk, i);
+		printf("%s on duty.\n", t->getName());
 	}
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
-		appClerkLines[i]->money = rand() % 500;
 		name = appClerkLines[i]->name;
 		t = new Thread(name);
-		//printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) beAppClerk, i);
-	}
-
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		name = new char[20];
-		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
-		customers[i] = new Customer(name, i, Customer::REGULAR);
-		customers[i]->picDone = true;
-		customers[i]->appDone = true;
-		customers[i]->certified = true;
-		customers[i]->money = 100;
-		t->Fork((VoidFunctionPtr) beCustomer, i);
+		printf("%s on duty.\n", t->getName());
 	}
 
 	for (i = 0; i < NUM_MANAGERS; ++i) {
@@ -1414,11 +1392,39 @@ void testCase2(int d) {
 
 		name = managers[i]->name;
 		t = new Thread(name);
-		//printf("%s on duty.\n", t->getName());
+		printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beManager, i);
 
 		for (int j = 0; j < rand() % 20; ++j)
 			currentThread->Yield();
+	}
+	while (customersServed < NUM_CUSTOMERS) {
+		for (i = 0; i < NUM_PP_CLERKS; ++i) {
+			passportClerkLines[i]->money += 100;
+			for (int j = 0; j < rand() % 100; ++j)
+				currentThread->Yield();
+		}
+
+		for (i = 0; i < NUM_CASHIERS; ++i) {
+			cashierLines[i]->money += 100;
+			for (int j = 0; j < rand() % 100; ++j)
+				currentThread->Yield();
+		}
+
+		for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+			picClerkLines[i]->money += 100;
+			for (int j = 0; j < rand() % 100; ++j)
+				currentThread->Yield();
+		}
+
+		for (i = 0; i < NUM_APP_CLERKS; ++i) {
+			appClerkLines[i]->money += 100;
+			for (int j = 0; j < rand() % 100; ++j)
+				currentThread->Yield();
+		}
+		customerCounterLock.Acquire();
+		customersServed++;
+		customerCounterLock.Release();
 	}
 
 }

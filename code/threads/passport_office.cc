@@ -1897,8 +1897,8 @@ void testCase8() {
 		;
 	printf("Enter the number of Senators:");
 	scanf("%ui", &NUM_SENATORS);
-	while ((c = getchar()) != '\n' && c != EOF)
-		;
+//	while ((c = getchar()) != '\n' && c != EOF)
+//		;
 
 	// NUM_CUSTOMERS = 20;
 	// NUM_SENATORS = 0;

@@ -296,9 +296,9 @@ void broadcastMoney() {
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
 	/*printf(
-			"\%s has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
-			currentThread->getName(), picClerkTotal, appClerkTotal,
-			passClerkTotal, cashierTotal, officeTotal);*/
+	 "\%s has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
+	 currentThread->getName(), picClerkTotal, appClerkTotal,
+	 passClerkTotal, cashierTotal, officeTotal);*/
 
 //	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 //		picClerkLines[i]->transactionLock->Release();
@@ -361,8 +361,7 @@ void beManager(int index) {
 							+ passportClerkLines[i]->regularLineCount > 0
 							|| senatorInProcess)) {
 				passportClerkLines[i]->state = Clerk::AVAILABLE;
-				passportClerkLines[i]->breakCV->Signal(
-						&passportLineLock);
+				passportClerkLines[i]->breakCV->Signal(&passportLineLock);
 				printf("%s has woken up a PassportClerk\n",
 						managers[index]->name);
 			}
@@ -491,7 +490,7 @@ void passportClerkTransaction(int customer, int clerk) {
 
 			passportClerkLines[clerk]->transactionCV->Signal(
 					passportClerkLines[clerk]->transactionLock);
-			
+
 			passportClerkLines[clerk]->transactionLock->Release();
 
 			break;
@@ -592,8 +591,7 @@ void bePicClerk(int clerkIndex) {
 				picClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						picClerkLines[clerkIndex]->name);
-				picClerkLines[clerkIndex]->breakCV->Wait(
-						&picLineLock);
+				picClerkLines[clerkIndex]->breakCV->Wait(&picLineLock);
 				picLineLock.Release();
 				//picClerkLines[clerkIndex]->breakLock->Release();
 				break;
@@ -603,7 +601,6 @@ void bePicClerk(int clerkIndex) {
 			/*printf("%s acquired transaction lock %s.\n",
 			 picClerkLines[clerkIndex]->name,
 			 picClerkLines[clerkIndex]->transactionLock->getName());
-
 			 printf("%s released %s.\n", picClerkLines[clerkIndex]->name,
 			 picLineLock.getName());*/
 			picLineLock.Release();
@@ -655,7 +652,6 @@ void bePicClerk(int clerkIndex) {
 			 printf("%s is done at %s. ",
 			 picClerkLines[clerkIndex]->customer->name,
 			 picClerkLines[clerkIndex]->name);
-
 			 printf("%s released transaction lock %s.\n",
 			 picClerkLines[clerkIndex]->name,
 			 picClerkLines[clerkIndex]->transactionLock->getName());*/
@@ -698,8 +694,7 @@ void beAppClerk(int clerkIndex) {
 				appClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						appClerkLines[clerkIndex]->name);
-				appClerkLines[clerkIndex]->breakCV->Wait(
-						&appLineLock);
+				appClerkLines[clerkIndex]->breakCV->Wait(&appLineLock);
 				appLineLock.Release();
 				//appClerkLines[clerkIndex]->breakLock->Release();
 				break;
@@ -709,7 +704,6 @@ void beAppClerk(int clerkIndex) {
 			/*printf("%s acquired transaction lock %s.\n",
 			 appClerkLines[clerkIndex]->name,
 			 appClerkLines[clerkIndex]->transactionLock->getName());
-
 			 printf("%s released %s.\n", appClerkLines[clerkIndex]->name,
 			 appLineLock.getName());*/
 			appLineLock.Release();
@@ -749,7 +743,6 @@ void beAppClerk(int clerkIndex) {
 			 printf("%s is done at %s. ",
 			 appClerkLines[clerkIndex]->customer->name,
 			 appClerkLines[clerkIndex]->name);
-
 			 printf("%s released transaction lock %s.\n",
 			 appClerkLines[clerkIndex]->name,
 			 appClerkLines[clerkIndex]->transactionLock->getName());*/
@@ -898,11 +891,10 @@ void beCashier(int cashierIndex) {
 				cashierLines[cashierIndex]->state = Cashier::BREAK;
 				printf("%s is now on break.\n",
 						cashierLines[cashierIndex]->name);
-				cashierLines[cashierIndex]->breakCV->Wait(
-						&cashierLineLock);
+				cashierLines[cashierIndex]->breakCV->Wait(&cashierLineLock);
 				cashierLineLock.Release();
 				//cashierLines[cashierIndex]->breakLock->Release();
-				break; // lol get it break haha
+				break;// lol get it break haha
 			}
 
 			cashierLines[cashierIndex]->transactionLock->Acquire();
@@ -2023,4 +2015,3 @@ void PassportOffice() {
 	}
 	printf("\n\n");
 }
-

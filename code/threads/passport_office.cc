@@ -295,10 +295,10 @@ void broadcastMoney() {
 	}
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	/*printf(
-	 "\%s has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
-	 currentThread->getName(), picClerkTotal, appClerkTotal,
-	 passClerkTotal, cashierTotal, officeTotal);*/
+	printf(
+			"\%s has counted amounts of:\n $%i for PictureClerks\n $%i for ApplicationClerks\n $%i for PassportClerks\n $%i for Cashiers\n Grand total is $%i\n\n",
+			currentThread->getName(), picClerkTotal, appClerkTotal,
+			passClerkTotal, cashierTotal, officeTotal);
 
 //	for (unsigned int i = 0; i < NUM_PIC_CLERKS; ++i) {
 //		picClerkLines[i]->transactionLock->Release();
@@ -384,7 +384,7 @@ void beManager(int index) {
 			//cashierLines[i]->breakLock->Release();
 			cashierLineLock.Release();
 		}
-		for (int i = 0; i < rand() % 1000; ++i)
+		for (int i = 0; i < rand() % 500; ++i)
 			currentThread->Yield();
 	}
 	printf("MANAGER'S WORK HERE IS DONE\n");
@@ -459,13 +459,13 @@ void appClerkTransaction(int customer, int clerk) {
 
 void passportClerkTransaction(int customer, int clerk) {
 
-	printf("%s is trying to start to do business with %s\n", customers[customer]->name,
-			passportClerkLines[clerk]->name);
+	printf("%s is trying to start to do business with %s\n",
+			customers[customer]->name, passportClerkLines[clerk]->name);
 
 	while (!passportClerkLines[clerk]->approved) {
 
-		printf("%s is trying to do business with %s\n", customers[customer]->name,
-				passportClerkLines[clerk]->name);
+		printf("%s is trying to do business with %s\n",
+				customers[customer]->name, passportClerkLines[clerk]->name);
 
 		passportClerkLines[clerk]->transactionLock->Acquire();
 		passportClerkLines[clerk]->customer = customers[customer];
@@ -498,7 +498,7 @@ void passportClerkTransaction(int customer, int clerk) {
 					passportClerkLines[clerk]->transactionLock);
 
 			passportClerkLines[clerk]->approved = false;
-			
+
 			passportClerkLines[clerk]->transactionLock->Release();
 
 			break;
@@ -594,8 +594,6 @@ void bePicClerk(int clerkIndex) {
 			else {
 				//picClerkLines[clerkIndex]->breakLock->Acquire();
 				//picLineLock.Release();
-				printf("%s has no one in line.\n",
-						picClerkLines[clerkIndex]->name);
 				picClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						picClerkLines[clerkIndex]->name);
@@ -697,8 +695,6 @@ void beAppClerk(int clerkIndex) {
 			}
 			else {
 				//appClerkLines[clerkIndex]->breakLock->Acquire();
-				printf("%s has no one in line.\n",
-						appClerkLines[clerkIndex]->name);
 				appClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						appClerkLines[clerkIndex]->name);
@@ -788,8 +784,6 @@ void bePassportClerk(int clerkIndex) {
 			}
 			else {
 				//passportClerkLines[clerkIndex]->breakLock->Acquire();
-				printf("%s has no one in line.\n",
-						passportClerkLines[clerkIndex]->name);
 				passportClerkLines[clerkIndex]->state = Clerk::BREAK;
 				printf("%s is now on break.\n",
 						passportClerkLines[clerkIndex]->name);
@@ -802,9 +796,8 @@ void bePassportClerk(int clerkIndex) {
 
 			passportLineLock.Release();
 			passportClerkLines[clerkIndex]->transactionLock->Acquire();
-			printf(
-				"%s has gotten a transaction lock.\n",
-				passportClerkLines[clerkIndex]->name);
+			printf("%s has gotten a transaction lock.\n",
+					passportClerkLines[clerkIndex]->name);
 			// wait for Customer data
 			passportClerkLines[clerkIndex]->transactionCV->Wait(
 					passportClerkLines[clerkIndex]->transactionLock);
@@ -896,8 +889,6 @@ void beCashier(int cashierIndex) {
 			}
 			else {
 				//cashierLines[cashierIndex]->breakLock->Acquire();
-				printf("%s has no one in line.\n",
-						cashierLines[cashierIndex]->name);
 				cashierLines[cashierIndex]->state = Cashier::BREAK;
 				printf("%s is now on break.\n",
 						cashierLines[cashierIndex]->name);
@@ -1261,7 +1252,12 @@ void beCustomer(int customerIndex) {
 		if (customers[customerIndex]->type != Customer::SENATOR
 				&& senatorInProcess) {
 			senatorLock.Acquire();
+			printf("%s is leaving because a senator has arrived.\n",
+					currentThread->getName());
 			senatorCV.Wait(&senatorLock);
+			printf(
+					"%s is re-entering the Passport Office now that the senator has left.\n",
+					currentThread->getName());
 			senatorLock.Release();
 		}
 		if ((customers[customerIndex]->type == Customer::SENATOR
@@ -1332,27 +1328,17 @@ void testCase1(int x) {
 
 	srand(time(NULL));
 
-	NUM_CUSTOMERS = 25;
-	NUM_APP_CLERKS = 6;
-	NUM_PIC_CLERKS = 3;
-	NUM_MANAGERS = 1;
-
-	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
-		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
-		name = picClerkLines[i]->name;
-		picClerkLines[i]->regularLineCount = rand() % 6 + 10;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) bePicClerk, i);
-	}
+	NUM_CUSTOMERS = 10;
+	NUM_APP_CLERKS = 3;
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
 		name = appClerkLines[i]->name;
-		appClerkLines[i]->regularLineCount = rand() % 6 + 10;
+		if (i > 0)
+			appClerkLines[i]->regularLineCount = (int) (NUM_CUSTOMERS / 2);
 		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beAppClerk, i);
+		printf("%s on duty with %i people in line.\n", t->getName(),
+				appClerkLines[i]->regularLineCount);
 	}
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
@@ -1360,19 +1346,10 @@ void testCase1(int x) {
 		sprintf(name, "Customer %i", i);
 		t = new Thread(name);
 		customers[i] = new Customer(name, i, Customer::REGULAR);
-		customers[i]->picDone = (i % 3 == 0 ? true : false);
+		customers[i]->picDone = true;
 		customers[i]->appDone = !customers[i]->picDone;
 		customers[i]->money = 100;
 		t->Fork((VoidFunctionPtr) picAppCustomerProcess, i);
-	}
-
-	for (i = 0; i < NUM_MANAGERS; ++i) {
-		managers[i] = new Manager("Manager ", i);
-
-		name = managers[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beManager, i);
 	}
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
@@ -1393,7 +1370,7 @@ void testCase2(int d) {
 	NUM_PP_CLERKS = 1;
 	NUM_CASHIERS = 1;
 	NUM_CUSTOMERS = 5;
-	NUM_MANAGERS = 3;
+	NUM_MANAGERS = 1;
 
 	Thread * t;
 	char * name;
@@ -1489,7 +1466,7 @@ void testCase3() {
 
 	srand(time(NULL));
 
-	NUM_CUSTOMERS = 10;
+	NUM_CUSTOMERS = 3;
 	NUM_CASHIERS = 1;
 	NUM_MANAGERS = 1;
 
@@ -1513,6 +1490,7 @@ void testCase3() {
 		customers[i]->money = 100;
 		t->Fork((VoidFunctionPtr) beCustomer, i);
 	}
+
 	for (i = 0; i < NUM_MANAGERS; ++i) {
 		managers[i] = new Manager("Manager ", i);
 
@@ -1537,12 +1515,10 @@ void testCase4(int x) {
 
 	srand(time(NULL));
 
-	NUM_CUSTOMERS = 10;
-	NUM_PP_CLERKS = 3;
-	NUM_PIC_CLERKS = 2;
-	NUM_APP_CLERKS = 3;
-	NUM_CASHIERS = 3;
-	NUM_MANAGERS = 1;
+	NUM_PP_CLERKS = 1;
+	NUM_APP_CLERKS = 1;
+	NUM_CASHIERS = 1;
+	NUM_PIC_CLERKS = 1;
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
@@ -1551,140 +1527,6 @@ void testCase4(int x) {
 		printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePassportClerk, i);
 	}
-
-	for (i = 0; i < NUM_CASHIERS; ++i) {
-		cashierLines[i] = new Cashier("Cashier ", i);
-		name = cashierLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beCashier, i);
-	}
-
-	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
-		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
-		name = picClerkLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) bePicClerk, i);
-	}
-
-	for (i = 0; i < NUM_APP_CLERKS; ++i) {
-		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
-		name = appClerkLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beAppClerk, i);
-	}
-
-	for (i = 0; i < NUM_MANAGERS; ++i) {
-		managers[i] = new Manager("Manager ", i);
-
-		name = managers[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beManager, i);
-	}
-
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		name = new char[20];
-		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
-		customers[i] = new Customer(name, i, Customer::REGULAR);
-		customers[i]->picDone = true;
-		customers[i]->appDone = true;
-		customers[i]->certified = true;
-		customers[i]->money = 100;
-		t->Fork((VoidFunctionPtr) cashierCustomerProcess, i);
-	}
-
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		customerCounterLock.Acquire();
-		customersServed++;
-		customerCounterLock.Release();
-		currentThread->Yield();
-	}
-}
-
-//----------------------------------------------------------------
-// "Managers get Clerks off their break when lines get too long"
-// There will be one cashier and 10 customers. Once the line accumulates
-// more than 3 customers, the manager wakes up the clerk.
-//----------------------------------------------------------------
-void testCase5(int x) {
-	Thread * t;
-	char * name;
-	unsigned int i;
-
-	srand(time(NULL));
-
-	NUM_CUSTOMERS = 5;
-	NUM_CASHIERS = 1;
-	NUM_MANAGERS = 1;
-
-	for (i = 0; i < NUM_CASHIERS; ++i) {
-		cashierLines[i] = new Cashier("Cashier ", i);
-		cashierLines[i]->lineCount = i;
-		name = cashierLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beCashier, i);
-	}
-
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		name = new char[20];
-		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
-		customers[i] = new Customer(name, i, Customer::REGULAR);
-		customers[i]->picDone = true;
-		customers[i]->appDone = true;
-		customers[i]->certified = true;
-		customers[i]->money = 100;
-		t->Fork((VoidFunctionPtr) cashierCustomerProcess, i);
-	}
-	for (i = 0; i < NUM_MANAGERS; ++i) {
-		managers[i] = new Manager("Manager ", i);
-
-		name = managers[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beManager, i);
-	}
-	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		customerCounterLock.Acquire();
-		customersServed++;
-		customerCounterLock.Release();
-		currentThread->Yield();
-	}
-}
-
-/**
- * Test 6: Total sales never suffers from a race condition
- * Many managers all reading sales.
- */
-void testCase6(int x) {
-	NUM_PIC_CLERKS = 3;
-	NUM_APP_CLERKS = 4;
-	NUM_PP_CLERKS = 1;
-	NUM_CASHIERS = 1;
-	NUM_CUSTOMERS = 5;
-	NUM_MANAGERS = 3;
-
-	Thread * t;
-	char * name;
-	unsigned int i;
-
-	srand(time(NULL));
-
-	for (i = 0; i < NUM_PP_CLERKS; ++i) {
-		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
-
-		name = passportClerkLines[i]->name;
-		passportClerkLines[i]->money = rand() % 500;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) bePassportClerk, i);
-	}
-
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 
@@ -1701,7 +1543,7 @@ void testCase6(int x) {
 		name = picClerkLines[i]->name;
 		t = new Thread(name);
 		printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) bePicClerk, i);
+		t->Fork((VoidFunctionPtr) bePicClerk, i);
 	}
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
@@ -1710,7 +1552,92 @@ void testCase6(int x) {
 		name = appClerkLines[i]->name;
 		t = new Thread(name);
 		printf("%s on duty.\n", t->getName());
-//		t->Fork((VoidFunctionPtr) beAppClerk, i);
+		t->Fork((VoidFunctionPtr) beAppClerk, i);
+	}
+
+}
+
+//----------------------------------------------------------------
+// "Managers get Clerks off their break when lines get too long"
+// There will be one cashier and 10 customers. Once the line accumulates
+// more than 3 customers, the manager wakes up the clerk.
+//----------------------------------------------------------------
+void testCase5(int x) {
+	Thread * t;
+	char * name;
+	unsigned int i;
+
+	srand(time(NULL));
+
+	NUM_CASHIERS = 1;
+	NUM_MANAGERS = 1;
+	NUM_CUSTOMERS = 5;
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		cashierLines[i] = new Cashier("Cashier ", i);
+		cashierLines[i]->lineCount = 0;
+		name = cashierLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beCashier, i);
+	}
+
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+		name = new char[20];
+		sprintf(name, "Customer %i", i);
+		customers[i] = new Customer(name, i, Customer::REGULAR);
+	}
+
+	for (i = 0; i < NUM_MANAGERS; ++i) {
+		managers[i] = new Manager("Manager ", i);
+
+		name = managers[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beManager, i);
+	}
+
+	for (i = 0; i < NUM_CUSTOMERS; ++i) {
+		currentThread->Yield();
+		cashierLineLock.Acquire();
+		cashierLines[0]->lineCount++;
+		printf("%s's line count is %i.\n", cashierLines[0]->name,
+				cashierLines[0]->lineCount);
+		cashierLineLock.Release();
+	}
+
+	while (customersServed < NUM_CUSTOMERS) {
+		customerCounterLock.Acquire();
+		customersServed++;
+		customerCounterLock.Release();
+		for (i = 0; i < 10; ++i)
+			currentThread->Yield();
+	}
+}
+
+/**
+ * Test 6: Total sales never suffers from a race condition
+ * Many managers all reading sales.
+ */
+void testCase6(int x) {
+	NUM_CASHIERS = 1;
+	NUM_CUSTOMERS = 10;
+	NUM_MANAGERS = 3;
+
+	Thread * t;
+	char * name;
+	unsigned int i;
+
+	srand(time(NULL));
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		cashierLines[i] = new Cashier("Cashier ", i);
+
+		cashierLines[i]->money = 0;
+		name = cashierLines[i]->name;
+		t = new Thread(name);
+		printf("%s on duty.\n", t->getName());
+		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
@@ -1745,11 +1672,8 @@ void testCase6(int x) {
  * execute and finish their tasks once he leaves.
  */
 void testCase7() {
-	NUM_CUSTOMERS = 15;
+	NUM_CUSTOMERS = 3;
 	NUM_SENATORS = 1;
-	NUM_PIC_CLERKS = 1;
-	NUM_APP_CLERKS = 1;
-	NUM_PP_CLERKS = 1;
 	NUM_CASHIERS = 1;
 	NUM_MANAGERS = 1;
 
@@ -1758,15 +1682,6 @@ void testCase7() {
 	unsigned int i;
 
 	srand(time(NULL));
-
-	for (i = 0; i < NUM_PP_CLERKS; ++i) {
-		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
-
-		name = passportClerkLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) bePassportClerk, i);
-	}
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
@@ -1777,24 +1692,6 @@ void testCase7() {
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
-	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
-		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
-
-		name = picClerkLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) bePicClerk, i);
-	}
-
-	for (i = 0; i < NUM_APP_CLERKS; ++i) {
-		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
-
-		name = appClerkLines[i]->name;
-		t = new Thread(name);
-		printf("%s on duty.\n", t->getName());
-		t->Fork((VoidFunctionPtr) beAppClerk, i);
-	}
-
 	int sen = NUM_SENATORS;
 	NUM_CUSTOMERS += NUM_SENATORS;
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
@@ -1803,6 +1700,9 @@ void testCase7() {
 			sprintf(name, "Senator %i", i);
 			t = new Thread(name);
 			customers[i] = new Customer(name, i, Customer::SENATOR);
+			customers[i]->picDone = true;
+			customers[i]->appDone = true;
+			customers[i]->certified = true;
 			printf("%s has just entered the passport office.\n", t->getName());
 			t->Fork((VoidFunctionPtr) beCustomer, i);
 			sen--;
@@ -1811,6 +1711,9 @@ void testCase7() {
 			sprintf(name, "Customer %i", i);
 			t = new Thread(name);
 			customers[i] = new Customer(name, i, Customer::REGULAR);
+			customers[i]->picDone = true;
+			customers[i]->appDone = true;
+			customers[i]->certified = true;
 			printf("%s has just entered the passport office.\n", t->getName());
 			t->Fork((VoidFunctionPtr) beCustomer, i);
 		}

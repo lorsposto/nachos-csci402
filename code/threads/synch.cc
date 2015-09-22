@@ -120,7 +120,6 @@ void Lock::Acquire() {
 		return;
 	}
 	if (state == BUSY) {
-		printf("%s is trying to get %s", currentThread->getName(), this->getName());
 		queue->Append((void *) currentThread);
 		currentThread->Sleep();
 	}

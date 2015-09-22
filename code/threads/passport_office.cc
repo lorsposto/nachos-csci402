@@ -294,7 +294,7 @@ void broadcastMoney() {
 	}
 
 	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
-	/*printf("%s has counted amounts of $%i for PictureClerks\n",
+	printf("%s has counted amounts of $%i for PictureClerks\n",
 			currentThread->getName(), picClerkTotal);
 
 	printf("%s has counted amounts of $%i for ApplicationClerks\n",
@@ -307,7 +307,7 @@ void broadcastMoney() {
 			currentThread->getName(), cashierTotal);
 
 	printf("%s has counted amounts of $%i for the passport office\n",
-			currentThread->getName(), officeTotal);*/
+			currentThread->getName(), officeTotal);
 }
 
 void beManager(int index) {

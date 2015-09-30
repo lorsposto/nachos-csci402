@@ -68,7 +68,7 @@ typedef int SpaceId;
 /* Run the executable, stored in the Nachos file "name", and return the 
  * address space identifier
  */
-SpaceId Exec(char *name);
+SpaceId Exec(char *name, int len);
  
 /* Only return once the the user program "id" has finished.  
  * Return the exit status.
@@ -128,6 +128,8 @@ void Close(OpenFileId id);
  */
 void Fork(void (*func)());
 
+void kernel_thread(int vaddr);
+
 /* Yield the CPU to another runnable thread, whether in this address space 
  * or not. 
  */
@@ -149,7 +151,7 @@ void Signal(int index);
 void Broadcast(int index);
 
 /* Create lock. */
-int CreateLock(char* name);
+int CreateLock(char* name, int len);
 
 /* Destroy lock. */
 void DestroyLock(int index);

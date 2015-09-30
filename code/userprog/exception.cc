@@ -279,4 +279,60 @@ void ExceptionHandler(ExceptionType which) {
       cout<<"Unexpected user mode exception - which:"<<which<<"  type:"<< type<<endl;
       interrupt->Halt();
     }
+} 
+
+void Exit_Syscall(int status) {
+
+}
+
+void Exec_Syscall(int vaddr, int len) {
+
+} 
+
+void kernel_thread(int vaddr) {
+
+}
+
+void Fork_Syscall(int vaddr, int len) {
+
+}
+
+void Yield_Syscall() {
+  currentThread->Yield();
+}
+
+void Acquire_Syscall(int index) {
+
+}
+
+void Release_Syscall(int index) {
+
+}
+
+void Wait_Syscall(int index) {
+
+}
+
+void Signal_Syscall(int index) {
+
+}
+
+void Broadcast_Syscall(int index) {
+
+}
+
+int CreateLock_Syscall(int vaddr, int len) {
+
+}
+
+void DestroyLock_Syscall(int index) {
+
+}
+
+int CreateCondition_Syscall(int vaddr, int len) {
+
+}
+
+void DestroyCondition_Syscall(int index) {
+
 }

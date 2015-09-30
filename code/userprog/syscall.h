@@ -134,31 +134,31 @@ void Fork(void (*func)());
 void Yield();
 
 /* Acquire lock. */
-void Acquire();
+void Acquire(int index);
 
 /* Release lock. */
-void Release();
+void Release(int index);
 
 /* Wait on condition variable. */
-void Wait();	
+void Wait(int index);	
 
 /* Signal on condition variable. */
-void Signal();
+void Signal(int index);
 
 /* Broadcast on condition variable. */
-void Broadcast();
+void Broadcast(int index);
 
 /* Create lock. */
-void CreateLock();
+int CreateLock(char* name);
 
 /* Destroy lock. */
-void DestroyLock();
+void DestroyLock(int index);
 
 /* Create condition variable. */
-void CreateCondition();
+int CreateCondition(char* name);
 
 /* Destroy condition variable. */
-void DestroyCondition();
+void DestroyCondition(int index);
 
 #endif /* IN_ASM */
 

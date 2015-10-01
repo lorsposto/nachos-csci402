@@ -128,8 +128,6 @@ void Close(OpenFileId id);
  */
 void Fork(void (*func)());
 
-void kernel_thread(int vaddr);
-
 /* Yield the CPU to another runnable thread, whether in this address space 
  * or not. 
  */

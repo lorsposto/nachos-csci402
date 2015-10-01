@@ -232,22 +232,60 @@ void Close_Syscall(int fd) {
 }
 
 void Exit_Syscall(int status) {
+  // Check if the number of child threads of this thread exist or not. If they exist then go to sleep until woken
+  // up by the last child thread to exit (go in while loop)
+  // When you wake up check if this thread (currentthread) has a parent. If it has a parent then reduce the number of
+  // children of your parent because you are going to finish. Before calling finish wake up your parent. Then call currentThread->Finish()
+  // Now check if it is the main thread of the child process. By main thread of the child process it means that some process has
+  // executed this process by calling exec.. Make sure that its not the main process/thread (first one actual main)
+  // Now tell your children (if they exist, use your Process Table for this purpose) that you are going to finish.
+  // More over you need to tell your parent that your are dying, so you need to remove your entry from the process table
+  // of your parent. In case  your parent has called join upon you then you need to wake him up, otherwise if it has not called
+  // join then just remove your identity from your parents process table and decrement the number of childprocess counter of your
+  // parent process table and delete your addresspace. If it is the main thread of the child process call currentthread finish
+}
 
+/* Helper function for Exec */
+void exec_thread(int vaddr) {
+  // Initialize the register by using currentThread->space
+  // Call Restore State through currentThread->space
+  // Call machine->Run()
 }
 
 void Exec_Syscall(int vaddr, int len) {
-
+  // Read the virtual address of the name of the process from the register R4 virtualAddress = machine->ReadRegister(4)
+  // Convert it to the physical address and read the contents from there , which will give you the name of the process to be executed
+  // Now Open that file using filesystem->Open
+  // Store its openfile pointer
+  // Create new addrespace for this executable file
+  // Create a new thread
+  // Allocate the space created to this thread's space
+  // Update the process table and related data structures
+  // Write the space ID to the register 2
+  // Fork the new thread. I call it exec_thread
 } 
 
+/* Helper function for Fork */
 void kernel_thread(int vaddr) {
-
+  // Write to the register PCReg the virtual address
+  // Write virtualaddress + 4 in NextPCReg
+  // Call Restorestate function inorder to prevent information loss while context switching
+  // Write to the stack register, the starting postion of the stack for this thread
+  // Call machine->Run()
+  machine->Run();
 }
 
 void Fork_Syscall(int vaddr/*, int len*/) {
-
+  // Read the virtual address of user function from Register R4 virtualAddress = machine->ReadRegister(4) (?)
+  // Create a New thread. This would be a kernel thread
+  kernel_thread(vaddr);
+  // Update the Process Table for Multiprogramming part
+  // Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
+  // because threads share the process addressspace
 }
 
 void Yield_Syscall() {
+  // Just call currentThread->Yield()
   currentThread->Yield();
 }
 
@@ -272,7 +310,24 @@ void Broadcast_Syscall(int index) {
 }
 
 int CreateLock_Syscall(int vaddr, int len) {
+  // Create the lock with the name in the user buffer pointed to by
+  // vaddr.  The lock name is at most MAXFILENAME chars long.  No
+  // way to return errors, though...
+  char *buf = new char[len+1];  // Kernel buffer to put the name in
 
+  if (!buf) return;
+  if( copyin(vaddr,len,buf) == -1 ) {
+    printf("%s","Bad pointer passed to CreateLock\n");
+    delete buf;
+    return;
+  }
+
+  buf[len]='\0';
+
+  // Create the new lock...
+
+  delete[] buf;
+  return;
 }
 
 void DestroyLock_Syscall(int index) {
@@ -280,7 +335,24 @@ void DestroyLock_Syscall(int index) {
 }
 
 int CreateCondition_Syscall(int vaddr, int len) {
+  // Create the condition variable with the name in the user buffer pointed to by
+  // vaddr.  The condition variable name is at most MAXFILENAME chars long.  No
+  // way to return errors, though...
+  char *buf = new char[len+1];  // Kernel buffer to put the name in
 
+  if (!buf) return;
+  if( copyin(vaddr,len,buf) == -1 ) {
+    printf("%s","Bad pointer passed to CreateLock\n");
+    delete buf;
+    return;
+  }
+
+  buf[len]='\0';
+
+  // Create the new condition variable...
+
+  delete[] buf;
+  return;
 }
 
 void DestroyCondition_Syscall(int index) {

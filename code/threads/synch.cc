@@ -109,6 +109,11 @@ bool Lock::isHeldByCurrentThread() {
 //	else printf("Owner thread: null\n");
 	return (currentThread == ownerThread);
 }
+
+bool Lock::isBusy() {
+	return (state == BUSY);
+}
+
 void Lock::Acquire() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 //	printf("%s is trying to acquire lock %s.\n", currentThread->getName(),
@@ -162,6 +167,10 @@ Condition::~Condition() {
 	delete name;
 	delete waitingLock;
 	delete queue;
+}
+
+bool Condition::isQueueEmpty() {
+	return (queue->IsEmpty());
 }
 
 void Condition::Wait(Lock* conditionLock) {

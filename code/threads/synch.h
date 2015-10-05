@@ -77,6 +77,8 @@ class Lock {
 					// checking in Release, and in
 					// Condition variable ops below.
 
+    bool isBusy();
+
   private:
     enum lock_states {BUSY, AVAILABLE}; // state representations
     char* name;				// for debugging
@@ -131,6 +133,9 @@ class Condition {
     void Signal(Lock *conditionLock);   // conditionLock must be held by
     void Broadcast(Lock *conditionLock);// the currentThread for all of 
 					// these operations
+
+    bool isQueueEmpty();
+    
   private:
     char* name;
     List* queue;

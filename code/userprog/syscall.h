@@ -140,13 +140,13 @@ void Acquire(int index);
 void Release(int index);
 
 /* Wait on condition variable. */
-void Wait(int index);	
+void Wait(int conditionIndex, int lockIndex);
 
 /* Signal on condition variable. */
-void Signal(int index);
+void Signal(int conditionIndex, int lockIndex);
 
 /* Broadcast on condition variable. */
-void Broadcast(int index);
+void Broadcast(int conditionIndex, int lockIndex);
 
 /* Create lock. */
 int CreateLock(char* name, int len);
@@ -155,7 +155,7 @@ int CreateLock(char* name, int len);
 void DestroyLock(int index);
 
 /* Create condition variable. */
-int CreateCondition(char* name);
+int CreateCondition(char* name, int len);
 
 /* Destroy condition variable. */
 void DestroyCondition(int index);

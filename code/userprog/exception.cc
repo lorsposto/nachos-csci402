@@ -347,15 +347,95 @@ void Release_Syscall(int index) {
 	kernelLockList[index].lock->Release();
 }
 
-void Wait_Syscall(int index) {
+void Wait_Syscall(int conditionIndex, int lockIndex) {
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		return;
+	}
 
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		return;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+	}
+
+	kernelConditionList[conditionIndex].threadsUsing++;
+
+	// Check lock
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to acquire.\n");
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		return;
+	}
+	kernelLockList[lockIndex].threadsUsing++;
+
+	printf("Condition [%s] waiting on lock [%s].\n",
+			kernelConditionList[conditionIndex].condition->getName(),
+			kernelLockList[lockIndex].lock->getName());
+	kernelConditionList[conditionIndex].condition->Wait(
+			kernelLockList[lockIndex].lock);
 }
 
-void Signal_Syscall(int index) {
+void Signal_Syscall(int conditionIndex, int lockIndex) {
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		return;
+	}
 
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		return;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+	}
+
+	kernelConditionList[conditionIndex].threadsUsing--;
+
+	// Check lock
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to acquire.\n");
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		return;
+	}
+	kernelLockList[lockIndex].threadsUsing--;
+
+	printf("Condition [%s] signaling on lock [%s].\n",
+			kernelConditionList[conditionIndex].condition->getName(),
+			kernelLockList[lockIndex].lock->getName());
+	kernelConditionList[conditionIndex].condition->Signal(
+			kernelLockList[lockIndex].lock);
 }
 
-void Broadcast_Syscall(int index) {
+void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 
 }
 
@@ -434,13 +514,42 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	buf[len] = '\0';
 
 	// Create the new condition variable...
+	printf("Creating condition %s.\n", buf);
+	int createdConditionIndex = kernelConditionIndex;
+	kernelConditionList[kernelConditionIndex].condition = new Condition(buf);
+	kernelConditionList[kernelConditionIndex].addrsp = currentThread->space;
+	kernelConditionList[kernelConditionIndex].isToBeDeleted = false;
+	kernelConditionList[kernelConditionIndex].threadsUsing = 0;
+	kernelConditionIndex++;
 
 	delete[] buf;
-	return -1;
+	return createdConditionIndex;
 }
 
 void DestroyCondition_Syscall(int index) {
+	if (index < 0 || index >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		return;
+	}
 
+	if (kernelConditionList[index].condition == NULL) {
+		printf("No condition at index %i.\n", index);
+		return;
+	}
+
+	if (kernelConditionList[index].threadsUsing > 0) {
+		printf("Threads are still using condition %s. Won't destroy.\n",
+				kernelConditionList[index].condition->getName());
+		return;
+	}
+
+	if (kernelConditionList[index].threadsUsing == 0
+			|| kernelConditionList[kernelConditionIndex].isToBeDeleted) {
+		printf("Condition %s will be destroyed.\n",
+				kernelConditionList[index].condition->getName());
+		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
+		kernelConditionList[kernelConditionIndex].condition = NULL;
+	}
 }
 
 void ExceptionHandler(ExceptionType which) {
@@ -496,15 +605,15 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Wait:
 			DEBUG('a', "Wait syscall.\n");
-			Wait_Syscall(machine->ReadRegister(4));
+			Wait_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_Signal:
 			DEBUG('a', "Signal syscall.\n");
-			Signal_Syscall(machine->ReadRegister(4));
+			Signal_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_Broadcast:
 			DEBUG('a', "Broadcast syscall.\n");
-			Broadcast_Syscall(machine->ReadRegister(4));
+			Broadcast_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");

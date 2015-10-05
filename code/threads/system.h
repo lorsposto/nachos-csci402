@@ -30,6 +30,10 @@ extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 
+class AddrSpace;
+//---------------------------------------------
+// LOCK SYSCALL
+//---------------------------------------------
 struct kernelLock {
 	Lock * lock;
 	AddrSpace * addrsp;
@@ -39,6 +43,18 @@ struct kernelLock {
 
 extern kernelLock kernelLockList[];
 extern int kernelLockIndex;
+//---------------------------------------------
+// CONDITION SYSCALL
+//---------------------------------------------
+struct kernelCondition {
+	Condition * condition;
+	AddrSpace * addrsp;
+	bool isToBeDeleted;
+	int threadsUsing;
+};
+
+extern kernelCondition kernelConditionList[];
+extern int kernelConditionIndex;
 
 #ifdef USER_PROGRAM
 #include "machine.h"

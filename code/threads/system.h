@@ -12,6 +12,7 @@
 #include "utility.h"
 #include "thread.h"
 #include "scheduler.h"
+#include "synch.h"
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
@@ -28,6 +29,16 @@ extern Scheduler *scheduler;			// the ready list
 extern Interrupt *interrupt;			// interrupt status
 extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
+
+struct kernelLock {
+	Lock * lock;
+	AddrSpace * addrsp;
+	bool isToBeDeleted;
+	int threadsUsing;
+};
+
+extern kernelLock kernelLockList[];
+extern int kernelLockIndex;
 
 #ifdef USER_PROGRAM
 #include "machine.h"

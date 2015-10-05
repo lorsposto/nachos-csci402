@@ -19,6 +19,9 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+kernelLock kernelLockList[1000];
+int kernelLockIndex = 0;
+
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif

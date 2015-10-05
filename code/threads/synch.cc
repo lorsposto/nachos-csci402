@@ -95,7 +95,8 @@ void Semaphore::V() {
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
 Lock::Lock(char* debugName) {
-	name = debugName;
+	name = new char[20];
+	sprintf(name, debugName);
 	state = AVAILABLE;
 	ownerThread = NULL;
 	queue = new List;
@@ -158,7 +159,8 @@ void Lock::Release() {
 }
 
 Condition::Condition(char* debugName) {
-	name = debugName;
+	name = new char[20];
+	sprintf(name, debugName);
 	waitingLock = NULL;
 	queue = new List;
 }

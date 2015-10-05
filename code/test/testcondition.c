@@ -7,8 +7,7 @@ int main() {
 	Acquire(l);
 
 	c = CreateCondition("Condition 1",11);
-	Wait(c, l);
-	Signal(c, l);
+	Broadcast(c, l);
 
 	Release(l);
 	DestroyCondition(c);

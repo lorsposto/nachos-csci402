@@ -38,7 +38,6 @@ struct kernelLock {
 	Lock * lock;
 	AddrSpace * addrsp;
 	bool isToBeDeleted;
-	int threadsUsing;
 };
 
 extern kernelLock kernelLockList[];
@@ -50,7 +49,6 @@ struct kernelCondition {
 	Condition * condition;
 	AddrSpace * addrsp;
 	bool isToBeDeleted;
-	int threadsUsing;
 };
 
 extern kernelCondition kernelConditionList[];

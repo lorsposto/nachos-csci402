@@ -279,40 +279,70 @@ void Exit_Syscall(int status) {
 /* Helper function for Exec */
 void exec_thread(int vaddr) {
 	// Initialize the register by using currentThread->space
+  currentThread->space->InitRegisters();
 	// Call Restore State through currentThread->space
+  currentThread->space->RestoreState();
 	// Call machine->Run()
+  machine->Run();
 }
 
 void Exec_Syscall(int vaddr, int len) {
-	// Read the virtual address of the name of the process from the register R4 virtualAddress = machine->ReadRegister(4)
-	// Convert it to the physical address and read the contents from there , which will give you the name of the process to be executed
+	// Convert it to the physical address and read the contents from there, which will give you the name of the process to be executed
 	// Now Open that file using filesystem->Open
-	// Store its openfile pointer
+  char *buf = new char[len + 1];  // Kernel buffer to put the name in
+  OpenFile *f;      // The new open file
+
+  if (!buf) {
+    printf("%s", "Can't allocate kernel buffer in Open\n");
+    return;
+  }
+
+  if (copyin(vaddr, len, buf) == -1) {
+    printf("%s", "Bad pointer passed to Open\n");
+    delete[] buf;
+    return;
+  }
+
+  buf[len] = '\0';
+
+  // Store its openfile pointer
+  f = fileSystem->Open(buf);
+  delete[] buf;
+
 	// Create new addrespace for this executable file
+  AddrSpace* a = new AddrSpace(f);
 	// Create a new thread
+  Thread* t = new Thread("exec_thread");
 	// Allocate the space created to this thread's space
+  t->space = a;
 	// Update the process table and related data structures
-	// Write the space ID to the register 2
 	// Fork the new thread. I call it exec_thread
+  t->Fork(exec_thread, vaddr);
 }
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-	// Write to the register PCReg the virtual address
-	// Write virtualaddress + 4 in NextPCReg
-	// Call Restorestate function inorder to prevent information loss while context switching
-	// Write to the stack register, the starting postion of the stack for this thread
-	// Call machine->Run()
-	machine->Run();
+  // Write to the register PCReg the virtual address
+  machine->WriteRegister(PCReg, vaddr);
+  // Write virtualaddress + 4 in NextPCReg
+  machine->WriteRegister(NextPCReg, vaddr + 4);
+  // Call Restorestate function inorder to prevent information loss while context switching
+  currentThread->space->RestoreState();
+  // Write to the stack register, the starting position of the stack for this thread
+  // machine->WriteRegister(StackReg, ???);
+  // Call machine->Run()
+  machine->Run();
 }
 
-void Fork_Syscall(int vaddr/*, int len*/) {
-	// Read the virtual address of user function from Register R4 virtualAddress = machine->ReadRegister(4) (?)
+void Fork_Syscall(int vaddr, int len) {
 	// Create a New thread. This would be a kernel thread
-	kernel_thread(vaddr);
+  Thread* t = new Thread("kernel_thread");
+  // compute first or last page of 8 pages.. store in process table so in kernel thread function you can grab the page index
 	// Update the Process Table for Multiprogramming part
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
+  t->space = currentThread->space;
+  t->Fork(kernel_thread, vaddr);
 }
 
 void Yield_Syscall() {
@@ -651,7 +681,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Fork:
 			DEBUG('a', "Fork syscall.\n");
-			Fork_Syscall(machine->ReadRegister(4));
+			Fork_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_Yield:
 			DEBUG('a', "Yield syscall.\n");

@@ -19,6 +19,8 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+BitMap bitmap(NumPhysPages);
+Lock bitmapLock("Bitmap lock");
 //---------------------------------------------
 // THREAD SYSCALL
 //---------------------------------------------

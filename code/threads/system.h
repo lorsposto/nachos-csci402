@@ -37,7 +37,12 @@ class AddrSpace;
 extern BitMap bitmap;
 extern Lock bitmapLock;
 
-struct Process {
+extern process processTable[];
+extern int processIndex;
+extern const int NUM_PROCESSES;
+extern Lock processLock;
+
+struct process {
 	SpaceId spaceId;
 	AddrSpace * addrsp;
 	//indices in this process's table where thread stacks begin

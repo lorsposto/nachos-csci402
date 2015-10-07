@@ -21,6 +21,14 @@ Timer *timer;				// the hardware timer device,
 
 BitMap bitmap(NumPhysPages);
 Lock bitmapLock("Bitmap lock");
+
+//---------------------------------------------
+// PROCESS TABLE
+//---------------------------------------------
+const int NUM_PROCESSES = 10;
+process processTable[NUM_PROCESSES];
+int processIndex = 0;
+Lock processLock("Process Lock");
 //---------------------------------------------
 // THREAD SYSCALL
 //---------------------------------------------

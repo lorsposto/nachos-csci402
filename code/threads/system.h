@@ -40,7 +40,8 @@ extern Lock bitmapLock;
 struct Process {
 	SpaceId spaceId;
 	AddrSpace * addrsp;
-	//list of where all the threads stack are contained
+	//indices in this process's table where thread stacks begin
+	int threadStacks[];
 	int threadsContained;
 };
 

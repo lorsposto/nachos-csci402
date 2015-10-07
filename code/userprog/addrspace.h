@@ -38,6 +38,9 @@ class AddrSpace {
 
     TranslationEntry getPageTable();
 
+    //my index in the process table
+    int processIndex;
+
  private:
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!

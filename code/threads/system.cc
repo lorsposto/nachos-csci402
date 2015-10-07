@@ -22,13 +22,17 @@ Timer *timer;				// the hardware timer device,
 //---------------------------------------------
 // THREAD SYSCALL
 //---------------------------------------------
-kernelLock kernelLockList[1000];
+const int NUM_KERNEL_LOCKS = 1000;
+kernelLock kernelLockList[NUM_KERNEL_LOCKS];
 int kernelLockIndex = 0;
+Lock kernelLockLock("Kernel Locks Lock ");
 //---------------------------------------------
 // CONDITION SYSCALL
 //---------------------------------------------
-kernelCondition kernelConditionList[1000];
+const int NUM_KERNAL_CONDITIONS = 1000;
+kernelCondition kernelConditionList[NUM_KERNAL_CONDITIONS];
 int kernelConditionIndex = 0;
+Lock kernelConditionLock("Kernel Conditions Lock");
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;

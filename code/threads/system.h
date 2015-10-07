@@ -42,6 +42,8 @@ struct kernelLock {
 
 extern kernelLock kernelLockList[];
 extern int kernelLockIndex;
+extern const int NUM_KERNEL_LOCKS;
+extern Lock kernelLockLock;
 //---------------------------------------------
 // CONDITION SYSCALL
 //---------------------------------------------
@@ -53,6 +55,8 @@ struct kernelCondition {
 
 extern kernelCondition kernelConditionList[];
 extern int kernelConditionIndex;
+extern const int NUM_KERNEL_CONDITIONS;
+extern Lock kernelConditionLock;
 
 #ifdef USER_PROGRAM
 #include "machine.h"

@@ -168,7 +168,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 // zero out the entire address space, to zero the unitialized data segment 
 // and the stack segment
 
-	// Do we comment this out? -L
+	// When nachos is uniprogram, zeros out all of the memory. 
 //	bzero(machine->mainMemory, size);
 
 	// for each virtual page, copy in the code and stuff into physical memory -L
@@ -266,4 +266,8 @@ void AddrSpace::SaveState() {
 void AddrSpace::RestoreState() {
 	machine->pageTable = pageTable;
 	machine->pageTableSize = numPages;
+}
+
+void AddrSpace::getPageTable() {
+    return pageTable;
 }

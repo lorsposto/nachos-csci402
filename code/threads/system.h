@@ -32,9 +32,18 @@ extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 
 class AddrSpace;
+
 //-----BITMAP-----
 extern BitMap bitmap;
 extern Lock bitmapLock;
+
+struct Process {
+	SpaceId spaceId;
+	AddrSpace * addrsp;
+	//list of where all the threads stack are contained
+	int threadsContained;
+};
+
 
 //---------------------------------------------
 // LOCK SYSCALL

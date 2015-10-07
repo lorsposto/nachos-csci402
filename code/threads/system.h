@@ -43,11 +43,10 @@ extern const int NUM_PROCESSES;
 extern Lock processLock;
 
 struct process {
-	SpaceId spaceId;
-	AddrSpace * addrsp;
-	//indices in this process's table where thread stacks begin
+	// AddrSpace * addrsp;
 	int threadStacks[];
-	int threadsContained;
+	int numThreadsRunning; // to check in exit if it's safe to kill the process
+	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
 
 

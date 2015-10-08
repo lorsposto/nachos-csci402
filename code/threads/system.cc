@@ -7,6 +7,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "../userprog/bitmap.h"
 
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
@@ -166,7 +167,7 @@ Initialize(int argc, char **argv)
     // We didn't explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a Thread
     // object to save its state. 
-    currentThread = new Thread("main");		
+    currentThread = new Thread("main", -1); //giving this -1 because it should never be used as an index for a process		
     currentThread->setStatus(RUNNING);
 
     interrupt->Enable();

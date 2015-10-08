@@ -18,6 +18,7 @@
 #include "timer.h"
 #include "machine.h"
 
+
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
 						// called before anything else
@@ -32,15 +33,12 @@ extern Statistics *stats;			// performance metrics
 extern Timer *timer;				// the hardware alarm clock
 
 class AddrSpace;
+class BitMap;
 
 //-----BITMAP-----
 extern BitMap bitmap;
 extern Lock bitmapLock;
 
-extern process processTable[];
-extern int processIndex;
-extern const int NUM_PROCESSES;
-extern Lock processLock;
 
 struct process {
 	// AddrSpace * addrsp;
@@ -49,6 +47,10 @@ struct process {
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
 
+extern process processTable[];
+extern int processIndex;
+extern const int NUM_PROCESSES;
+extern Lock processLock;
 
 //---------------------------------------------
 // LOCK SYSCALL

@@ -268,6 +268,6 @@ void AddrSpace::RestoreState() {
 	machine->pageTableSize = numPages;
 }
 
-void AddrSpace::getPageTable() {
+TranslationEntry* AddrSpace::getPageTable() {
     return pageTable;
 }

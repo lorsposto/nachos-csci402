@@ -45,7 +45,7 @@ ThreadTest()
 {
     DEBUG('t', "Entering SimpleTest");
 
-    Thread *t = new Thread("forked thread");
+    Thread *t = new Thread("forked thread", -1);
 
     t->Fork(SimpleThread, 1);
     SimpleThread(0);
@@ -331,13 +331,13 @@ void TestSuite() {
 
     printf("Starting Test 1\n");
 
-    t = new Thread("t1_t1");
+    t = new Thread("t1_t1", 0);
     t->Fork((VoidFunctionPtr)t1_t1,0);
 
-    t = new Thread("t1_t2");
+    t = new Thread("t1_t2", 1);
     t->Fork((VoidFunctionPtr)t1_t2,0);
 
-    t = new Thread("t1_t3");
+    t = new Thread("t1_t3", 2);
     t->Fork((VoidFunctionPtr)t1_t3,0);
 
     // Wait for Test 1 to complete

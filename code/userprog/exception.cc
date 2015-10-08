@@ -312,7 +312,9 @@ void Exec_Syscall(int vaddr, int len) {
 	// Create new addrespace for this executable file
   AddrSpace* a = new AddrSpace(f);
 	// Create a new thread
-  Thread* t = new Thread("exec_thread");
+  Thread* t = new Thread("exec_thread", processTable[a->processIndex].numThreadsTotal + 1);
+  processTable[a->processIndex].numThreadsTotal++;
+
 	// Allocate the space created to this thread's space
   t->space = a;
 	// Update the process table and related data structures
@@ -336,7 +338,8 @@ void kernel_thread(int vaddr) {
 
 void Fork_Syscall(int vaddr, int len) {
 	// Create a New thread. This would be a kernel thread
-  Thread* t = new Thread("kernel_thread");
+  Thread* t = new Thread("kernel_thread", processTable[currentThread->space->processIndex].numThreadsTotal + 1);
+  processTable[currentThread->space->processIndex].numThreadsTotal++;
   // compute first or last page of 8 pages.. store in process table so in kernel thread function you can grab the page index
 	// Update the Process Table for Multiprogramming part
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace

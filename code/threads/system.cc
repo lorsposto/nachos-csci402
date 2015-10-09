@@ -7,7 +7,6 @@
 
 #include "copyright.h"
 #include "system.h"
-#include "../userprog/bitmap.h"
 
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
@@ -29,6 +28,7 @@ Lock bitmapLock("Bitmap lock");
 const int NUM_PROCESSES = 10;
 process processTable[NUM_PROCESSES];
 int processIndex = 0;
+int activeProcesses = 0;
 Lock processLock("Process Lock");
 //---------------------------------------------
 // THREAD SYSCALL

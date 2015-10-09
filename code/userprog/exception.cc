@@ -263,17 +263,60 @@ void Close_Syscall(int fd) {
 }
 
 void Exit_Syscall(int status) {
-	// Check if the number of child threads of this thread exist or not. If they exist then go to sleep until woken
-	// up by the last child thread to exit (go in while loop)
-	// When you wake up check if this thread (currentthread) has a parent. If it has a parent then reduce the number of
-	// children of your parent because you are going to finish. Before calling finish wake up your parent. Then call currentThread->Finish()
-	// Now check if it is the main thread of the child process. By main thread of the child process it means that some process has
-	// executed this process by calling exec.. Make sure that its not the main process/thread (first one actual main)
-	// Now tell your children (if they exist, use your Process Table for this purpose) that you are going to finish.
-	// More over you need to tell your parent that your are dying, so you need to remove your entry from the process table
-	// of your parent. In case  your parent has called join upon you then you need to wake him up, otherwise if it has not called
-	// join then just remove your identity from your parents process table and decrement the number of childprocess counter of your
-	// parent process table and delete your addresspace. If it is the main thread of the child process call currentthread finish
+	// All of the parent/child stuff from the documentation is only relevant for Join and we shouldn't have to worry about that at all
+
+	/*3 Exit Cases
+	(1) a thread calls Exit - not the last executing thread in the process
+		Reclaim 8 pages of stack
+	(2) last executing thread in last process (i.e. ready queue is empty)
+		No need to reclaim anything
+		Stop Nachos
+	(3) Last executing thread in a process - not last process
+		Reclaim all unreclaimed memory
+	Locks/CVs (match AddrSpace* w/ Process Table)*/
+
+
+	processLock.Acquire();
+	
+	//find the current thread we are in
+	process myProcess = processTable[currentThread->space->processIndex];
+
+	if(myProcess.numThreadsRunning > 1) { //we not the last thread in the process
+		//reclaim 8 pages of the stack
+
+		bitmapLock.Acquire();
+		
+		//find the beginning of this thread's stack
+		int pageTableIndex = myProcess.threadStacks[currentThread->index];
+		for(int i = pageTableIndex; i < pageTableIndex + 8; i++) {
+				bitmap.Clear(currentThread->space->getPageTable[i].physicalPage);
+		}
+
+		myProcess.numThreadsRunning -= 1;
+
+		bitmapLock.Release();
+		processLock.Release()
+		currentThread->Finish();
+	} else {
+		//we are the last thread in the process
+		if(activeProcesses == 1) { //we are the last process in nachos
+			processLock.Release();
+			activeProcesses--;
+			interrupt->Halt();
+		} else {
+			bitmapLock.Acquire();
+			activeProcesses--;
+
+			//reclaim the entire page table of the process
+			for(int i = 0; i < currentThread->space->numPages; i++) {
+					bitmap.Clear(currentThread->space->getPageTable[i].physicalPage);
+			}
+
+			bitmapLock.Release();
+			processLock.Release();
+			currentThread->Finish();
+		}
+	}
 }
 
 /* Helper function for Exec */

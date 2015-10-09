@@ -17,6 +17,7 @@
 #include "stats.h"
 #include "timer.h"
 #include "machine.h"
+#include "../userprog/bitmap.h"
 
 
 // Initialization and cleanup routines
@@ -49,6 +50,7 @@ struct process {
 
 extern process processTable[];
 extern int processIndex;
+extern int activeProcesses;
 extern const int NUM_PROCESSES;
 extern Lock processLock;
 

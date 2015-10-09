@@ -40,12 +40,13 @@ class AddrSpace {
 
     //my index in the process table
     int processIndex;
+    unsigned int numPages;      // Number of pages in the virtual 
+                 // address space
 
  private:
     TranslationEntry *pageTable;	// Assume linear page table translation
 					// for now!
-    unsigned int numPages;		// Number of pages in the virtual 
-					// address space
+
 };
 
 #endif // ADDRSPACE_H

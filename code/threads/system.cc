@@ -26,7 +26,7 @@ Lock bitmapLock("Bitmap lock");
 // PROCESS TABLE
 //---------------------------------------------
 const int NUM_PROCESSES = 10;
-process processTable[NUM_PROCESSES];
+process * processTable[NUM_PROCESSES];
 int processIndex = 0;
 int activeProcesses = 0;
 Lock processLock("Process Lock");

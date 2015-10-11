@@ -266,50 +266,52 @@ void Exit_Syscall(int status) {
 	// All of the parent/child stuff from the documentation is only relevant for Join and we shouldn't have to worry about that at all
 
 	/*3 Exit Cases
-	(1) a thread calls Exit - not the last executing thread in the process
-		Reclaim 8 pages of stack
-	(2) last executing thread in last process (i.e. ready queue is empty)
-		No need to reclaim anything
-		Stop Nachos
-	(3) Last executing thread in a process - not last process
-		Reclaim all unreclaimed memory
-	Locks/CVs (match AddrSpace* w/ Process Table)*/
-
+	 (1) a thread calls Exit - not the last executing thread in the process
+	 Reclaim 8 pages of stack
+	 (2) last executing thread in last process (i.e. ready queue is empty)
+	 No need to reclaim anything
+	 Stop Nachos
+	 (3) Last executing thread in a process - not last process
+	 Reclaim all unreclaimed memory
+	 Locks/CVs (match AddrSpace* w/ Process Table)*/
 
 	processLock.Acquire();
-	
-	//find the current thread we are in
-	process myProcess = processTable[currentThread->space->processIndex];
 
-	if(myProcess.numThreadsRunning > 1) { //we not the last thread in the process
+	//find the current thread we are in
+	process * myProcess = processTable[currentThread->space->processIndex];
+
+	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
 		//reclaim 8 pages of the stack
 
 		bitmapLock.Acquire();
-		
+
 		//find the beginning of this thread's stack
-		int pageTableIndex = myProcess.threadStacks[currentThread->index];
-		for(int i = pageTableIndex; i < pageTableIndex + 8; i++) {
-				bitmap.Clear(currentThread->space->getPageTable[i].physicalPage);
+		int pageTableIndex = myProcess->threadStacks[currentThread->threadIndex];
+		for (int i = pageTableIndex; i < pageTableIndex + 8; i++) {
+			bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
 		}
 
-		myProcess.numThreadsRunning -= 1;
+		myProcess->numThreadsRunning -= 1;
 
 		bitmapLock.Release();
-		processLock.Release()
+		processLock.Release();
 		currentThread->Finish();
-	} else {
+	}
+	else {
 		//we are the last thread in the process
-		if(activeProcesses == 1) { //we are the last process in nachos
+		if (activeProcesses == 1) { //we are the last process in nachos
 			processLock.Release();
 			activeProcesses--;
 			interrupt->Halt();
-		} else {
+		}
+		else {
 			bitmapLock.Acquire();
 			activeProcesses--;
 
 			//reclaim the entire page table of the process
-			for(int i = 0; i < currentThread->space->numPages; i++) {
-					bitmap.Clear(currentThread->space->getPageTable[i].physicalPage);
+			for (int i = 0; i < currentThread->space->numPages; i++) {
+				bitmap.Clear(
+						currentThread->space->getPageTable()[i].physicalPage);
 			}
 
 			bitmapLock.Release();
@@ -322,73 +324,87 @@ void Exit_Syscall(int status) {
 /* Helper function for Exec */
 void exec_thread(int vaddr) {
 	// Initialize the register by using currentThread->space
-  currentThread->space->InitRegisters();
+	currentThread->space->InitRegisters();
 	// Call Restore State through currentThread->space
-  currentThread->space->RestoreState();
+	currentThread->space->RestoreState();
 	// Call machine->Run()
-  machine->Run();
+	machine->Run();
 }
 
 void Exec_Syscall(int vaddr, int len) {
+
+	processLock.Acquire();
+	if (processIndex >= NUM_PROCESSES) {
+		printf("Too many processes.\n");
+		processLock.Release();
+		return;
+	}
 	// Convert it to the physical address and read the contents from there, which will give you the name of the process to be executed
 	// Now Open that file using filesystem->Open
-  char *buf = new char[len + 1];  // Kernel buffer to put the name in
-  OpenFile *f;      // The new open file
+	char *buf = new char[len + 1];  // Kernel buffer to put the name in
+	OpenFile *f;      // The new open file
 
-  if (!buf) {
-    printf("%s", "Can't allocate kernel buffer in Open\n");
-    return;
-  }
+	if (!buf) {
+		printf("%s", "Can't allocate kernel buffer in Open\n");
+		return;
+	}
 
-  if (copyin(vaddr, len, buf) == -1) {
-    printf("%s", "Bad pointer passed to Open\n");
-    delete[] buf;
-    return;
-  }
+	if (copyin(vaddr, len, buf) == -1) {
+		printf("%s", "Bad pointer passed to Open\n");
+		delete[] buf;
+		return;
+	}
 
-  buf[len] = '\0';
+	buf[len] = '\0';
 
-  // Store its openfile pointer
-  f = fileSystem->Open(buf);
-  delete[] buf;
+	// Store its openfile pointer
+	f = fileSystem->Open(buf);
+	delete[] buf;
 
 	// Create new addrespace for this executable file
-  AddrSpace* a = new AddrSpace(f);
+	AddrSpace* a = new AddrSpace(f);
+	a->processIndex = processIndex;
+	processIndex++;
+	activeProcesses++;
 	// Create a new thread
-  Thread* t = new Thread("exec_thread", processTable[a->processIndex].numThreadsTotal + 1);
-  processTable[a->processIndex].numThreadsTotal++;
+	Thread* t = new Thread("exec_thread",
+			processTable[a->processIndex]->numThreadsTotal + 1);
+	processTable[a->processIndex]->numThreadsTotal++;
+	processLock.Release();
 
 	// Allocate the space created to this thread's space
-  t->space = a;
+	t->space = a;
 	// Update the process table and related data structures
 	// Fork the new thread. I call it exec_thread
-  t->Fork(exec_thread, vaddr);
+	t->Fork(exec_thread, vaddr);
 }
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-  // Write to the register PCReg the virtual address
-  machine->WriteRegister(PCReg, vaddr);
-  // Write virtualaddress + 4 in NextPCReg
-  machine->WriteRegister(NextPCReg, vaddr + 4);
-  // Call Restorestate function inorder to prevent information loss while context switching
-  currentThread->space->RestoreState();
-  // Write to the stack register, the starting position of the stack for this thread
-  // machine->WriteRegister(StackReg, ???);
-  // Call machine->Run()
-  machine->Run();
+	// Write to the register PCReg the virtual address
+	machine->WriteRegister(PCReg, vaddr);
+	// Write virtualaddress + 4 in NextPCReg
+	machine->WriteRegister(NextPCReg, vaddr + 4);
+	// Call Restorestate function inorder to prevent information loss while context switching
+	currentThread->space->RestoreState();
+	// Write to the stack register, the starting position of the stack for this thread
+	// machine->WriteRegister(StackReg, ???);
+	// Call machine->Run()
+	machine->Run();
 }
 
 void Fork_Syscall(int vaddr, int len) {
 	// Create a New thread. This would be a kernel thread
-  Thread* t = new Thread("kernel_thread", processTable[currentThread->space->processIndex].numThreadsTotal + 1);
-  processTable[currentThread->space->processIndex].numThreadsTotal++;
-  // compute first or last page of 8 pages.. store in process table so in kernel thread function you can grab the page index
+	Thread* t = new Thread("kernel_thread",
+			processTable[currentThread->space->processIndex]->numThreadsTotal
+					+ 1);
+	processTable[currentThread->space->processIndex]->numThreadsTotal++;
+	// compute first or last page of 8 pages.. store in process table so in kernel thread function you can grab the page index
 	// Update the Process Table for Multiprogramming part
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
-  t->space = currentThread->space;
-  t->Fork(kernel_thread, vaddr);
+	t->space = currentThread->space;
+	t->Fork(kernel_thread, vaddr);
 }
 
 void Yield_Syscall() {
@@ -806,7 +822,8 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Broadcast:
 			DEBUG('a', "Broadcast syscall.\n");
-			Broadcast_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			Broadcast_Syscall(machine->ReadRegister(4),
+					machine->ReadRegister(5));
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");

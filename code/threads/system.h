@@ -48,7 +48,7 @@ struct process {
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
 
-extern process processTable[];
+extern process * processTable[];
 extern int processIndex;
 extern int activeProcesses;
 extern const int NUM_PROCESSES;

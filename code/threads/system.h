@@ -17,8 +17,6 @@
 #include "stats.h"
 #include "timer.h"
 #include "machine.h"
-#include "../userprog/bitmap.h"
-
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -36,6 +34,10 @@ extern Timer *timer;				// the hardware alarm clock
 class AddrSpace;
 class BitMap;
 
+#ifdef USER_PROGRAM
+#include "../userprog/bitmap.h"
+#include "machine.h"
+extern Machine* machine;
 //-----BITMAP-----
 extern BitMap bitmap;
 extern Lock bitmapLock;
@@ -53,7 +55,6 @@ extern int processIndex;
 extern int activeProcesses;
 extern const int NUM_PROCESSES;
 extern Lock processLock;
-
 //---------------------------------------------
 // LOCK SYSCALL
 //---------------------------------------------
@@ -80,10 +81,6 @@ extern kernelCondition kernelConditionList[];
 extern int kernelConditionIndex;
 extern const int NUM_KERNEL_CONDITIONS;
 extern Lock kernelConditionLock;
-
-#ifdef USER_PROGRAM
-#include "machine.h"
-extern Machine* machine;	// user program memory and registers
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

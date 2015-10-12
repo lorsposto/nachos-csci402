@@ -8,6 +8,7 @@
 #include "copyright.h"
 #include "system.h"
 
+
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
 
@@ -19,6 +20,8 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+#ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
+Machine *machine;	// user program memory and registers
 BitMap bitmap(NumPhysPages);
 Lock bitmapLock("Bitmap lock");
 
@@ -44,6 +47,7 @@ const int NUM_KERNAL_CONDITIONS = 1000;
 kernelCondition kernelConditionList[NUM_KERNAL_CONDITIONS];
 int kernelConditionIndex = 0;
 Lock kernelConditionLock("Kernel Conditions Lock");
+#endif
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -51,10 +55,6 @@ FileSystem  *fileSystem;
 
 #ifdef FILESYS
 SynchDisk   *synchDisk;
-#endif
-
-#ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
-Machine *machine;	// user program memory and registers
 #endif
 
 #ifdef NETWORK

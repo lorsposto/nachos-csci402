@@ -1452,13 +1452,13 @@ void testCase1(int x) {
 		name = appClerkLines[i]->name;
 		if (i > 0)
 			appClerkLines[i]->regularLineCount = (int) (NUM_CUSTOMERS / 2);
-		t = new Thread(name);
+		t = new Thread(name, 0);
 	}
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		name = new char[20];
 		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		customers[i] = new Customer(name, i, Customer::REGULAR);
 		customers[i]->picDone = true;
 		customers[i]->appDone = !customers[i]->picDone;
@@ -1499,32 +1499,32 @@ void testCase2(int d) {
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
 		name = passportClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 	}
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 	}
 
 	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
 		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
 		name = picClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 	}
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
 		name = appClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 	}
 
 	for (i = 0; i < NUM_MANAGERS; ++i) {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		t->Fork((VoidFunctionPtr) beManager, i);
 
 		for (int j = 0; j < rand() % 20; ++j)
@@ -1605,7 +1605,7 @@ void testCase3() {
 		cashierLines[i] = new Cashier("Cashier ", i);
 		cashierLines[i]->lineCount = i;
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
@@ -1613,7 +1613,7 @@ void testCase3() {
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		name = new char[20];
 		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		customers[i] = new Customer(name, i, Customer::REGULAR);
 		customers[i]->picDone = true;
 		customers[i]->appDone = true;
@@ -1626,7 +1626,7 @@ void testCase3() {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
@@ -1658,7 +1658,7 @@ void testCase4(int x) {
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
 		name = passportClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePassportClerk, i);
 	}
@@ -1667,7 +1667,7 @@ void testCase4(int x) {
 
 		cashierLines[i]->money = rand() % 500;
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
@@ -1676,7 +1676,7 @@ void testCase4(int x) {
 		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
 		picClerkLines[i]->money = rand() % 500;
 		name = picClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePicClerk, i);
 	}
@@ -1685,7 +1685,7 @@ void testCase4(int x) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
 		appClerkLines[i]->money = rand() % 500;
 		name = appClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beAppClerk, i);
 	}
@@ -1716,7 +1716,7 @@ void testCase5(int x) {
 		cashierLines[i] = new Cashier("Cashier ", i);
 		cashierLines[i]->lineCount = 0;
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
@@ -1731,7 +1731,7 @@ void testCase5(int x) {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
@@ -1778,14 +1778,14 @@ void testCase6(int x) {
 
 		cashierLines[i]->money = 0;
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
 
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		name = new char[20];
 		sprintf(name, "Customer %i", i);
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		customers[i] = new Customer(name, i, Customer::REGULAR);
 		customers[i]->picDone = true;
 		customers[i]->appDone = true;
@@ -1798,7 +1798,7 @@ void testCase6(int x) {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
 
@@ -1829,7 +1829,7 @@ void testCase7() {
 		cashierLines[i] = new Cashier("Cashier ", i);
 
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
@@ -1840,7 +1840,7 @@ void testCase7() {
 		name = new char[20];
 		if (sen > 0) {
 			sprintf(name, "Senator %i", i);
-			t = new Thread(name);
+			t = new Thread(name, 0);
 			customers[i] = new Customer(name, i, Customer::SENATOR);
 			customers[i]->picDone = true;
 			customers[i]->appDone = true;
@@ -1851,7 +1851,7 @@ void testCase7() {
 		}
 		else {
 			sprintf(name, "Customer %i", i);
-			t = new Thread(name);
+			t = new Thread(name, 0);
 			customers[i] = new Customer(name, i, Customer::REGULAR);
 			customers[i]->picDone = true;
 			customers[i]->appDone = true;
@@ -1864,7 +1864,7 @@ void testCase7() {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
@@ -1924,7 +1924,7 @@ void testCase8() {
 		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
 
 		name = passportClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePassportClerk, i);
 	}
@@ -1933,7 +1933,7 @@ void testCase8() {
 		cashierLines[i] = new Cashier("Cashier ", i);
 
 		name = cashierLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beCashier, i);
 	}
@@ -1942,7 +1942,7 @@ void testCase8() {
 		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
 
 		name = picClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) bePicClerk, i);
 	}
@@ -1951,7 +1951,7 @@ void testCase8() {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
 
 		name = appClerkLines[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beAppClerk, i);
 	}
@@ -1962,7 +1962,7 @@ void testCase8() {
 		name = new char[20];
 		if (sen > 0) {
 			sprintf(name, "Senator %i", i);
-			t = new Thread(name);
+			t = new Thread(name, 0);
 			customers[i] = new Customer(name, i, Customer::SENATOR);
 			//printf("%s has just entered the passport office.\n", t->getName());
 			t->Fork((VoidFunctionPtr) beCustomer, i);
@@ -1970,7 +1970,7 @@ void testCase8() {
 		}
 		else {
 			sprintf(name, "Customer %i", i);
-			t = new Thread(name);
+			t = new Thread(name, 0);
 			customers[i] = new Customer(name, i, Customer::REGULAR);
 			//printf("%s has just entered the passport office.\n", t->getName());
 			t->Fork((VoidFunctionPtr) beCustomer, i);
@@ -1980,7 +1980,7 @@ void testCase8() {
 		managers[i] = new Manager("Manager ", i);
 
 		name = managers[i]->name;
-		t = new Thread(name);
+		t = new Thread(name, 0);
 		//printf("%s on duty.\n", t->getName());
 		t->Fork((VoidFunctionPtr) beManager, i);
 	}
@@ -2024,12 +2024,12 @@ void PassportOffice() {
 		switch (option) {
 		case 1:
 			validinput = true;
-			t = new Thread("T1");
+			t = new Thread("T1", 0);
 			t->Fork((VoidFunctionPtr) testCase1, i);
 			break;
 		case 2:
 			validinput = true;
-			t = new Thread("T2");
+			t = new Thread("T2", 0);
 			t->Fork((VoidFunctionPtr) testCase2, i);
 			break;
 		case 3:
@@ -2038,17 +2038,17 @@ void PassportOffice() {
 			break;
 		case 4:
 			validinput = true;
-			t = new Thread("T4");
+			t = new Thread("T4", 0);
 			t->Fork((VoidFunctionPtr) testCase4, i);
 			break;
 		case 5:
 			validinput = true;
-			t = new Thread("T5");
+			t = new Thread("T5", 0);
 			t->Fork((VoidFunctionPtr) testCase5, i);
 			break;
 		case 6:
 			validinput = true;
-			t = new Thread("T6");
+			t = new Thread("T6", 0);
 			t->Fork((VoidFunctionPtr) testCase6, i);
 			break;
 		case 7:

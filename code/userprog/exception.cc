@@ -366,7 +366,7 @@ void Exec_Syscall(int vaddr, int len) {
 	a->processIndex = processIndex;
 
 	process *p = new process;
-	// p->threadStacks = /* ??? */;
+	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 0; // when does this get incremented???
 	processTable[processIndex] = p;
@@ -416,6 +416,7 @@ void Fork_Syscall(int vaddr, int len) {
 	// copy over old existing pages
 	for (int i = 0; i < p->numThreadsTotal * 8; i++) {
 		newPageTable[i] = oldPageTable[i]; // deep copy
+		bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage); // ?
 	}
 
 	// initialize new empty pages

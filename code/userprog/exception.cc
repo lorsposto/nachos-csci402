@@ -327,6 +327,7 @@ void exec_thread(int vaddr) {
 	// Call Restore State through currentThread->space
 	currentThread->space->RestoreState();
 	// Call machine->Run()
+	printf("\tMachine run.\n");
 	machine->Run();
 }
 
@@ -383,6 +384,7 @@ void Exec_Syscall(int vaddr, int len) {
 	t->space = a;
 
 	// Fork the new thread. I call it exec_thread
+	printf("\tForking in exec.\n");
 	t->Fork(exec_thread, vaddr);
 }
 

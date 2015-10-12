@@ -45,7 +45,7 @@ extern Lock bitmapLock;
 
 struct process {
 	// AddrSpace * addrsp;
-	int threadStacks[];
+	int * threadStacks;
 	int numThreadsRunning; // to check in exit if it's safe to kill the process
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };

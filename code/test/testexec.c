@@ -9,6 +9,6 @@ int main() {
   int bytesread;
   char buf[20];
 
-    Write("testing Exec \n", 16, ConsoleOutput );
-    Exec("sort.c", 6);
+   Write("testing Exec \n", 16, ConsoleOutput );
+    Exec("../test/sort", 14);
 }

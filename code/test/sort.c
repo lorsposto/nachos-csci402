@@ -21,6 +21,7 @@ main()
         A[i] = 1024 - i;
 
     /* then sort! */
+    Write("Sort!\n", 6, ConsoleOutput );
     for (i = 0; i < 1023; i++)
         for (j = i; j < (1023 - i); j++)
 	   if (A[j] > A[j + 1]) {	/* out of order -> need to swap ! */
@@ -28,5 +29,6 @@ main()
 	      A[j] = A[j + 1];
 	      A[j + 1] = tmp;
     	   }
+    Write("Done Sort!\n", 11, ConsoleOutput );
     Exit(A[0]);		/* and then we're done -- should be 0! */
 }

@@ -309,9 +309,8 @@ void Exit_Syscall(int status) {
 			activeProcesses--;
 
 			//reclaim the entire page table of the process
-			for (int i = 0; i < currentThread->space->numPages; i++) {
-				bitmap.Clear(
-						currentThread->space->getPageTable()[i].physicalPage);
+			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
+				bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
 			}
 
 			bitmapLock.Release();
@@ -339,6 +338,7 @@ void Exec_Syscall(int vaddr, int len) {
 		processLock.Release();
 		return;
 	}
+
 	// Convert it to the physical address and read the contents from there, which will give you the name of the process to be executed
 	// Now Open that file using filesystem->Open
 	char *buf = new char[len + 1];  // Kernel buffer to put the name in
@@ -361,46 +361,86 @@ void Exec_Syscall(int vaddr, int len) {
 	f = fileSystem->Open(buf);
 	delete[] buf;
 
-	// Create new addrespace for this executable file
+	// Create new addrespace for this executable file and update process table
 	AddrSpace* a = new AddrSpace(f);
 	a->processIndex = processIndex;
+
+	process *p = new process;
+	// p->threadStacks = /* ??? */;
+	p->numThreadsTotal = 1;
+	p->numThreadsRunning = 0; // when does this get incremented???
+	processTable[processIndex] = p;
+	
 	processIndex++;
 	activeProcesses++;
+
 	// Create a new thread
-	Thread* t = new Thread("exec_thread",
-			processTable[a->processIndex]->numThreadsTotal + 1);
-	processTable[a->processIndex]->numThreadsTotal++;
+	Thread* t = new Thread("exec_thread", 0);
+	
 	processLock.Release();
 
 	// Allocate the space created to this thread's space
 	t->space = a;
-	// Update the process table and related data structures
+
 	// Fork the new thread. I call it exec_thread
 	t->Fork(exec_thread, vaddr);
 }
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-	// Write to the register PCReg the virtual address
-	machine->WriteRegister(PCReg, vaddr);
-	// Write virtualaddress + 4 in NextPCReg
-	machine->WriteRegister(NextPCReg, vaddr + 4);
-	// Call Restorestate function inorder to prevent information loss while context switching
-	currentThread->space->RestoreState();
-	// Write to the stack register, the starting position of the stack for this thread
-	// machine->WriteRegister(StackReg, ???);
-	// Call machine->Run()
-	machine->Run();
+  // Write to the register PCReg the virtual address
+  machine->WriteRegister(PCReg, vaddr);
+  // Write virtualaddress + 4 in NextPCReg
+  machine->WriteRegister(NextPCReg, vaddr + 4);
+  // Call Restorestate function inorder to prevent information loss while context switching
+  currentThread->space->RestoreState();
+  // Write to the stack register, the starting position of the stack (addr of the first page) for this thread
+  machine->WriteRegister(StackReg, currentThread->space->getPageTable()->virtualPage); // should this be physicalPage?
+  // Call machine->Run()
+  machine->Run();
 }
 
 void Fork_Syscall(int vaddr, int len) {
+	// Get the current process from the Process Table so we can use it for everything else
+	process* p = processTable[currentThread->space->processIndex];
+
 	// Create a New thread. This would be a kernel thread
-	Thread* t = new Thread("kernel_thread",
-			processTable[currentThread->space->processIndex]->numThreadsTotal
-					+ 1);
-	processTable[currentThread->space->processIndex]->numThreadsTotal++;
-	// compute first or last page of 8 pages.. store in process table so in kernel thread function you can grab the page index
+	Thread* t = new Thread("kernel_thread", p->numThreadsTotal);
+
 	// Update the Process Table for Multiprogramming part
+	int oldPageTableIndex = p->threadStacks[currentThread->threadIndex];
+
+	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
+	TranslationEntry* newPageTable = new TranslationEntry[(p->numThreadsTotal + 1) * 8]; // is this math right?
+
+	// copy over old existing pages
+	for (int i = 0; i < p->numThreadsTotal * 8; i++) {
+		newPageTable[i] = oldPageTable[i]; // deep copy
+	}
+
+	// initialize new empty pages
+	for (int i = p->numThreadsTotal * 8; i < (p->numThreadsTotal + 1) * 8; i++) {
+		bitmapLock.Acquire(); // maybe outside the loop?
+		// find a physical page number -L
+		int ppn = bitmap.Find();
+		newPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		newPageTable[i].valid = TRUE;
+		newPageTable[i].use = FALSE;
+		newPageTable[i].dirty = FALSE;
+		newPageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+		// a separate page, we could set its
+		// pages to be read-only
+		bitmapLock.Release();
+	}
+
+	// replace old page table (by reference)
+	oldPageTable = newPageTable;
+
+	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
+	p->numThreadsTotal++;
+	// p->numThreadsRunning ???
+
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
 	t->space = currentThread->space;

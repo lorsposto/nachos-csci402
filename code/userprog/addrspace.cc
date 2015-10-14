@@ -152,6 +152,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 // first, set up the translation 
 	pageTable = new TranslationEntry[numPages];
 	bitmapLock.Acquire(); // maybe within the loop?
+
 	for (i = 0; i < numPages; i++) {
 		// find a physical page number -L
 		ppn = bitmap.Find();
@@ -176,42 +177,41 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 	}
 	bitmapLock.Release();
 
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
+}
 
-	// When nachos is uniprogram, zeros out all of the memory. 
-//	bzero(machine->mainMemory, size);
+void AddrSpace::expandPageTable() {
+	pageTableLock.Acquire();
+	TranslationEntry* newPageTable = new TranslationEntry[numPages + 8]; // is this math right?
+	// copy over old existing pages
+	for (int i = 0; i < numPages; i++) {
+		newPageTable[i].virtualPage = pageTable[i].virtualPage; // deep copy
+		newPageTable[i].physicalPage = pageTable[i].physicalPage;
+		newPageTable[i].valid = pageTable[i].valid;
+		newPageTable[i].readOnly = pageTable[i].readOnly;
+		newPageTable[i].use = pageTable[i].use;
+		newPageTable[i].dirty = pageTable[i].dirty;
+	}
 
-	// for each virtual page, copy in the code and stuff into physical memory -L
-//	int codesize = noffH.code.size;
-//	int initsize = noffH.initData.size;
-//	for (i = 0; i < numPages; i++) {
-//		if (codesize > 0) {
-//			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
-//					PageSize, 40 + pageTable[i].virtualPage*PageSize);
-//			codesize -= PageSize;
-//		} else if(initsize > 0) {
-//			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
-//								PageSize, 40 + pageTable[i].virtualPage*PageSize);
-//			initsize -= PageSize;
-//		}
-
-//	}
-
-// then, copy in the code and data segments into memory
-//	if (noffH.code.size > 0) {
-//		DEBUG('a', "Initializing code segment, at 0x%x, size %d\n",
-//				noffH.code.virtualAddr, noffH.code.size);
-//		executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr]),
-//				noffH.code.size, noffH.code.inFileAddr);
-//	}
-//	if (noffH.initData.size > 0) {
-//		DEBUG('a', "Initializing data segment, at 0x%x, size %d\n",
-//				noffH.initData.virtualAddr, noffH.initData.size);
-//		executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
-//				noffH.initData.size, noffH.initData.inFileAddr);
-//	}
-
+	// initialize new empty pages
+	bitmapLock.Acquire(); // maybe outside the loop?
+	for (int i = numPages; i < numPages+8; i++) {
+		// find a physical page number -L
+		int ppn = bitmap.Find();
+		newPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		newPageTable[i].valid = TRUE;
+		newPageTable[i].use = FALSE;
+		newPageTable[i].dirty = FALSE;
+		newPageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+		// a separate page, we could set its
+		// pages to be read-only
+	}
+	bitmapLock.Release();
+	numPages += 8;
+	delete[] pageTable;
+	pageTable = newPageTable;
+	machine->pageTable = pageTable;
+	pageTableLock.Release();
 }
 
 //----------------------------------------------------------------------

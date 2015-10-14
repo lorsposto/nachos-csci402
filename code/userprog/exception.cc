@@ -332,7 +332,7 @@ void exec_thread(int vaddr) {
 }
 
 void Exec_Syscall(int vaddr, int len) {
-
+	int ppn;
 	processLock.Acquire();
 	if (processIndex >= NUM_PROCESSES) {
 		printf("Too many processes.\n");
@@ -365,6 +365,25 @@ void Exec_Syscall(int vaddr, int len) {
 	// Create new addrespace for this executable file and update process table
 	AddrSpace* a = new AddrSpace(f);
 	a->processIndex = processIndex;
+	TranslationEntry * pageTable = a->getPageTable();
+	for (int i = 0; i < a->numPages; i++) {
+		// find a physical page number -L
+		ppn = bitmap.Find();
+		if (ppn == -1) {
+			printf("Nachos is out of memory.\n");
+			interrupt->Halt();
+		}
+		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		pageTable[i].valid = TRUE;
+		pageTable[i].use = FALSE;
+		pageTable[i].dirty = FALSE;
+		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+		// a separate page, we could set its
+		// pages to be read-only
+	}
+	a->setPageTable(pageTable);
+
 	delete f;
 
 	process *p = new process;
@@ -406,6 +425,7 @@ void kernel_thread(int vaddr) {
 
 void Fork_Syscall(int vaddr, int len) {
 	// Get the current process from the Process Table so we can use it for everything else
+	printf("in fork\n");
 	process* p = processTable[currentThread->space->processIndex];
 
 	// Create a New thread. This would be a kernel thread
@@ -414,39 +434,41 @@ void Fork_Syscall(int vaddr, int len) {
 	// Update the Process Table for Multiprogramming part
 	int oldPageTableIndex = p->threadStacks[currentThread->threadIndex];
 
-	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
-	TranslationEntry* newPageTable = new TranslationEntry[(p->numThreadsTotal + 1) * 8]; // is this math right?
-
-	// copy over old existing pages
-	for (int i = 0; i < p->numThreadsTotal * 8; i++) {
-		newPageTable[i].virtualPage = oldPageTable[i].virtualPage; // deep copy
-		newPageTable[i].physicalPage = oldPageTable[i].physicalPage;
-		newPageTable[i].valid = oldPageTable[i].valid;
-		newPageTable[i].readOnly = oldPageTable[i].readOnly;
-		newPageTable[i].use = oldPageTable[i].use;
-		newPageTable[i].dirty = oldPageTable[i].dirty;
-	}
-
-	// initialize new empty pages
-	for (int i = p->numThreadsTotal * 8; i < (p->numThreadsTotal + 1) * 8; i++) {
-		bitmapLock.Acquire(); // maybe outside the loop?
-		// find a physical page number -L
-		int ppn = bitmap.Find();
-		newPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
-		newPageTable[i].valid = TRUE;
-		newPageTable[i].use = FALSE;
-		newPageTable[i].dirty = FALSE;
-		newPageTable[i].readOnly = FALSE;  // if the code segment was entirely on
-		// a separate page, we could set its
-		// pages to be read-only
-		bitmapLock.Release();
-	}
-
-	// replace old page table (by reference)
-//	oldPageTable = newPageTable;
-	currentThread->space->setPageTable(newPageTable);
-	delete[] oldPageTable;
+	currentThread->space->expandPageTable();
+//	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
+//	TranslationEntry* newPageTable = new TranslationEntry[currentThread->space->numPages + 8]; // is this math right?
+//
+//	// copy over old existing pages
+//	for (int i = 0; i < currentThread->space->numPages; i++) {
+//		newPageTable[i].virtualPage = oldPageTable[i].virtualPage; // deep copy
+//		newPageTable[i].physicalPage = oldPageTable[i].physicalPage;
+//		newPageTable[i].valid = oldPageTable[i].valid;
+//		newPageTable[i].readOnly = oldPageTable[i].readOnly;
+//		newPageTable[i].use = oldPageTable[i].use;
+//		newPageTable[i].dirty = oldPageTable[i].dirty;
+//	}
+//
+//	// initialize new empty pages
+//	for (int i = currentThread->space->numPages; i < currentThread->space->numPages+8; i++) {
+//		bitmapLock.Acquire(); // maybe outside the loop?
+//		// find a physical page number -L
+//		int ppn = bitmap.Find();
+//		newPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+//		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+//		newPageTable[i].valid = TRUE;
+//		newPageTable[i].use = FALSE;
+//		newPageTable[i].dirty = FALSE;
+//		newPageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+//		// a separate page, we could set its
+//		// pages to be read-only
+//		bitmapLock.Release();
+//	}
+//	currentThread->space->numPages += 8;
+//
+//	// replace old page table (by reference)
+////	oldPageTable = newPageTable;
+//	currentThread->space->setPageTable(newPageTable);
+//	delete[] oldPageTable;
 
 	// delete old page table?
 

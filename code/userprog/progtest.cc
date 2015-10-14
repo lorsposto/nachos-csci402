@@ -22,26 +22,43 @@
 // 	Run a user program.  Open the executable, load it into
 //	memory, and jump to it.
 //----------------------------------------------------------------------
-void
-StartProcess(char *filename)
-{
-    OpenFile *executable = fileSystem->Open(filename);
-    AddrSpace *space;
+void StartProcess(char *filename) {
+	int ppn;
+	OpenFile *executable = fileSystem->Open(filename);
+	AddrSpace *space;
 
-    if (executable == NULL) {
-	printf("Unable to open file %s\n", filename);
-	return;
-    }
+	if (executable == NULL) {
+		printf("Unable to open file %s\n", filename);
+		return;
+	}
 
-    processLock.Acquire();
-    space = new AddrSpace(executable);
-    space->processIndex = processIndex;
+	processLock.Acquire();
+	space = new AddrSpace(executable);
+	space->processIndex = processIndex;
+	TranslationEntry * pageTable = space->getPageTable();
+	for (int i = 0; i < space->numPages; i++) {
+		// find a physical page number -L
+		ppn = bitmap.Find();
+		if (ppn == -1) {
+			printf("Nachos is out of memory.\n");
+			interrupt->Halt();
+		}
+		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		pageTable[i].valid = TRUE;
+		pageTable[i].use = FALSE;
+		pageTable[i].dirty = FALSE;
+		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+		// a separate page, we could set its
+		// pages to be read-only
+	}
+	space->setPageTable(pageTable);
 
 	process *p = new process;
 	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 1; // when does this get incremented???
-    p->threadStacks[0] = 0;
+	p->threadStacks[0] = 0;
 	processTable[processIndex] = p;
 
 	processIndex++;
@@ -50,15 +67,15 @@ StartProcess(char *filename)
 	currentThread->space = space;
 	processLock.Release();
 
-    delete executable;			// close file
+	delete executable;			// close file
 
-    space->InitRegisters();		// set the initial register values
-    space->RestoreState();		// load page table register
+	space->InitRegisters();		// set the initial register values
+	space->RestoreState();		// load page table register
 
-    machine->Run();			// jump to the user progam
-    ASSERT(FALSE);			// machine->Run never returns;
-					// the address space exits
-					// by doing the syscall "exit"
+	machine->Run();			// jump to the user progam
+	ASSERT(FALSE);			// machine->Run never returns;
+	// the address space exits
+	// by doing the syscall "exit"
 }
 
 // Data structures needed for the console test.  Threads making
@@ -73,8 +90,12 @@ static Semaphore *writeDone;
 // 	Wake up the thread that requested the I/O.
 //----------------------------------------------------------------------
 
-static void ReadAvail(int arg) { readAvail->V(); }
-static void WriteDone(int arg) { writeDone->V(); }
+static void ReadAvail(int arg) {
+	readAvail->V();
+}
+static void WriteDone(int arg) {
+	writeDone->V();
+}
 
 //----------------------------------------------------------------------
 // ConsoleTest
@@ -82,21 +103,20 @@ static void WriteDone(int arg) { writeDone->V(); }
 //	the output.  Stop when the user types a 'q'.
 //----------------------------------------------------------------------
 
-void 
-ConsoleTest (char *in, char *out)
-{
-    char ch;
+void ConsoleTest(char *in, char *out) {
+	char ch;
 
-    console = new Console(in, out, ReadAvail, WriteDone, 0);
-    readAvail = new Semaphore("read avail", 0);
-    writeDone = new Semaphore("write done", 0);
-    
-    for (;;) {
-	readAvail->P();		// wait for character to arrive
-	ch = console->GetChar();
-	console->PutChar(ch);	// echo it!
-	writeDone->P() ;        // wait for write to finish
-	if (ch == 'q') return;  // if q, quit
-    }
+	console = new Console(in, out, ReadAvail, WriteDone, 0);
+	readAvail = new Semaphore("read avail", 0);
+	writeDone = new Semaphore("write done", 0);
+
+	for (;;) {
+		readAvail->P();		// wait for character to arrive
+		ch = console->GetChar();
+		console->PutChar(ch);	// echo it!
+		writeDone->P();        // wait for write to finish
+		if (ch == 'q')
+			return;  // if q, quit
+	}
 }
 

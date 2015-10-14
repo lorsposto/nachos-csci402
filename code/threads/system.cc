@@ -25,6 +25,8 @@ Machine *machine;	// user program memory and registers
 BitMap bitmap(NumPhysPages);
 Lock bitmapLock("Bitmap lock");
 
+Lock pageTableLock("Page table lock");
+
 //---------------------------------------------
 // PROCESS TABLE
 //---------------------------------------------

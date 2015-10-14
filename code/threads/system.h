@@ -42,6 +42,8 @@ extern Machine* machine;
 extern BitMap bitmap;
 extern Lock bitmapLock;
 
+extern Lock pageTableLock;
+
 
 struct process {
 	// AddrSpace * addrsp;

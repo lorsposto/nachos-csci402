@@ -277,6 +277,7 @@ void Exit_Syscall(int status) {
 
 	processLock.Acquire();
 
+
 	//find the current thread we are in
 	process * myProcess = processTable[currentThread->space->processIndex];
 
@@ -901,8 +902,12 @@ void ExceptionHandler(ExceptionType which) {
 			DestroyCondition_Syscall(machine->ReadRegister(4));
 			break;
 		case SC_Exec:
-			DEBUG('a', "DestroyCondition syscall.\n");
+			DEBUG('a', "Exec syscall.\n");
 			Exec_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			break;
+		case SC_Exit:
+			DEBUG('a', "Exit syscall.\n");
+			Exit_Syscall(machine->ReadRegister(4));
 			break;
 
 		}

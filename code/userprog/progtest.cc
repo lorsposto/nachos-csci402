@@ -41,6 +41,7 @@ StartProcess(char *filename)
 	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 1; // when does this get incremented???
+    p->threadStacks[0] = 0;
 	processTable[processIndex] = p;
 
 	processIndex++;

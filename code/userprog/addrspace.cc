@@ -154,6 +154,10 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 	for (i = 0; i < numPages; i++) {
 		// find a physical page number -L
 		ppn = bitmap.Find();
+		if (ppn == -1) {
+			printf("Nachos is out of memory.\n");
+			interrupt->Halt();
+		}
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
 		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		pageTable[i].valid = TRUE;
@@ -162,6 +166,12 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
 		// a separate page, we could set its
 		// pages to be read-only
+
+		/* Essentially this but simplified
+		 * executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
+							PageSize, 40 + pageTable[i].virtualPage*PageSize);*/
+		executable->ReadAt(&(machine->mainMemory[PageSize*ppn]),
+							PageSize, 40 + i*PageSize);
 	}
 	bitmapLock.Release();
 
@@ -172,20 +182,20 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 //	bzero(machine->mainMemory, size);
 
 	// for each virtual page, copy in the code and stuff into physical memory -L
-	int codesize = noffH.code.size;
-	int initsize = noffH.initData.size;
-	for (i = 0; i < numPages; i++) {
-		if (codesize > 0) {
-			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
-					PageSize, 40 + pageTable[i].virtualPage*PageSize);
-			codesize -= PageSize;
-		} else if(initsize > 0) {
-			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
-								PageSize, 40 + pageTable[i].virtualPage*PageSize);
-			initsize -= PageSize;
-		}
+//	int codesize = noffH.code.size;
+//	int initsize = noffH.initData.size;
+//	for (i = 0; i < numPages; i++) {
+//		if (codesize > 0) {
+//			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
+//					PageSize, 40 + pageTable[i].virtualPage*PageSize);
+//			codesize -= PageSize;
+//		} else if(initsize > 0) {
+//			executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
+//								PageSize, 40 + pageTable[i].virtualPage*PageSize);
+//			initsize -= PageSize;
+//		}
 
-	}
+//	}
 
 // then, copy in the code and data segments into memory
 //	if (noffH.code.size > 0) {
@@ -270,4 +280,8 @@ void AddrSpace::RestoreState() {
 
 TranslationEntry* AddrSpace::getPageTable() {
     return pageTable;
+}
+
+void AddrSpace::setPageTable(TranslationEntry * newtable) {
+    pageTable = newtable;
 }

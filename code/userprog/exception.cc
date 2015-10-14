@@ -417,8 +417,12 @@ void Fork_Syscall(int vaddr, int len) {
 
 	// copy over old existing pages
 	for (int i = 0; i < p->numThreadsTotal * 8; i++) {
-		newPageTable[i] = oldPageTable[i]; // deep copy
-		bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage); // ?
+		newPageTable[i].virtualPage = oldPageTable[i].virtualPage; // deep copy
+		newPageTable[i].physicalPage = oldPageTable[i].physicalPage;
+		newPageTable[i].valid = oldPageTable[i].valid;
+		newPageTable[i].readOnly = oldPageTable[i].readOnly;
+		newPageTable[i].use = oldPageTable[i].use;
+		newPageTable[i].dirty = oldPageTable[i].dirty;
 	}
 
 	// initialize new empty pages
@@ -438,7 +442,11 @@ void Fork_Syscall(int vaddr, int len) {
 	}
 
 	// replace old page table (by reference)
-	oldPageTable = newPageTable;
+//	oldPageTable = newPageTable;
+	currentThread->space->setPageTable(newPageTable);
+	delete[] oldPageTable;
+
+	// delete old page table?
 
 	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
 	p->numThreadsTotal++;

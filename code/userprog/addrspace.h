@@ -37,6 +37,7 @@ class AddrSpace {
     Table fileTable;			// Table of openfiles
 
     TranslationEntry* getPageTable();
+    void setPageTable(TranslationEntry * newtable);
 
     //my index in the process table
     int processIndex;

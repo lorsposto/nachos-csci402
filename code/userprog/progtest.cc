@@ -32,10 +32,22 @@ StartProcess(char *filename)
 	printf("Unable to open file %s\n", filename);
 	return;
     }
-   
-    space = new AddrSpace(executable);
 
-    currentThread->space = space;
+    processLock.Acquire();
+    space = new AddrSpace(executable);
+    space->processIndex = processIndex;
+
+	process *p = new process;
+	p->threadStacks = new int[50]; // max number of threads is 50
+	p->numThreadsTotal = 1;
+	p->numThreadsRunning = 1; // when does this get incremented???
+	processTable[processIndex] = p;
+
+	processIndex++;
+	activeProcesses++;
+
+	currentThread->space = space;
+	processLock.Release();
 
     delete executable;			// close file
 

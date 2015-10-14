@@ -365,11 +365,13 @@ void Exec_Syscall(int vaddr, int len) {
 	// Create new addrespace for this executable file and update process table
 	AddrSpace* a = new AddrSpace(f);
 	a->processIndex = processIndex;
+	delete f;
 
 	process *p = new process;
 	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
-	p->numThreadsRunning = 0; // when does this get incremented???
+	p->numThreadsRunning = 1; // when does this get incremented???
+	p->threadStacks[0] = 0; //first thread's stack starts at 0?
 	processTable[processIndex] = p;
 	
 	processIndex++;
@@ -385,7 +387,7 @@ void Exec_Syscall(int vaddr, int len) {
 
 	// Fork the new thread. I call it exec_thread
 	printf("\tForking in exec.\n");
-	t->Fork(exec_thread, vaddr);
+	t->Fork((VoidFunctionPtr) exec_thread, vaddr);
 }
 
 /* Helper function for Fork */
@@ -448,14 +450,18 @@ void Fork_Syscall(int vaddr, int len) {
 
 	// delete old page table?
 
+	processLock.Acquire();
+
 	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
 	p->numThreadsTotal++;
-	// p->numThreadsRunning ???
+	p->numThreadsRunning++;
 
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
 	t->space = currentThread->space;
 	t->Fork(kernel_thread, vaddr);
+
+	processLock.Release();
 }
 
 void Yield_Syscall() {

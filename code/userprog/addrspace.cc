@@ -123,7 +123,8 @@ static void SwapHeader(NoffHeader *noffH) {
 AddrSpace::AddrSpace(OpenFile *executable) :
 		fileTable(MaxOpenFiles) {
 	NoffHeader noffH;
-	unsigned int i, size, ppn;
+	unsigned int i, size;
+	int ppn;
 
 	// Don't allocate the input or output to disk files
 	fileTable.Put(0);

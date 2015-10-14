@@ -5,7 +5,7 @@
 #include "syscall.h"
 
 void print() {
-	Write("Hello world. \n", 16, ConsoleOutput );
+	Write("Hello world. \n", 15, ConsoleOutput );
 }
 
 int main() {
@@ -16,7 +16,7 @@ int main() {
    /* Write("testing Exec \n", 16, ConsoleOutput );
     Exec("../test/sort", 14);
     Write("ending Exec \n", 15, ConsoleOutput ); */
-  Write("Testing Fork \n", 16, ConsoleOutput );
+  Write("Testing Fork \n", 15, ConsoleOutput );
   Fork(print);
-  Write("Done testing Fork \n", 16, ConsoleOutput );
+  Write("Done testing Fork \n", 20, ConsoleOutput );
 }

@@ -447,7 +447,6 @@ void Fork_Syscall(int vaddr, int len) {
 	// replace old page table (by reference)
 //	oldPageTable = newPageTable;
 	currentThread->space->setPageTable(newPageTable);
-	currentThread->space->RestoreState();
 	/*updates the MACHINE'S page table (the registers currently in CPU basically).
 										setting the page table makes it correct for all FUTURE times the thread is swapped
 										in the CPU but we still need to change the current registers to use the new page table before

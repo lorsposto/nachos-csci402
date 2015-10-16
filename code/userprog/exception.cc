@@ -399,7 +399,7 @@ void kernel_thread(int vaddr) {
   // Write virtualaddress + 4 in NextPCReg
   machine->WriteRegister(NextPCReg, vaddr + 4);
   // Write to the stack register, the starting position of the stack (addr of the first page) for this thread
-  machine->WriteRegister(StackReg, currentThread->space->getPageTable()->virtualPage * PageSize - 16); 
+  machine->WriteRegister(StackReg, currentThread->space->numPages * PageSize - 16);
   // Call Restorestate function inorder to prevent information loss while context switching
   currentThread->space->RestoreState();
   // Call machine->Run()
@@ -410,6 +410,7 @@ void Fork_Syscall(int vaddr, int len) {
 	printf("Entering Fork_Syscall\n");
 
 	// Get the current process from the Process Table so we can use it for everything else
+	processLock.Acquire();
 	process* p = processTable[currentThread->space->processIndex];
 	// Create a New thread. This would be a kernel thread
 	Thread* t = new Thread("kernel_thread", p->numThreadsTotal);
@@ -427,7 +428,7 @@ void Fork_Syscall(int vaddr, int len) {
 		newPageTable[i].dirty = oldPageTable[i].dirty;
 	}
 
-	bitmapLock.Acquire(); 
+	bitmapLock.Acquire();
 	// initialize new empty pages
 	for (int i = p->numThreadsTotal * 8; i < (p->numThreadsTotal + 1) * 8; i++) {
 		// find a physical page number -L
@@ -446,15 +447,14 @@ void Fork_Syscall(int vaddr, int len) {
 	// replace old page table (by reference)
 //	oldPageTable = newPageTable;
 	currentThread->space->setPageTable(newPageTable);
-	currentThread->space->RestoreState(); /*updates the MACHINE'S page table (the registers currently in CPU basically). 
+	currentThread->space->RestoreState();
+	/*updates the MACHINE'S page table (the registers currently in CPU basically).
 										setting the page table makes it correct for all FUTURE times the thread is swapped
 										in the CPU but we still need to change the current registers to use the new page table before
 										we delete the old one and garbage starts getting written to it*/
-	delete[] oldPageTable;
+//	delete[] oldPageTable;
 
 	// delete old page table?
-
-	processLock.Acquire();
 
 	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
 	p->numThreadsTotal++;
@@ -462,9 +462,9 @@ void Fork_Syscall(int vaddr, int len) {
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
 	t->space = currentThread->space;
-	t->Fork(kernel_thread, vaddr);
-
 	processLock.Release();
+
+	t->Fork(kernel_thread, vaddr);
 }
 
 void Yield_Syscall() {

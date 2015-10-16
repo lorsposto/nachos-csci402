@@ -5,18 +5,11 @@
 #include "syscall.h"
 
 void print() {
-	Write("Hello world. \n", 15, ConsoleOutput );
+	Write("Hello world. \n", 14, ConsoleOutput );
 }
 
 int main() {
-  OpenFileId fd;
-  int bytesread;
-  char buf[20];
-
-   /* Write("testing Exec \n", 16, ConsoleOutput );
-    Exec("../test/sort", 14);
-    Write("ending Exec \n", 15, ConsoleOutput ); */
-  Write("Testing Fork \n", 15, ConsoleOutput );
+  Write("Testing Fork \n", 14, ConsoleOutput );
   Fork(print);
-  Write("Done testing Fork \n", 20, ConsoleOutput );
+  Write("Done testing Fork \n", 19, ConsoleOutput );
 }

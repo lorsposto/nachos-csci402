@@ -216,6 +216,10 @@ void Thread::Sleep() {
 	scheduler->Run(nextThread); // returns when we've been signalled
 }
 
+void Thread::Print() {
+	printf("%s, %i", name, threadIndex);
+}
+
 //----------------------------------------------------------------------
 // ThreadFinish, InterruptEnable, ThreadPrint
 //	Dummy functions because C++ does not allow a pointer to a member
@@ -232,7 +236,8 @@ static void InterruptEnable() {
 }
 void ThreadPrint(int arg) {
 	Thread *t = (Thread *) arg;
-	t->Print();
+//	t->Print();
+	printf("%s, %i\n",t->getName(), t->threadIndex);
 }
 
 //----------------------------------------------------------------------

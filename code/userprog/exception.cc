@@ -451,7 +451,6 @@ void Fork_Syscall(int vaddr, int len) {
 										setting the page table makes it correct for all FUTURE times the thread is swapped
 										in the CPU but we still need to change the current registers to use the new page table before
 										we delete the old one and garbage starts getting written to it*/
-//	delete[] oldPageTable;
 
 	// delete old page table?
 
@@ -461,6 +460,10 @@ void Fork_Syscall(int vaddr, int len) {
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
 	t->space = currentThread->space;
+
+//	delete[] oldPageTable;
+//	oldPageTable = NULL;
+//	currentThread->space->RestoreState();
 	processLock.Release();
 
 	t->Fork(kernel_thread, vaddr);

@@ -274,7 +274,7 @@ void Exit_Syscall(int status) {
 	 (3) Last executing thread in a process - not last process
 	 Reclaim all unreclaimed memory
 	 Locks/CVs (match AddrSpace* w/ Process Table)*/
-
+	currentThread->Finish();
 	processLock.Acquire();
 
 
@@ -328,7 +328,6 @@ void exec_thread(int vaddr) {
 	// Call Restore State through currentThread->space
 	currentThread->space->RestoreState();
 	// Call machine->Run()
-	printf("\tMachine run.\n");
 	machine->Run();
 }
 
@@ -373,7 +372,7 @@ void Exec_Syscall(int vaddr, int len) {
 	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 1; // when does this get incremented???
-	p->threadStacks[0] = 0; //first thread's stack starts at 0?
+	p->threadStacks[0] = a->numPages; //first thread's stack starts at 0?
 	processTable[processIndex] = p;
 
 	processIndex++;
@@ -400,7 +399,13 @@ void kernel_thread(int vaddr) {
   // Write virtualaddress + 4 in NextPCReg
   machine->WriteRegister(NextPCReg, vaddr + 4);
   // Write to the stack register, the starting position of the stack (addr of the first page) for this thread
-  machine->WriteRegister(StackReg, currentThread->space->numPages * PageSize - 16);
+//  machine->WriteRegister(StackReg, currentThread->space->numPages * PageSize - 16);
+
+//  printf("Setting StackReg to %i for threadIndex %i, pages %i\n",
+//		  processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex] * PageSize - 16,
+//		  currentThread->threadIndex,
+//		  processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex]);
+  machine->WriteRegister(StackReg, processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex] * PageSize - 16);
   // Call Restorestate function inorder to prevent information loss while context switching
   currentThread->space->RestoreState();
   // Call machine->Run()
@@ -426,7 +431,9 @@ void Fork_Syscall(int vaddr, int len) {
 
 	// delete old page table?
 
-	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
+//	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
+	p->threadStacks[t->threadIndex] = currentThread->space->numPages;
+//	printf("Thread stack %i set to %i\n",t->threadIndex, currentThread->space->numPages);
 	p->numThreadsTotal++;
 	p->numThreadsRunning++;
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace

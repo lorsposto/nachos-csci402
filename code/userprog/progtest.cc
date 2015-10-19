@@ -42,7 +42,8 @@ StartProcess(char *filename)
 	p->threadStacks = new int[50]; // max number of threads is 50
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 1; // when does this get incremented???
-    p->threadStacks[0] = 0;
+    p->threadStacks[0] = space->numPages;
+    printf("Thread stack 0 set to %i\n", space->numPages);
 	processTable[processIndex] = p;
 
 	processIndex++;

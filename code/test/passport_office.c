@@ -114,8 +114,8 @@ struct Cashier {
 	int customer;
 };
 
-int Customer(int ssn) {
-	customers[customerIndex].SSN = ssn;
+int Customer() {
+	customers[customerIndex].SSN = customerIndex;
 	customers[customerIndex].picDone = false;
 	customers[customerIndex].appDone = false;
 	customers[customerIndex].certified = false;
@@ -568,26 +568,31 @@ void beAppClerk(int appClerkIndex) {
 	Exit(0);
 }
 
-void beCustomer(int customerIndex) {
+void beCustomer() {
 
-	int targetLock = CreateLock("Lock", 4);
+	int targetLock;
+	int customer;
+	targetLock = CreateLock("Lock", 4);
+	Acquire(customerIndexLock);
+	customer = Customer();
+	Release(customerIndexLock);
 
 	Write("Hi cs\n", 6, ConsoleOutput);
 
-	if (customers[customerIndex].type == SENATOR) {
+	if (customers[customer].type == SENATOR) {
 		/* senatorSema.P(); */
 		Acquire(senatorLock);
 		senatorInProcess = true;
-		currentSenator = customers[customerIndex];
+		currentSenator = customers[customer];
 		Release(senatorLock);
 	}
 
-	while ((!customers[customerIndex].picDone == true
-			|| customers[customerIndex].appDone == false
-			|| customers[customerIndex].certified == false
-			|| customers[customerIndex].gotPassport == false)) {
+	while ((!customers[customer].picDone == true
+			|| customers[customer].appDone == false
+			|| customers[customer].certified == false
+			|| customers[customer].gotPassport == false)) {
 
-		if (customers[customerIndex].type != SENATOR
+		if (customers[customer].type != SENATOR
 				&& senatorInProcess == true) {
 			Acquire(senatorLock);
 			/* Write("%s is going outside the Passport Office because there is a Senator present.\n",
@@ -596,32 +601,32 @@ void beCustomer(int customerIndex) {
 			Release(senatorLock);
 		}
 		if (senatorInProcess == false
-				|| (customers[customerIndex].type == SENATOR
-						&& currentSenator.SSN == customers[customerIndex].SSN)) {
+				|| (customers[customer].type == SENATOR
+						&& currentSenator.SSN == customers[customer].SSN)) {
 
-			if (customers[customerIndex].picDone == false
-					|| customers[customerIndex].appDone == false) {
+			if (customers[customer].picDone == false
+					|| customers[customer].appDone == false) {
 				/* picAppCustomerProcess(customerIndex); */
 				Write("Yield1\n", 7, ConsoleOutput);
 				Yield();
 			}
-			else if (customers[customerIndex].appDone == true
-					&& customers[customerIndex].picDone == true
-					&& customers[customerIndex].certified == false
-					&& customers[customerIndex].earlybird == false) {
+			else if (customers[customer].appDone == true
+					&& customers[customer].picDone == true
+					&& customers[customer].certified == false
+					&& customers[customer].earlybird == false) {
 				/* passportCustomerProcess(customerIndex); */
 				Write("Yield2\n", 7, ConsoleOutput);
 				Yield();
 			}
-			else if (customers[customerIndex].certified == true
-					|| customers[customerIndex].earlybird == true
-							&& customers[customerIndex].gotPassport == false) {
+			else if (customers[customer].certified == true
+					|| customers[customer].earlybird == true
+							&& customers[customer].gotPassport == false) {
 				/* cashierCustomerProcess(customerIndex); */
 				Write("Yield3\n", 7, ConsoleOutput);
 				Yield();
 			}
 
-			if (customers[customerIndex].type != SENATOR
+			if (customers[customer].type != SENATOR
 					&& senatorInProcess == true) {
 				Acquire(senatorLock);
 				Wait(senatorCV, senatorLock);
@@ -637,7 +642,7 @@ void beCustomer(int customerIndex) {
 	customersServed++;
 	Release(customerCounterLock);
 
-	if (customers[customerIndex].type == SENATOR && senatorInProcess == true) {
+	if (customers[customer].type == SENATOR && senatorInProcess == true) {
 		Acquire(senatorLock);
 		/* currentSenator = NULL; */
 		senatorInProcess = false;

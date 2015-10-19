@@ -138,6 +138,8 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 
 	size = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
 	numPages = divRoundUp(size, PageSize);// + divRoundUp(UserStackSize,PageSize);
+//	printf("Code size %#x\n", noffH.code.size);
+//	printf("First stack index should be at %i, %i\n", size, numPages+8);
 	// we need to increase the size
 	// to leave room for the stack
 	size = numPages * PageSize;
@@ -209,6 +211,7 @@ void AddrSpace::addStack() {
 void AddrSpace::expandTable() {
 	TranslationEntry* newPageTable = new TranslationEntry[numPages+8]; // is this math right?
 	// copy over old existing pages
+	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = 0; i < numPages; i++) {
 		newPageTable[i].virtualPage = pageTable[i].virtualPage; // deep copy
 		newPageTable[i].physicalPage = pageTable[i].physicalPage;
@@ -234,7 +237,7 @@ void AddrSpace::expandTable() {
 		// pages to be read-only
 	}
 	bitmapLock.Release();
-
+	numPages += 8;
 	// replace old page table (by reference)
 	//	oldPageTable = newPageTable;
 	delete[] pageTable;

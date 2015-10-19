@@ -1,63 +1,42 @@
 #include "syscall.h"
 
-#define NULL 0
 typedef enum { false, true } bool;
 
-unsigned int NUM_CUSTOMERS = 0;
-unsigned int NUM_SENATORS = 0;
-unsigned int NUM_PIC_CLERKS = 0;
-unsigned int NUM_APP_CLERKS = 0;
-unsigned int NUM_PP_CLERKS = 0;
-unsigned int NUM_CASHIERS = 0;
-unsigned int NUM_MANAGERS = 0;
-unsigned int customersServed = 0;
+int NUM_CUSTOMERS = 0;
+int NUM_SENATORS = 0;
+int NUM_PIC_CLERKS = 0;
+int NUM_APP_CLERKS = 0;
+int NUM_PP_CLERKS = 0;
+int NUM_CASHIERS = 0;
+int NUM_MANAGERS = 0;
+int customersServed = 0;
 
 bool senatorInProcess = false;
-struct Customer * currentSenator = NULL;
+struct Customer currentSenator;
 
-struct Clerk * picClerkLines[100];
-struct Clerk * appClerkLines[100];
-struct Clerk * passportClerkLines[100];
-struct Cashier * cashierLines[100];
+struct Clerk picClerkLines[100];
+struct Clerk appClerkLines[100];
+struct Clerk passportClerkLines[100];
+struct Cashier cashierLines[100];
 
-struct Manager * managers[100];
+struct Manager managers[100];
 
-struct Customer * customers[100];
+struct Customer customers[100];
 
 struct Customer {
 
-	Customer(char * n, int ssn, customerType t) {
-
-	}
 };
 
 struct Clerk {
 
-	Clerk() {
-		
-	}
-
-	Clerk(char * n, int i, clerkType t) {
-		
-	}
 };
 
 struct Manager {
 
-	Manager(char * n, int i) {
-
-	}
 };
 
 struct Cashier {
 
-	Cashier() {
-
-	}
-
-	Cashier(char * n, int i) {
-
-	}
 };
 
 void bePassportClerk(int passportClerkIndex) {
@@ -94,51 +73,52 @@ int main() {
 	int NUM_CASHIERS = 1;
 	int NUM_MANAGERS = 1;
 
-	char * name;
+	int sen = NUM_SENATORS;
+
 	unsigned int i;
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
-		passportClerkLines[i] = new Clerk("Passport Clerk ", i, Clerk::PP);
-		name = passportClerkLines[i]->name;
-		Fork((VoidFunctionPtr) bePassportClerk);
+		struct Clerk c;
+		passportClerkLines[i] = c;
+		Fork(bePassportClerk);
 	}
 
 	for (i = 0; i < NUM_CASHIERS; ++i) {
-		cashierLines[i] = new Cashier("Cashier ", i);
-		name = cashierLines[i]->name;
-		Fork((VoidFunctionPtr) beCashier);
+		struct Cashier c;
+		cashierLines[i] = c;
+		Fork(beCashier);
 	}
 
 	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
-		picClerkLines[i] = new Clerk("Pic Clerk ", i, Clerk::PIC);
-		name = picClerkLines[i]->name;
-		Fork((VoidFunctionPtr) bePicClerk);
+		struct Clerk c;
+		picClerkLines[i] = c;
+		Fork(bePicClerk);
 	}
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
-		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
-		name = appClerkLines[i]->name;
-		t->Fork((VoidFunctionPtr) beAppClerk, i);
+		struct Clerk c;
+		appClerkLines[i] = c;
+		Fork(beAppClerk);
 	}
 
-	int sen = NUM_SENATORS;
 	NUM_CUSTOMERS += NUM_SENATORS;
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
-		name = new char[20];
 		if (sen > 0) {
-			customers[i] = new Customer(name, i, Customer::SENATOR);
-			Fork((VoidFunctionPtr) beCustomer);
+			struct Customer c;
+			customers[i] = c;
+			Fork(beCustomer);
 			sen--;
 		}
 		else {
-			customers[i] = new Customer(name, i, Customer::REGULAR);
-			Fork((VoidFunctionPtr) beCustomer);
+			struct Customer c;
+			customers[i] = c;
+			Fork(beCustomer);
 		}
 	}
 	for (i = 0; i < NUM_MANAGERS; ++i) {
-		managers[i] = new Manager("Manager ", i);
-		name = managers[i]->name;
-		Fork((VoidFunctionPtr) beManager);
+		struct Manager m;
+		managers[i] = m;
+		Fork(beManager);
 	}
 
 	/* TODO: figure out how to get user input */

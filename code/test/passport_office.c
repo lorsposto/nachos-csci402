@@ -24,7 +24,7 @@ struct Manager managers[100];
 struct Customer customers[100];
 
 typedef enum customerType {
-	REGULAR, SENATOR
+	CUSTOMER, SENATOR
 };
 
 typedef enum {
@@ -35,6 +35,10 @@ typedef enum {
 	AVAILABLE, BUSY, BREAK
 } clerkState;
 
+int customerIndex = 0;
+int passportClerkIndex = 0;
+int picClerkIndex = 0;
+int appClerkIndex = 0;
 struct Customer {
 	int SSN;
 	bool picDone;
@@ -45,8 +49,6 @@ struct Customer {
 	int money;
 	clerkType type;
 };
-
-
 
 struct Clerk {
 	int index;
@@ -86,7 +88,88 @@ struct Cashier {
 	int customer;
 };
 
+int Customer(int ssn) {
+	customers[customerIndex].SSN = ssn;
+	customers[customerIndex].picDone = false;
+	customers[customerIndex].appDone = false;
+	customers[customerIndex].certified = false;
+	customers[customerIndex].gotPassport = false;
+	customers[customerIndex].earlybird = false;
+	customers[customerIndex].money = 100;
+	customers[customerIndex].type = CUSTOMER;
+	customerIndex++;
+	return customerIndex;
+}
+
+int Senator(int ssn) {
+	customers[customerIndex].SSN = ssn;
+	customers[customerIndex].picDone = false;
+	customers[customerIndex].appDone = false;
+	customers[customerIndex].certified = false;
+	customers[customerIndex].gotPassport = false;
+	customers[customerIndex].earlybird = false;
+	customers[customerIndex].money = 100;
+	customers[customerIndex].type = SENATOR;
+	customerIndex++;
+	return customerIndex;
+}
+
+int AppClerk(int index) {
+	appClerkLines[appClerkIndex].index = index;
+	appClerkLines[appClerkIndex].approved = false;
+	appClerkLines[appClerkIndex].bribeLineCount = 0;
+	appClerkLines[appClerkIndex].regularLineCount = 0;
+	appClerkLines[appClerkIndex].type = APP;
+	appClerkLines[appClerkIndex].state = AVAILABLE;
+	appClerkLines[appClerkIndex].regularLineCV = CreateCondition("AppClerkRegularCV", 17);
+	appClerkLines[appClerkIndex].bribeLineCV = CreateCondition("AppClerkBribeCV", 15);
+	appClerkLines[appClerkIndex].transactionCV = CreateCondition("AppClerkTransactionCV", 21);
+	appClerkLines[appClerkIndex].transactionLock = CreateLock("AppClerkTransactionLock", 23);
+	appClerkLines[appClerkIndex].breakCV = CreateCondition("AppClerkBreakCV", 15);
+	appClerkLines[appClerkIndex].customer = -1;
+	appClerkLines[appClerkIndex].money = 0;
+	appClerkIndex++;
+	return appClerkIndex;
+}
+
+int PicClerk(int index) {
+	picClerkLines[picClerkIndex].index = index;
+	picClerkLines[picClerkIndex].approved = false;
+	picClerkLines[picClerkIndex].bribeLineCount = 0;
+	picClerkLines[picClerkIndex].regularLineCount = 0;
+	picClerkLines[picClerkIndex].type = PIC;
+	picClerkLines[picClerkIndex].state = AVAILABLE;
+	picClerkLines[picClerkIndex].regularLineCV = CreateCondition("PicClerkRegularCV", 17);
+	picClerkLines[picClerkIndex].bribeLineCV = CreateCondition("PicClerkBribeCV", 15);
+	picClerkLines[picClerkIndex].transactionCV = CreateCondition("PicClerkTransactionCV", 21);
+	picClerkLines[picClerkIndex].transactionLock = CreateLock("PicClerkTransactionLock", 23);
+	picClerkLines[picClerkIndex].breakCV = CreateCondition("PicClerkBreakCV", 15);
+	picClerkLines[picClerkIndex].customer = -1;
+	picClerkLines[picClerkIndex].money = 0;
+	picClerkIndex++;
+	return picClerkIndex;
+}
+
+int PassportClerk(int index) {
+	passportClerkLines[passportClerkIndex].index = index;
+	passportClerkLines[passportClerkIndex].approved = false;
+	passportClerkLines[passportClerkIndex].bribeLineCount = 0;
+	passportClerkLines[passportClerkIndex].regularLineCount = 0;
+	passportClerkLines[passportClerkIndex].type = PP;
+	passportClerkLines[passportClerkIndex].state = AVAILABLE;
+	passportClerkLines[passportClerkIndex].regularLineCV = CreateCondition("PPClerkRegularCV", 16);
+	passportClerkLines[passportClerkIndex].bribeLineCV = CreateCondition("PPClerkBribeCV", 14);
+	passportClerkLines[passportClerkIndex].transactionCV = CreateCondition("PPClerkTransactionCV", 20);
+	passportClerkLines[passportClerkIndex].transactionLock = CreateLock("PPClerkTransactionLock", 22);
+	passportClerkLines[passportClerkIndex].breakCV = CreateCondition("PPClerkBreakCV", 14);
+	passportClerkLines[passportClerkIndex].customer = -1;
+	passportClerkLines[passportClerkIndex].money = 0;
+	passportClerkIndex++;
+	return passportClerkIndex;
+}
+
 void bePassportClerk(int passportClerkIndex) {
+	Write("Hi pp", 5, ConsoleOutput);
 	Exit(0);
 }
 
@@ -95,14 +178,17 @@ void beCashier(int cashierIndex) {
 }
 
 void bePicClerk(int picClerkIndex) {
+	Write("Hi pi", 5, ConsoleOutput);
 	Exit(0);
 }
 
 void beAppClerk(int appClerkIndex) {
+	Write("Hi ap", 5, ConsoleOutput);
 	Exit(0);
 }
 
 void beCustomer(int customerIndex) {
+	Write("Hi cs", 5, ConsoleOutput);
 	Exit(0);
 }
 
@@ -112,70 +198,68 @@ void beManager(int managerIndex) {
 
 int main() {
 
-	int NUM_CUSTOMERS = 20;
+	int NUM_CUSTOMERS = 0;
 	int NUM_SENATORS = 0;
 	int NUM_PIC_CLERKS = 1;
 	int NUM_APP_CLERKS = 1;
-	int NUM_PP_CLERKS = 1;
-	int NUM_CASHIERS = 1;
-	int NUM_MANAGERS = 1;
+	int NUM_PP_CLERKS = 0;
+	int NUM_CASHIERS = 0;
+	int NUM_MANAGERS = 0;
 
 	int sen = NUM_SENATORS;
 
 	unsigned int i;
+	int option;
+	char c;
+	bool validinput;
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
-		struct Clerk c;
-		passportClerkLines[i] = c;
+		PassportClerk(passportClerkIndex);
 		Fork(bePassportClerk);
 	}
 
-	for (i = 0; i < NUM_CASHIERS; ++i) {
+	/*for (i = 0; i < NUM_CASHIERS; ++i) {
 		struct Cashier c;
 		cashierLines[i] = c;
 		Fork(beCashier);
-	}
+	}*/
 
 	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
-		struct Clerk c;
-		picClerkLines[i] = c;
+		PicClerk(picClerkIndex);
 		Fork(bePicClerk);
 	}
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
-		struct Clerk c;
-		appClerkLines[i] = c;
+		AppClerk(appClerkIndex);
 		Fork(beAppClerk);
 	}
 
 	NUM_CUSTOMERS += NUM_SENATORS;
 	for (i = 0; i < NUM_CUSTOMERS; ++i) {
 		if (sen > 0) {
-			struct Customer c;
-			customers[i] = c;
+			Senator(customerIndex);
 			Fork(beCustomer);
 			sen--;
 		}
 		else {
-			struct Customer c;
-			customers[i] = c;
+			Customer(customerIndex);
 			Fork(beCustomer);
 		}
 	}
-	for (i = 0; i < NUM_MANAGERS; ++i) {
+
+	/*for (i = 0; i < NUM_MANAGERS; ++i) {
 		struct Manager m;
 		managers[i] = m;
 		Fork(beManager);
-	}
+	}*/
 
 	/* TODO: figure out how to get user input */
-	/* int option = 0;
-	char c;
-	bool validinput = false;
+	/*option = 0;
+	validinput = false;
 
 	Write("Enter a value 1-8: ", 20, ConsoleOutput);
 
-	Read(&option, 1, ConsoleOutput);
+	Read(option, 1, ConsoleInput);
 
 	while (!validinput) {
 		switch (option) {
@@ -208,5 +292,5 @@ int main() {
 		}
 	}
 
-	Write("\n\n", 2, ConsoleOutput); */
+	Write("\n\n", 2, ConsoleOutput);*/
 }

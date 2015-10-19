@@ -77,38 +77,43 @@ IV. Implementation:
 
 			struct process {
 				int * threadStacks;
-				int numThreadsRunning; // to check in exit if it's safe to kill the process
-				int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
+				int numThreadsRunning; 
+				int numThreadsTotal;
 			};
 
 	+ Functions added and in which file.
 			syscall.h (prototypes):
-				Yield()
-				Acquire()
-				Release()
-				Wait()
-				Signal()
-				Broadcast()
-				CreateLock()
-				DestroyLock()
-				CreateCondition()
-				DestroyCondition()
+				Yield() - interface for userprogram to call Yield 
+				Acquire(int index) - interface for userprogram to call Acquire
+				Release(int index) - interface for userprogram to call Releae
+				Wait(int conditionIndex, int lockIndex) - interface for userprogram to call Wait
+				Signal(int conditionIndex, int lockIndex) - interface for userprogram to call Signal
+				Broadcast(int conditionIndex, int lockIndex) - interface for userprogram to call Broadcast
+				CreateLock(char* name, int len) - interface for userprogram to create a Lock to use
+				DestroyLock(int index) - interface for userprogram to destroy a Lock no longer in use
+				CreateCondition(char* name, int len) -  interface for userprogram to create a Condition to use
+				DestroyCondition(int index) - interface for userprogram to destroy a Lock no longer in use
+
 			exception.h/cc
-				Exit_Syscall() 
-				Exec_Syscall()
-				kernel_thread()
-				Fork_Syscall()
-				Yield_Syscall()
-				Acquire_Syscall()
-				Release_Syscall()
-				Wait_Syscall()
-				Signal_Syscall()
-				Broadcast_Syscall()
-				CreateLock_Syscall()
-				DestroyLock_Syscall()
-				CreateCondition_Syscall()
+				Exit_Syscall(int status) - terminates the execution of the currently running thread
+				Exec_Syscall(int vaddr, int len) - begins a new process
+				exec_thread(int vaddr) - helper funciton to kick off new process
+				kernel_thread(int vaddr) - helper function to kick off new thread
+				Fork_Syscall(int vaddr) - creates a new thread within a process
+				Yield_Syscall(int vaddr) - relinquishes control of the CPU
+				Acquire_Syscall(int index) - acquires the lock with the given index
+				Release_Syscall(int index) - releases lock with the given index
+				Wait_Syscall(int conditionIndex, int lockIndex) - has the condition at the given index wait to be signaled
+				Signal_Syscall(int conditionIndex, int lockIndex) - signals the first waiting thread on the condition at the given index
+				Broadcast_Syscall(int conditionIndex, int lockIndex) - signals all waiting threads on the condition at the given index
+				CreateLock_Syscall(int vaddr, int len) - creates a lock with given name
+				DestroyLock_Syscall(int index) - destroys lock contained at index
+				CreateCondition_Syscall(int vaddr, int len) - creates a condition with given name
+				DestroyCondition_Syscall(int index) - destroys condition contained at index
 
 	+ Functions modified and in which file.
+			exception.cc:
+				ExceptionHandler(ExceptionType which) - expand for new syscall cases
 
 V. Testing:  (For each test case, you must show)
 	+ How to test

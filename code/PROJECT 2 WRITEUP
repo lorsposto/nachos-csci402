@@ -37,6 +37,7 @@ IV. Implementation:
 	+ Files Modified
 		addrspace.cc - updated constructor to correclty map virtual memory to a physical page, changing variable scope (or using getters/setters) to be able to be accessed by threads
 		exception.cc - implementation of all new system calls
+		progtest.cc - updating the process table with the very first process
 		start.s - added assembly for new system calls
 		syscall.h - added new #define values for new system calls, created function prototypes
 		system.h - new global variables delcarations
@@ -51,18 +52,6 @@ IV. Implementation:
 
 	+ Data Structures added, and the file they were added to.
 		system.h/cc - 
-			kernelLock struct (Lock, AddrSpace, bool isToBeDeleted)
-			kernelCondition struct (Condition, AddrSpace, bool isToBeDeleted)
-			kernelCondition kernelConditionList[]
-			kernelLock kernelLockList[] 
-			BitMap bitmap
-			Lock bitmapLock
-			process processTable[]
-			Lock processLock
-
-	+ Data Structures modified, and the file they were added to.
-			
-		system.h:
 			struct kernelCondition {
 				Condition * condition;
 				AddrSpace * addrsp;
@@ -80,6 +69,20 @@ IV. Implementation:
 				int numThreadsRunning; 
 				int numThreadsTotal;
 			};
+
+			kernelCondition kernelConditionList[]
+			kernelLock kernelLockList[] 
+			BitMap bitmap
+			Lock bitmapLock
+			process processTable[]
+			Lock processLock
+
+	+ Data Structures modified, and the file they were added to.
+			
+		addrspace.h:
+			AddrSpace - addition of int for processIndex and numPages
+		thread.h 
+			Thread - addition of int for threadIndex
 
 	+ Functions added and in which file.
 			syscall.h (prototypes):
@@ -112,8 +115,12 @@ IV. Implementation:
 				DestroyCondition_Syscall(int index) - destroys condition contained at index
 
 	+ Functions modified and in which file.
+			addrspace.cc:
+				AddrSpace(OpenFile *executable) - change from supporting uniprogram to multiprogram by splitting out physical/virtual to a non-direct mapping
 			exception.cc:
 				ExceptionHandler(ExceptionType which) - expand for new syscall cases
+			progtest.cc:
+				StartProcess(char *filename) - add very first process to the process table
 
 V. Testing:  (For each test case, you must show)
 	+ How to test

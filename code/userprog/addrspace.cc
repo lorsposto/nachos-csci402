@@ -190,7 +190,7 @@ void AddrSpace::addStack() {
 	bitmapLock.Acquire();
 	// initialize new empty pages
 	ASSERT(numPages < NumPhysPages)
-	for (int i = numPages; i < numPages + 8; i++) {
+	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
 		int ppn = bitmap.Find();
 		pageTable[i].virtualPage = i;// for now, virtual page # = phys page #
@@ -209,7 +209,7 @@ void AddrSpace::addStack() {
 void AddrSpace::expandTable() {
 	TranslationEntry* newPageTable = new TranslationEntry[numPages+8]; // is this math right?
 	// copy over old existing pages
-	for (int i = 0; i < numPages; i++) {
+	for (unsigned int i = 0; i < numPages; i++) {
 		newPageTable[i].virtualPage = pageTable[i].virtualPage; // deep copy
 		newPageTable[i].physicalPage = pageTable[i].physicalPage;
 		newPageTable[i].valid = pageTable[i].valid;
@@ -220,7 +220,7 @@ void AddrSpace::expandTable() {
 
 	bitmapLock.Acquire();
 	// initialize new empty pages
-	for (int i = numPages; i < numPages+8;
+	for (unsigned int i = numPages; i < numPages+8;
 			i++) {
 		// find a physical page number -L
 		int ppn = bitmap.Find();
@@ -239,7 +239,7 @@ void AddrSpace::expandTable() {
 	//	oldPageTable = newPageTable;
 	delete[] pageTable;
 	pageTable = newPageTable;
-	machine->pageTable = pageTable;
+	RestoreState();
 }
 
 //----------------------------------------------------------------------

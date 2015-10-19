@@ -2,7 +2,7 @@
 
 typedef enum { false, true } bool;
 
-void PassportOffice() {
+int main() {
 	int option = 0;
 	char c;
 	bool validinput = false;
@@ -43,12 +43,4 @@ void PassportOffice() {
 	}
 
 	Write("\n\n", 2, ConsoleOutput);
-	Exit(0);
-}
-
-int main() {
-	int i;
-	for(i=0; i < 5; i++) {
-		Fork(PassportOffice);
-	}
 }

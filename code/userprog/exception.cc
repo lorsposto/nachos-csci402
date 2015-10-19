@@ -375,13 +375,13 @@ void Exec_Syscall(int vaddr, int len) {
 	p->numThreadsRunning = 1; // when does this get incremented???
 	p->threadStacks[0] = 0; //first thread's stack starts at 0?
 	processTable[processIndex] = p;
-	
+
 	processIndex++;
 	activeProcesses++;
 
 	// Create a new thread
 	Thread* t = new Thread("exec_thread", 0);
-	
+
 	processLock.Release();
 
 	// Allocate the space created to this thread's space
@@ -687,7 +687,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 	// Create the new lock...
 	kernelLockLock.Acquire();
-	printf("Creating lock %s.\n", buf);
+	printf("Creating lock %s, index %i.\n", buf, kernelLockIndex);
 	int createdLockIndex = kernelLockIndex;
 	kernelLockList[kernelLockIndex].lock = new Lock(buf);
 	kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
@@ -751,7 +751,7 @@ int CreateCondition_Syscall(int vaddr, int len) {
 
 	// Create the new condition variable...
 	kernelConditionLock.Acquire();
-	printf("Creating condition %s.\n", buf);
+	printf("Creating condition %s, index %i.\n", buf, kernelConditionIndex);
 	int createdConditionIndex = kernelConditionIndex;
 	kernelConditionList[kernelConditionIndex].condition = new Condition(buf);
 	kernelConditionList[kernelConditionIndex].addrsp = currentThread->space;

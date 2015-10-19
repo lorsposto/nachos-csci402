@@ -49,6 +49,9 @@ int customerCounterLock;
 int senatorLock;
 /* Semaphore senatorSema; */
 int senatorCV;
+int managerIndex = 0;
+int cashierIndex = 0;
+
 
 struct Customer {
 	int SSN;
@@ -179,6 +182,11 @@ int PassportClerk(int index) {
 	return passportClerkIndex;
 }
 
+int Manager(int index) {
+	managers[managerIndex].index = index;
+	managers[managerIndex].counter = 0;
+}
+
 void bePassportClerk(int passportClerkIndex) {
 	Write("Hi pp\n", 6, ConsoleOutput);
 	Exit(0);
@@ -273,7 +281,177 @@ void beCustomer(int customerIndex) {
 	Exit(0);
 }
 
-void beManager(int managerIndex) {
+void beManager() {
+	int i;
+	int j;
+	int myIndex = Manager(managerIndex);
+
+	while (customersServed < NUM_CUSTOMERS) {
+		
+		/* it didn't like this for whatever reason 
+		if (managers[myIndex].counter % 2 == 0) {
+			// broadcastMoney();
+		}*/
+
+		/*checks if all clerks are on break. Because the manager terminates when all customers are served,
+		if there are still customers to be served and all clerks of a type are on break we know there are
+		<3 people in line who must be served*/
+		bool allOnBreak = true;
+		managers[myIndex].counter++;
+
+		/*FIX TO USE CORRECT LOCK STUFF picLineLock.Acquire();*/
+		for (i = 0; i < picClerkIndex; ++i) {
+
+			if (picClerkLines[i].state == BREAK
+					&& (picClerkLines[i].bribeLineCount
+							+ picClerkLines[i].regularLineCount > 2
+							|| senatorInProcess == true)) {
+				picClerkLines[i].state = AVAILABLE;
+				
+				/*FIX TO USE CORRECT CONDITION STUFF picClerkLines[i].breakCV->Signal(&picLineLock);*/
+
+				/*CHANGE TO NOT BE PRINTF
+				printf("%s has woken up a PictureClerk\n",
+						managers[index]->name);*/
+
+				allOnBreak = false;
+			} else {
+				if(picClerkLines[i].state != BREAK)
+					allOnBreak = false;
+			}
+		}
+		/*all picture clerks are on break because they have < 3 in line, but there are still customers waiting to be served*/
+		if(allOnBreak == true) {
+			for (i = 0; i < picClerkIndex; ++i) {
+				if(picClerkLines[i].bribeLineCount
+						+ picClerkLines[i].regularLineCount > 0) {
+					picClerkLines[i].state = AVAILABLE;
+					
+					/* FIX TO USE CORRECT LOCK STUFF picClerkLines[i]->breakCV->Signal(&picLineLock);*/
+					
+					/*CHANGE TO NOT BE PRINTF 
+					printf("%s has woken up a PictureClerk\n",
+						managers[index]->name);*/
+				}
+			}
+		}
+
+		allOnBreak = true;
+
+		/*FIX TO USE CORRECT LOCK STUFF picLineLock.Release();*/
+
+		/*FIX TO USE CORRECT LOCK STUFF appLineLock.Acquire();*/
+
+		for (i = 0; i < appClerkIndex; ++i) {
+
+			if (appClerkLines[i].state == BREAK
+					&& (appClerkLines[i].bribeLineCount
+							+ appClerkLines[i].regularLineCount > 2
+							|| senatorInProcess == true)) {
+				appClerkLines[i].state = AVAILABLE;
+				
+				/*FIX TO USE CORRECT CONDITION STUFF appClerkLines[i].breakCV->Signal(&appLineLock);*/
+
+				/*CHANGE TO NOT BE PRINTF 
+				printf("%s has woken up an ApplicationClerk\n",
+						managers[index]->name);*/
+				allOnBreak = false;
+			} else {
+				if(appClerkLines[i].state != BREAK)
+					allOnBreak = false;
+			}
+		}
+		/*all app clerks are on break because they have < 3 in line, but there are still customers waiting to be served*/
+		if(allOnBreak == true) {
+			for (i = 0; i < appClerkIndex; ++i) {
+				if(appClerkLines[i].bribeLineCount
+						+ appClerkLines[i].regularLineCount > 0) {
+					appClerkLines[i].state = AVAILABLE;
+					
+					/*FIX ALL DIS appClerkLines[i].breakCV->Signal(&appLineLock);
+					printf("%s has woken up an ApplicationClerk\n",
+						managers[index]->name);*/
+				}
+			}
+		}
+
+		allOnBreak = true;
+
+		/*FIX appLineLock.Release();
+		
+		FIX passportLineLock.Acquire();*/
+
+		for (i = 0; i < passportClerkIndex; ++i) {
+
+			if (passportClerkLines[i].state == BREAK
+					&& (passportClerkLines[i].bribeLineCount
+							+ passportClerkLines[i].regularLineCount > 2
+							|| senatorInProcess)) {
+				passportClerkLines[i].state = AVAILABLE;
+				/*FIX ALL passportClerkLines[i]->breakCV->Signal(&passportLineLock);
+				printf("%s has woken up a PassportClerk\n",
+						managers[index]->name);*/
+				allOnBreak = false;
+			} else {
+				if(passportClerkLines[i].state != BREAK)
+					allOnBreak = false;
+			}
+		}
+
+		/*all passport clerks are on break because they have < 3 in line, but there are still customers waiting to be served*/
+		if(allOnBreak == true) {
+			for (i = 0; i < passportClerkIndex; ++i) {
+				if(passportClerkLines[i].bribeLineCount
+						+ passportClerkLines[i].regularLineCount > 0) {
+					passportClerkLines[i].state = AVAILABLE;
+					/*FIX ALL passportClerkLines[i]->breakCV->Signal(&passportLineLock);
+					printf("%s has woken up an PassportClerk\n",
+						managers[index]->name);*/
+				}
+			}
+		}
+
+		allOnBreak = true;
+
+		/*FIX passportLineLock.Release();
+		FIX cashierLineLock.Acquire();*/
+
+		for (i = 0; i < cashierIndex; ++i) {
+
+			if (cashierLines[i].state == BREAK
+					&& (cashierLines[i].lineCount > 2 || senatorInProcess == true)) {
+				cashierLines[i].state = AVAILABLE;
+				/*FIX ALL cashierLines[i]->breakCV->Signal(&cashierLineLock);
+				printf("%s has woken up a Cashier\n", managers[index]->name);
+				allOnBreak = false;*/
+			} else {
+				if(cashierLines[i].state != BREAK)
+					allOnBreak = false;
+			}
+		}
+
+		/*all cashier clerks are on break because they have < 3 in line, but there are still customers waiting to be served*/
+		if(allOnBreak == true) {
+			for (j = 0; j < cashierIndex; ++j) {
+				if(cashierLines[j].lineCount > 0) {
+					cashierLines[j].state = AVAILABLE;
+					/*FIX ALL cashierLines[j].breakCV->Signal(&cashierLineLock);
+					printf("%s has woken up a Cashier\n",
+						managers[index]->name);*/
+				}
+			}
+		}
+
+		allOnBreak = true;
+		/*FIX cashierLineLock.Release(); */
+
+		/*fix to use RAND when we make a syscall for that*/
+		for (i = 0; i < 250; ++i) {
+			Yield();
+		}
+	}
+
+
 	Exit(0);
 }
 
@@ -338,11 +516,9 @@ int main() {
 		}
 	}
 
-	/*for (i = 0; i < NUM_MANAGERS; ++i) {
-		struct Manager m;
-		managers[i] = m;
+	for (i = 0; i < NUM_MANAGERS; ++i) {
 		Fork(beManager);
-	}*/
+	}
 
 	/* TODO: figure out how to get user input */
 	/*option = 0;

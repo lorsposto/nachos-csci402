@@ -1,12 +1,46 @@
 #include "syscall.h"
 
-void beCustomer() {
-	Write("I am a customer.\n",17,ConsoleOutput);
-}
+typedef enum { false, true } bool;
 
 int main() {
-	int i;
-	for(i=0; i < 5; i++)
-		Fork(beCustomer);
+
+	int option = 0;
+	char c;
+	bool validinput = false;
+
+	Read(&option, 1, ConsoleOutput);
+
+	while (!validinput) {
+		switch (option) {
+			case 1:
+				validinput = true;
+				break;
+			case 2:
+				validinput = true;
+				break;
+			case 3:
+				validinput = true;
+				break;
+			case 4:
+				validinput = true;
+				break;
+			case 5:
+				validinput = true;
+				break;
+			case 6:
+				validinput = true;
+				break;
+			case 7:
+				validinput = true;
+				break;
+			case 8:
+				validinput = true;
+				break;
+			default:
+				Write("Invalid input. \n", 16, ConsoleOutput);
+		}
+	}
+
+	Write("\n\n", 2, ConsoleOutput);
 
 }

@@ -319,6 +319,114 @@ void bePassportClerk(int passportClerkIndex) {
 }
 
 void beCashier(int cashierIndex) {
+
+	while (true) {
+		/* once they are not on break, process the line*/
+		while (cashierLines[cashierIndex].state != BREAK) {
+			Acquire(cashierLineLock);
+
+			if (cashierLines[cashierIndex].lineCount > 0) {
+
+				/*printf(
+						"%s has signalled a Customer to come to their counter.\n",
+						cashierLines[cashierIndex]->name);*/
+				Signal(cashierLines[cashierIndex].lineCV, cashierLineLock);
+				cashierLines[cashierIndex].state = BUSY;
+			}
+			else {
+				cashierLines[cashierIndex].state = BREAK;
+				/*printf("%s is going on break.\n",
+						cashierLines[cashierIndex]->name);*/
+				Wait(cashierLines[cashierIndex].breakCV, cashierLineLock);
+				/*printf("%s is coming off break.\n",
+						cashierLines[cashierIndex]->name);*/
+				Release(cashierLineLock);
+				break;
+			}
+
+			Acquire(cashierLines[cashierIndex].transactionLock);
+			Release(cashierLineLock);
+
+			/* wait for Customer data*/
+			Wait(cashierLines[cashierIndex].transactionCV,
+					cashierLines[cashierIndex].transactionLock);
+
+			/*printf("%s has received SSN %i from %s\n",
+				cashierLines[cashierIndex]->name,
+				cashierLines[cashierIndex]->customer->SSN,
+				cashierLines[cashierIndex]->customer->name);*/
+
+			/* If the customer has finished everything*/
+			if (customers[cashierLines[cashierIndex].customer].appDone
+					&& customers[cashierLines[cashierIndex].customer].picDone
+					&& customers[cashierLines[cashierIndex].customer].certified) {
+
+				/*printf("%s has verified that %s has been certified by a PassportClerk\n",
+						cashierLines[cashierIndex]->name,
+						cashierLines[cashierIndex]->customer->name);*/
+
+				cashierLines[cashierIndex].approved = true;
+
+
+				Signal(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+
+				Wait(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+
+	
+				Signal(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+
+				Wait(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+
+				/*printf("%s has received the $100 from %s after certification\n",
+						cashierLines[cashierIndex]->name,
+						cashierLines[cashierIndex]->customer->name);*/
+
+				/* receive money from customer */
+				cashierLines[cashierIndex].money += 100;
+				customers[cashierLines[cashierIndex].customer].money -= 100;
+
+
+				/* set passport as received by customer */
+				customers[cashierLines[cashierIndex].customer].gotPassport = true;
+
+				/*printf("%s has provided %s their completed passport\n",
+						cashierLines[cashierIndex]->name,
+						cashierLines[cashierIndex]->customer->name);*/
+
+				Signal(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+
+				/*printf(
+						"%s has recorded that %s has been given their completed passport\n",
+						cashierLines[cashierIndex]->name,
+						cashierLines[cashierIndex]->customer->name);*/
+			}
+			else if (customers[cashierLines[cashierIndex].customer].appDone
+					&& customers[cashierLines[cashierIndex].customer].picDone
+					&& customers[cashierLines[cashierIndex].customer].earlybird) {
+				/*printf("%s has received the $100 from %s before certification. They are to go to the back of line\n",
+				cashierLines[cashierIndex]->name, cashierLines[cashierIndex]->customer->name);*/
+				cashierLines[cashierIndex].approved = false;
+				customers[cashierLines[cashierIndex].customer].certified = true; /* artificially allow customer to go next time */
+				/*printf("%s has gone to %s too soon. They are going to the back of the line\n",
+					cashierLines[cashierIndex]->customer->name, cashierLines[cashierIndex]->name);*/
+				Signal(cashierLines[cashierIndex].transactionCV,
+					cashierLines[cashierIndex].transactionLock);
+			}
+			else {
+				cashierLines[cashierIndex].approved = false;
+				Signal(cashierLines[cashierIndex].transactionCV,
+						cashierLines[cashierIndex].transactionLock);
+			}
+			Wait(cashierLines[cashierIndex].transactionCV,
+					cashierLines[cashierIndex].transactionLock);
+			Release(cashierLines[cashierIndex].transactionLock);
+		}
+	}
 	Exit(0);
 }
 

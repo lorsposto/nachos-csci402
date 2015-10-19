@@ -827,6 +827,40 @@ void beManager() {
 	Exit(0);
 }
 
+void picAppCustomerProcess(int customerIndex) {
+
+}
+
+void passportCustomerProcess(int customerIndex) {
+
+}
+
+void cashierCustomerProcess(int customerIndex) {
+	int myLine = -1;
+	int lineSize = 1000;
+	unsigned int i;
+
+	Acquire(cashierLineLock);
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		if (cashierLines[i].lineCount < lineSize) {
+			myLine = i;
+			lineSize = cashierLines[i].lineCount;
+		}
+	}
+
+	cashierLines[myLine].lineCount++;
+	/* printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
+			cashierLines[myLine]->name); */
+	Wait(cashierLines[myLine].lineCV, cashierLineLock);
+	cashierLines[myLine].lineCount--;
+
+	cashierLines[myLine].state = BUSY;
+
+	Release(cashierLineLock);
+	/* cashierTransaction(customerIndex, myLine); */
+}
+
 int main() {
 
 	int NUM_CUSTOMERS = 10;

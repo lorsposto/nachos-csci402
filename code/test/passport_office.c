@@ -23,20 +23,67 @@ struct Manager managers[100];
 
 struct Customer customers[100];
 
-struct Customer {
-
+typedef enum customerType {
+	REGULAR, SENATOR
 };
 
-struct Clerk {
+typedef enum {
+	APP, PIC, PP
+} clerkType;
 
+typedef enum {
+	AVAILABLE, BUSY, BREAK
+} clerkState;
+
+struct Customer {
+	int SSN;
+	bool picDone;
+	bool appDone;
+	bool certified;
+	bool gotPassport;
+	bool earlybird;
+	int money;
+	clerkType type;
+};
+
+
+
+struct Clerk {
+	int index;
+	bool approved;
+	int bribeLineCount;
+	int regularLineCount;
+	clerkType type;
+	clerkState state;
+	int regularLineCV;
+	int bribeLineCV;
+	int transactionCV;
+	int transactionLock;
+
+	int breakCV;
+
+	int customer;
+	int money;
 };
 
 struct Manager {
-
+	int index;
+	int counter;
 };
 
 struct Cashier {
+	int index;
+	bool approved;
+	int lineCount;
+	int money;
+	clerkState state;
+	int lineCV;
+	int transactionCV;
+	int transactionLock;
 
+	int breakCV;
+
+	int customer;
 };
 
 void bePassportClerk(int passportClerkIndex) {

@@ -46,6 +46,7 @@ int appLineLock;
 int passportLineLock;
 int cashierLineLock;
 int customerCounterLock;
+int managerCounterLock;
 int senatorLock;
 /* Semaphore senatorSema; */
 int senatorCV;
@@ -284,22 +285,26 @@ void beCustomer(int customerIndex) {
 void beManager() {
 	int i;
 	int j;
-	int myIndex = Manager(managerIndex);
+	int myIndex;
+	bool allOnBreak;
+
+	Acquire(managerCounterLock);
+	myIndex = Manager(managerIndex);
+	Release(managerCounterLock);
 
 	while (customersServed < NUM_CUSTOMERS) {
 		
-		/* it didn't like this for whatever reason 
 		if (managers[myIndex].counter % 2 == 0) {
-			// broadcastMoney();
-		}*/
+			/* broadcastMoney();*/
+		}
 
 		/*checks if all clerks are on break. Because the manager terminates when all customers are served,
 		if there are still customers to be served and all clerks of a type are on break we know there are
 		<3 people in line who must be served*/
-		bool allOnBreak = true;
+		allOnBreak = true;
 		managers[myIndex].counter++;
 
-		/*FIX TO USE CORRECT LOCK STUFF picLineLock.Acquire();*/
+		Acquire(picLineLock);
 		for (i = 0; i < picClerkIndex; ++i) {
 
 			if (picClerkLines[i].state == BREAK
@@ -308,7 +313,7 @@ void beManager() {
 							|| senatorInProcess == true)) {
 				picClerkLines[i].state = AVAILABLE;
 				
-				/*FIX TO USE CORRECT CONDITION STUFF picClerkLines[i].breakCV->Signal(&picLineLock);*/
+				Signal(picClerkLines[i].breakCV, picLineLock);
 
 				/*CHANGE TO NOT BE PRINTF
 				printf("%s has woken up a PictureClerk\n",
@@ -327,7 +332,7 @@ void beManager() {
 						+ picClerkLines[i].regularLineCount > 0) {
 					picClerkLines[i].state = AVAILABLE;
 					
-					/* FIX TO USE CORRECT LOCK STUFF picClerkLines[i]->breakCV->Signal(&picLineLock);*/
+					Signal(picClerkLines[i].breakCV, picLineLock);
 					
 					/*CHANGE TO NOT BE PRINTF 
 					printf("%s has woken up a PictureClerk\n",
@@ -338,9 +343,9 @@ void beManager() {
 
 		allOnBreak = true;
 
-		/*FIX TO USE CORRECT LOCK STUFF picLineLock.Release();*/
+		Release(picLineLock);
 
-		/*FIX TO USE CORRECT LOCK STUFF appLineLock.Acquire();*/
+		Acquire(appLineLock);
 
 		for (i = 0; i < appClerkIndex; ++i) {
 
@@ -350,7 +355,7 @@ void beManager() {
 							|| senatorInProcess == true)) {
 				appClerkLines[i].state = AVAILABLE;
 				
-				/*FIX TO USE CORRECT CONDITION STUFF appClerkLines[i].breakCV->Signal(&appLineLock);*/
+				Signal(appClerkLines[i].breakCV, appLineLock);
 
 				/*CHANGE TO NOT BE PRINTF 
 				printf("%s has woken up an ApplicationClerk\n",
@@ -368,8 +373,8 @@ void beManager() {
 						+ appClerkLines[i].regularLineCount > 0) {
 					appClerkLines[i].state = AVAILABLE;
 					
-					/*FIX ALL DIS appClerkLines[i].breakCV->Signal(&appLineLock);
-					printf("%s has woken up an ApplicationClerk\n",
+					Signal(appClerkLines[i].breakCV, appLineLock);
+					/*FIX printf("%s has woken up an ApplicationClerk\n",
 						managers[index]->name);*/
 				}
 			}
@@ -377,9 +382,9 @@ void beManager() {
 
 		allOnBreak = true;
 
-		/*FIX appLineLock.Release();
+		Release(appLineLock);
 		
-		FIX passportLineLock.Acquire();*/
+		Acquire(passportLineLock);
 
 		for (i = 0; i < passportClerkIndex; ++i) {
 
@@ -388,8 +393,8 @@ void beManager() {
 							+ passportClerkLines[i].regularLineCount > 2
 							|| senatorInProcess)) {
 				passportClerkLines[i].state = AVAILABLE;
-				/*FIX ALL passportClerkLines[i]->breakCV->Signal(&passportLineLock);
-				printf("%s has woken up a PassportClerk\n",
+				Signal(passportClerkLines[i].breakCV, passportLineLock);
+				/*FIX printf("%s has woken up a PassportClerk\n",
 						managers[index]->name);*/
 				allOnBreak = false;
 			} else {
@@ -404,8 +409,8 @@ void beManager() {
 				if(passportClerkLines[i].bribeLineCount
 						+ passportClerkLines[i].regularLineCount > 0) {
 					passportClerkLines[i].state = AVAILABLE;
-					/*FIX ALL passportClerkLines[i]->breakCV->Signal(&passportLineLock);
-					printf("%s has woken up an PassportClerk\n",
+					Signal(passportClerkLines[i].breakCV, passportLineLock);
+					/*FIX printf("%s has woken up an PassportClerk\n",
 						managers[index]->name);*/
 				}
 			}
@@ -413,17 +418,17 @@ void beManager() {
 
 		allOnBreak = true;
 
-		/*FIX passportLineLock.Release();
-		FIX cashierLineLock.Acquire();*/
+		Release(passportLineLock);
+		Acquire(cashierLineLock);
 
 		for (i = 0; i < cashierIndex; ++i) {
 
 			if (cashierLines[i].state == BREAK
 					&& (cashierLines[i].lineCount > 2 || senatorInProcess == true)) {
 				cashierLines[i].state = AVAILABLE;
-				/*FIX ALL cashierLines[i]->breakCV->Signal(&cashierLineLock);
-				printf("%s has woken up a Cashier\n", managers[index]->name);
-				allOnBreak = false;*/
+				Signal(cashierLines[i].breakCV, cashierLineLock);
+				/*FIX printf("%s has woken up a Cashier\n", managers[index]->name);*/
+				allOnBreak = false;
 			} else {
 				if(cashierLines[i].state != BREAK)
 					allOnBreak = false;
@@ -435,15 +440,15 @@ void beManager() {
 			for (j = 0; j < cashierIndex; ++j) {
 				if(cashierLines[j].lineCount > 0) {
 					cashierLines[j].state = AVAILABLE;
-					/*FIX ALL cashierLines[j].breakCV->Signal(&cashierLineLock);
-					printf("%s has woken up a Cashier\n",
+					Signal(cashierLines[j].breakCV, cashierLineLock);
+					/*printf("%s has woken up a Cashier\n",
 						managers[index]->name);*/
 				}
 			}
 		}
 
 		allOnBreak = true;
-		/*FIX cashierLineLock.Release(); */
+		Release(cashierLineLock);
 
 		/*fix to use RAND when we make a syscall for that*/
 		for (i = 0; i < 250; ++i) {
@@ -477,6 +482,7 @@ int main() {
 	passportLineLock = CreateLock("Passport Line Lock", 18);
 	cashierLineLock = CreateLock("Cashier Line Lock", 17);
 	customerCounterLock = CreateLock("Customer Counter Lock", 21);
+	managerCounterLock = CreateLock("Manager Counter Lock", 20);
 
 	senatorLock = CreateLock("Senator Lock", 12);
 	/* Semaphore senatorSema("Senator Semaphore", 1); */

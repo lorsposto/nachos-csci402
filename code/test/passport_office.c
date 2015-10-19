@@ -13,16 +13,16 @@ unsigned int NUM_MANAGERS = 0;
 unsigned int customersServed = 0;
 
 bool senatorInProcess = false;
-Customer[] currentSenator = NULL;
+struct Customer * currentSenator = NULL;
 
-Clerk[] picClerkLines[100];
-Clerk[] appClerkLines[100];
-Clerk[] passportClerkLines[100];
-Cashier[] cashierLines[100];
+struct Clerk * picClerkLines[100];
+struct Clerk * appClerkLines[100];
+struct Clerk * passportClerkLines[100];
+struct Cashier * cashierLines[100];
 
-Manager[] managers[100];
+struct Manager * managers[100];
 
-Customer[] customers[100];
+struct Customer * customers[100];
 
 struct Customer {
 
@@ -42,7 +42,7 @@ struct Clerk {
 	}
 };
 
-class Manager {
+struct Manager {
 
 	Manager(char * n, int i) {
 
@@ -94,7 +94,7 @@ int main() {
 	int NUM_CASHIERS = 1;
 	int NUM_MANAGERS = 1;
 
-	char[] name;
+	char * name;
 	unsigned int i;
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
@@ -117,7 +117,6 @@ int main() {
 
 	for (i = 0; i < NUM_APP_CLERKS; ++i) {
 		appClerkLines[i] = new Clerk("Application Clerk ", i, Clerk::APP);
-
 		name = appClerkLines[i]->name;
 		t->Fork((VoidFunctionPtr) beAppClerk, i);
 	}
@@ -138,7 +137,6 @@ int main() {
 	}
 	for (i = 0; i < NUM_MANAGERS; ++i) {
 		managers[i] = new Manager("Manager ", i);
-
 		name = managers[i]->name;
 		Fork((VoidFunctionPtr) beManager);
 	}

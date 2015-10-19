@@ -1,5 +1,6 @@
 #include "syscall.h"
 
+#define NULL 0
 typedef enum { false, true } bool;
 
 int NUM_CUSTOMERS = 0;
@@ -23,9 +24,9 @@ struct Manager managers[100];
 
 struct Customer customers[100];
 
-typedef enum customerType {
+typedef enum {
 	CUSTOMER, SENATOR
-};
+} customerType;
 
 typedef enum {
 	APP, PIC, PP
@@ -39,6 +40,16 @@ int customerIndex = 0;
 int passportClerkIndex = 0;
 int picClerkIndex = 0;
 int appClerkIndex = 0;
+
+int picLineLock;
+int appLineLock;
+int passportLineLock;
+int cashierLineLock;
+int customerCounterLock;
+int senatorLock;
+/* Semaphore senatorSema; */
+int senatorCV;
+
 struct Customer {
 	int SSN;
 	bool picDone;
@@ -188,7 +199,77 @@ void beAppClerk(int appClerkIndex) {
 }
 
 void beCustomer(int customerIndex) {
+
+	int targetLock = CreateLock("Lock", 4);
+
 	Write("Hi cs\n", 6, ConsoleOutput);
+
+	if (customers[customerIndex].type == SENATOR) {
+		/* senatorSema.P(); */
+		Acquire(senatorLock);
+		senatorInProcess = true;
+		currentSenator = customers[customerIndex];
+		Release(senatorLock);
+	}
+
+	while ((!customers[customerIndex].picDone == true
+			|| customers[customerIndex].appDone == false
+			|| customers[customerIndex].certified == false
+			|| customers[customerIndex].gotPassport == false)) {
+
+		if (customers[customerIndex].type != SENATOR
+				&& senatorInProcess == true) {
+			Acquire(senatorLock);
+			/* printf("%s is going outside the Passport Office because there is a Senator present.\n",
+					currentThread->getName()); */
+			Wait(senatorCV, senatorLock);
+			Release(senatorLock);
+		}
+		if (senatorInProcess == false ||
+			(customers[customerIndex].type == SENATOR && currentSenator.SSN == customers[customerIndex].SSN)) {
+
+			if (customers[customerIndex].picDone == false
+					|| customers[customerIndex].appDone == false) {
+				/* picAppCustomerProcess(customerIndex); */
+			}
+			else if (customers[customerIndex].appDone == true
+					&& customers[customerIndex].picDone == true
+					&& customers[customerIndex].certified == false
+					&& customers[customerIndex].earlybird == false) {
+				/* passportCustomerProcess(customerIndex); */
+			}
+			else if (customers[customerIndex].certified == true
+					|| customers[customerIndex].earlybird == true
+					&& customers[customerIndex].gotPassport == false) {
+				/* cashierCustomerProcess(customerIndex); */
+			}
+
+			if (customers[customerIndex].type != SENATOR
+					&& senatorInProcess == true) {
+				Acquire(senatorLock);
+				Wait(senatorCV, senatorLock);
+				Release(senatorLock);
+			}
+		}
+	}
+
+	/* printf("%s is leaving the Passport Office.\n",
+			customers[customerIndex]->name); */
+
+	Acquire(customerCounterLock);
+	customersServed++;
+	Release(customerCounterLock);
+
+	if (customers[customerIndex].type == SENATOR
+			&& senatorInProcess == true) {
+		Acquire(senatorLock);
+		/* currentSenator = NULL; */
+		senatorInProcess = false;
+		Broadcast(senatorCV, senatorLock);
+		Release(senatorLock);
+		/* senatorSema.V(); */
+	}
+
 	Exit(0);
 }
 
@@ -212,6 +293,16 @@ int main() {
 	int option;
 	char c;
 	bool validinput;
+
+	picLineLock = CreateLock("Pic Line Lock", 13);
+	appLineLock = CreateLock("App Line Lock", 13);
+	passportLineLock = CreateLock("Passport Line Lock", 18);
+	cashierLineLock = CreateLock("Cashier Line Lock", 17);
+	customerCounterLock = CreateLock("Customer Counter Lock", 21);
+
+	senatorLock = CreateLock("Senator Lock", 12);
+	/* Semaphore senatorSema("Senator Semaphore", 1); */
+	senatorCV = CreateCondition("Senator CV", 10);
 
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		PassportClerk(passportClerkIndex);

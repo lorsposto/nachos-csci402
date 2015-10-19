@@ -169,7 +169,7 @@ int PassportClerk(int index) {
 }
 
 void bePassportClerk(int passportClerkIndex) {
-	Write("Hi pp", 5, ConsoleOutput);
+	Write("Hi pp\n", 6, ConsoleOutput);
 	Exit(0);
 }
 
@@ -178,17 +178,17 @@ void beCashier(int cashierIndex) {
 }
 
 void bePicClerk(int picClerkIndex) {
-	Write("Hi pi", 5, ConsoleOutput);
+	Write("Hi pi\n", 6, ConsoleOutput);
 	Exit(0);
 }
 
 void beAppClerk(int appClerkIndex) {
-	Write("Hi ap", 5, ConsoleOutput);
+	Write("Hi ap\n", 6, ConsoleOutput);
 	Exit(0);
 }
 
 void beCustomer(int customerIndex) {
-	Write("Hi cs", 5, ConsoleOutput);
+	Write("Hi cs\n", 6, ConsoleOutput);
 	Exit(0);
 }
 
@@ -198,11 +198,11 @@ void beManager(int managerIndex) {
 
 int main() {
 
-	int NUM_CUSTOMERS = 0;
+	int NUM_CUSTOMERS = 10;
 	int NUM_SENATORS = 0;
 	int NUM_PIC_CLERKS = 1;
 	int NUM_APP_CLERKS = 1;
-	int NUM_PP_CLERKS = 0;
+	int NUM_PP_CLERKS = 1;
 	int NUM_CASHIERS = 0;
 	int NUM_MANAGERS = 0;
 

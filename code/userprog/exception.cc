@@ -366,6 +366,7 @@ void Exec_Syscall(int vaddr, int len) {
 	// Create new addrespace for this executable file and update process table
 	AddrSpace* a = new AddrSpace(f);
 	a->processIndex = processIndex;
+	a->addStack();
 	delete f;
 
 	process *p = new process;
@@ -417,36 +418,7 @@ void Fork_Syscall(int vaddr, int len) {
 	// Update the Process Table for Multiprogramming part
 	int oldPageTableIndex = p->threadStacks[currentThread->threadIndex];
 	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
-	TranslationEntry* newPageTable = new TranslationEntry[(p->numThreadsTotal + 1) * 8]; // is this math right?
-	// copy over old existing pages
-	for (int i = 0; i < p->numThreadsTotal * 8; i++) {
-		newPageTable[i].virtualPage = oldPageTable[i].virtualPage; // deep copy
-		newPageTable[i].physicalPage = oldPageTable[i].physicalPage;
-		newPageTable[i].valid = oldPageTable[i].valid;
-		newPageTable[i].readOnly = oldPageTable[i].readOnly;
-		newPageTable[i].use = oldPageTable[i].use;
-		newPageTable[i].dirty = oldPageTable[i].dirty;
-	}
-
-	bitmapLock.Acquire();
-	// initialize new empty pages
-	for (int i = p->numThreadsTotal * 8; i < (p->numThreadsTotal + 1) * 8; i++) {
-		// find a physical page number -L
-		int ppn = bitmap.Find();
-		newPageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
-		newPageTable[i].valid = TRUE;
-		newPageTable[i].use = FALSE;
-		newPageTable[i].dirty = FALSE;
-		newPageTable[i].readOnly = FALSE;  // if the code segment was entirely on
-		// a separate page, we could set its
-		// pages to be read-only
-	}
-	bitmapLock.Release();
-
-	// replace old page table (by reference)
-//	oldPageTable = newPageTable;
-	currentThread->space->setPageTable(newPageTable);
+	currentThread->space->expandTable();
 	/*updates the MACHINE'S page table (the registers currently in CPU basically).
 										setting the page table makes it correct for all FUTURE times the thread is swapped
 										in the CPU but we still need to change the current registers to use the new page table before

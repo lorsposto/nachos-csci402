@@ -1,0 +1,127 @@
+ Title:  Writeup for Project 2, Fall 2015
+ Date:  10/18/15
+ Group:	Erika Johnson	erikajoh@usc.edu	
+		Heather Persson	hpersson@usc.edu	
+		Lorraine Sposto	llsposto@usc.edu
+
+I. Requirements:
+- Expand the exception handler to handle new types of interrupts for new syscalls
+- Implement the following new system calls: Fork, Exec, Exit, Yield
+- Implement system calls for Locks (Acquire, Release) and Conditions (Wait, Signal, and Broadcast) that essentially wrap our implementation from Part 1.
+- Implement any other system calls required for use and testing, such as CreateLock, CreateCondition, DestroyLock, DestroyCondiiton and system calls required to upgrade our PassportOffice (such as a Print syscall)
+- Bulletproof the kernal from errors sent by user program calls.
+- Upgrade the method of memory allocation to a mapped relationship of physical to virtual to allow for multiple programs to run at once.
+- Provide way to copy data between the kernel and the user 
+- Support multi-threaded multi-programs
+- Update the passport office from a part of the Nachos kernal code to a userprogram that can run multiple instances of itself
+- Develop tests for all functionality added
+
+II. Assumptions:
+	- A thread will explicitly exit out of itself
+	- Nachos has finished running when the last running process finishes.
+
+III. Design:
+- System calls are handled through the exception handler. The exception handler receives an exception and checks for the corresponding value before executing the correcting system call.
+- For the Fork system call, we must create a new thread, then resize the running process's page table to make room for 8 more pages for the new thread. After doing so, we update the appropriate values for the process (location of new thread stack, number of running threads, etc) and call the OS fork.
+- For the Exec system call, we must read in the process that is setting up to execute. We must then create a new address space and process, update the process table accordingly, then create a first thread for the process and fork it from the currently executing thread.
+- For the Exit system call, we must consider 3 cases. If the thread is not the last thread in the process, it simply frees up its own stack before finishing. If the thread is the last thread in a process, it must clean up the entire process's page table before finishing itself. If the thread is the last thread in the last process, it must halt all of Nachos.
+- For the Yeild system call, the machine simply yields.
+- For the Lock and Condition system calls, the system call itself simply checks for invalid values of the Lock/Condition before passing the handling off to our implemntation of Locks and Conditions from Project 1.
+- Page Table must keep track of the relationship between virtual and physical pages, and is unique to every process that is created
+- The Process Table keeps track of all processes. Processes are indexed on creation so that they may be kept track of in the process table.
+- A process contains and address space, an array to keep track of thread stacks, the and number of currently active threads.
+- A thread contains an index that indicates it is the nth thread created in the process. In this way, the location of the first page of their stack can be referenced in the process struct.
+- A thread interfaces with the process table by looking at the index of its address space, which is the same for all threads in a process. The process interfaces with threads by using their index to access their thread stack. 
+
+IV. Implementation:
+	+ Files Modified
+		addrspace.cc - updated constructor to correclty map virtual memory to a physical page, changing variable scope (or using getters/setters) to be able to be accessed by threads
+		exception.cc - implementation of all new system calls
+		start.s - added assembly for new system calls
+		syscall.h - added new #define values for new system calls, created function prototypes
+		system.h - new global variables delcarations
+		system.cc - new global varaible initialization
+		thread.h/cc - addition of counter
+
+	+ Files added
+		helloworld.c - short program to test exec functionality
+		testcondition.c - testing condition functionality
+		testfork.c - testing fork functionality
+		testlock.c - testing lock functionality	
+
+	+ Data Structures added, and the file they were added to.
+		system.h/cc - 
+			kernelLock struct (Lock, AddrSpace, bool isToBeDeleted)
+			kernelCondition struct (Condition, AddrSpace, bool isToBeDeleted)
+			kernelCondition kernelConditionList[]
+			kernelLock kernelLockList[] 
+			BitMap bitmap
+			Lock bitmapLock
+			process processTable[]
+			Lock processLock
+
+	+ Data Structures modified, and the file they were added to.
+			
+		system.h:
+			struct kernelCondition {
+				Condition * condition;
+				AddrSpace * addrsp;
+				bool isToBeDeleted;
+			};
+
+			struct kernelLock {
+				Lock * lock;
+				AddrSpace * addrsp;
+				bool isToBeDeleted;
+			};
+
+			struct process {
+				int * threadStacks;
+				int numThreadsRunning; // to check in exit if it's safe to kill the process
+				int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
+			};
+
+	+ Functions added and in which file.
+			syscall.h (prototypes):
+				Yield()
+				Acquire()
+				Release()
+				Wait()
+				Signal()
+				Broadcast()
+				CreateLock()
+				DestroyLock()
+				CreateCondition()
+				DestroyCondition()
+			exception.h/cc
+				Exit_Syscall() 
+				Exec_Syscall()
+				kernel_thread()
+				Fork_Syscall()
+				Yield_Syscall()
+				Acquire_Syscall()
+				Release_Syscall()
+				Wait_Syscall()
+				Signal_Syscall()
+				Broadcast_Syscall()
+				CreateLock_Syscall()
+				DestroyLock_Syscall()
+				CreateCondition_Syscall()
+
+	+ Functions modified and in which file.
+
+V. Testing:  (For each test case, you must show)
+	+ How to test
+- How to run the test cases, the commands, the arguments and so on.
+	+ Test Output
+- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output. The grader of your submission will be wanting to compare the output they get with what you say the output is.
+
+VI. Discussion:
+	+ Experiment expectation.  (What is supposed to happen.)
+	+ Experiment result.  (What actually happened.)
+	+ Explanation
+		- Explain your experiment result - how it proves what 
+		  you were supposed to prove.
+
+VIII. Miscellaneous:
+- Whatever else you want the grader know about your development.  You can create your own subsections headings here.

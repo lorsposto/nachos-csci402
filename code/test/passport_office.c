@@ -214,7 +214,7 @@ int Manager(int index) {
 	managers[managerIndex].counter = 0;
 }
 
-void bePassportClerk(int passportClerkIndex) {
+void bePassportClerk() {
 	int myIndex, i;
 	Acquire(passportClerkIndexLock);
 	myIndex = PassportClerk(passportClerkIndex);
@@ -318,7 +318,7 @@ void bePassportClerk(int passportClerkIndex) {
 	Exit(0);
 }
 
-void beCashier(int cashierIndex) {
+void beCashier() {
 
 	while (true) {
 		/* once they are not on break, process the line*/
@@ -430,7 +430,7 @@ void beCashier(int cashierIndex) {
 	Exit(0);
 }
 
-void bePicClerk(int picClerkIndex) {
+void bePicClerk() {
 	int myIndex;
 	bool firstTime;
 	Acquire(picClerkIndexLock);
@@ -506,7 +506,7 @@ void bePicClerk(int picClerkIndex) {
 	Exit(0);
 }
 
-void beAppClerk(int appClerkIndex) {
+void beAppClerk() {
 	int myIndex, i;
 	Acquire(appClerkIndexLock);
 	myIndex = AppClerk(appClerkIndex);
@@ -1062,6 +1062,185 @@ void cashierCustomerProcess(int customerIndex) {
 
 	Release(cashierLineLock);
 	/* cashierTransaction(customerIndex, myLine); */
+}
+
+void picClerkTransaction(int customer, int clerk) {
+	/* Set the clerk's current customer */
+	Acquire(picClerkLines[clerk].transactionLock);
+	picClerkLines[clerk].customer = customer;
+
+	/* send SSN */
+	/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
+			customers[customer]->SSN, picClerkLines[clerk]->name);*/
+	Signal(picClerkLines[clerk].transactionCV,
+			picClerkLines[clerk].transactionLock);
+
+	/* take picture
+
+	 Wait to be shown picture
+	 Take picture until he likes it*/
+
+	while (customers[customer].picDone == false) {
+		Wait(picClerkLines[clerk].transactionCV,
+				picClerkLines[clerk].transactionLock);
+
+		if (/*(rand() % 10) % 2*/ 1 == 0) {
+			/*printf("%s does not like their picture from %s.\n",
+					currentThread->getName(), picClerkLines[clerk]->name);*/
+			Signal(picClerkLines[clerk].transactionCV,
+					picClerkLines[clerk].transactionLock);
+		}
+		else {
+			/*printf("%s does like their picture from %s.\n",
+					currentThread->getName(), picClerkLines[clerk]->name);*/
+			customers[customer].picDone = true;
+			Signal(picClerkLines[clerk].transactionCV,
+					picClerkLines[clerk].transactionLock);
+		}
+	}
+	Wait(picClerkLines[clerk].transactionCV,
+			picClerkLines[clerk].transactionLock);
+
+	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
+			picClerkLines[clerk]->name);*/
+	Signal(picClerkLines[clerk].transactionCV,
+			picClerkLines[clerk].transactionLock);
+	Release(picClerkLines[clerk].transactionLock);
+}
+
+void appClerkTransaction(int customer, int clerk) {
+	/* Set the clerk's current customer */
+
+	Acquire(appClerkLines[clerk].transactionLock);
+	appClerkLines[clerk].customer = customer;
+	/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
+			customers[customer]->SSN, appClerkLines[clerk]->name);*/
+	
+	Signal(appClerkLines[clerk].transactionCV,
+			appClerkLines[clerk].transactionLock);
+
+	/*printf("%s waiting for clerk %s to file the application.\n",
+	 currentThread->getName(), appClerkLines[clerk]->name);*/
+	Wait(appClerkLines[clerk].transactionCV,
+			appClerkLines[clerk].transactionLock);
+
+	Signal(appClerkLines[clerk].transactionCV,
+			appClerkLines[clerk].transactionLock);
+
+	/*printf("%s is now leaving %s, releasing lock.\n", currentThread->getName(),
+	 appClerkLines[clerk]->name);*/
+	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
+			appClerkLines[clerk]->name);*/
+	Release(appClerkLines[clerk].transactionLock);
+}
+
+void passportClerkTransaction(int customer, int clerk) {
+	int bribeChance;
+
+	while (passportClerkLines[clerk].approved == false) {
+
+		Acquire(passportClerkLines[clerk].transactionLock);
+		passportClerkLines[clerk].customer = customer;
+
+		/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
+				customers[customer]->SSN, passportClerkLines[clerk]->name);*/
+
+		Signal(passportClerkLines[clerk].transactionCV,
+				passportClerkLines[clerk].transactionLock);
+
+		Wait(passportClerkLines[clerk].transactionCV,
+				passportClerkLines[clerk].transactionLock);
+
+		if (passportClerkLines[clerk].approved == true) {
+			/*stop here so we don't hop back in line*/
+
+			/*giving info*/
+			Signal(passportClerkLines[clerk].transactionCV,
+					passportClerkLines[clerk].transactionLock);
+
+			/*waiting to see if application is approved*/
+			Wait(passportClerkLines[clerk].transactionCV,
+					passportClerkLines[clerk].transactionLock);
+
+			/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
+					passportClerkLines[clerk]->name);*/
+
+			Signal(passportClerkLines[clerk].transactionCV,
+					passportClerkLines[clerk].transactionLock);
+
+			passportClerkLines[clerk].approved = false;
+
+			Release(passportClerkLines[clerk].transactionLock);
+
+			break;
+		}
+
+		/*printf("%s has gone to %s too soon. They are going to the back of the line.\n", currentThread->getName(),
+			passportClerkLines[clerk]->name);*/
+
+		/* the 5% chance of the passport clerk "making a mistake" happened and we must get back into line*/
+		Release(passportClerkLines[clerk].transactionLock);
+		Acquire(passportLineLock);
+
+		/*TODO: fix rand*/
+		bribeChance = 5;
+
+		if (bribeChance == 0) { /*decided to bribe*/
+			passportClerkLines[clerk].bribeLineCount++;
+			/*printf("%s has gotten in bribe line for %s.\n",
+					customers[customer]->name, passportClerkLines[clerk]->name);*/
+			customers[customer].money -= 500;
+			passportClerkLines[clerk].money += 500;
+			/*printf("%s has received $500 from %s.\n",
+					passportClerkLines[clerk]->name, customers[customer]->name);*/
+			Wait(passportClerkLines[clerk].bribeLineCV, passportLineLock);
+			passportClerkLines[clerk].bribeLineCount--;
+		}
+		else { /*decided not to bribe*/
+			passportClerkLines[clerk].regularLineCount++;
+			/*printf("%s has gotten in regular line for %s.\n",
+					customers[customer]->name, passportClerkLines[clerk]->name);*/
+			Wait(passportClerkLines[clerk].regularLineCV, passportLineLock);
+			passportClerkLines[clerk].regularLineCount--;
+		}
+
+		Release(passportLineLock);
+	}
+}
+
+void cashierTransaction(int customer, int cashier) {
+	/* Set the cashier's current customer */
+	Acquire(cashierLines[cashier].transactionLock);
+	cashierLines[cashier].customer = customer;
+
+	Signal(cashierLines[cashier].transactionCV,
+			cashierLines[cashier].transactionLock);
+
+	Wait(cashierLines[cashier].transactionCV,
+			cashierLines[cashier].transactionLock);
+
+	if (cashierLines[cashier].approved == true) {
+		Signal(cashierLines[cashier].transactionCV,
+				cashierLines[cashier].transactionLock);
+
+		/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
+				customers[customer]->SSN, cashierLines[cashier]->name);*/
+		Wait(cashierLines[cashier].transactionCV,
+				cashierLines[cashier].transactionLock);
+
+		/*printf("%s has given %s $100.\n", currentThread->getName(),
+				cashierLines[cashier]->name);*/
+		Signal(cashierLines[cashier].transactionCV,
+				cashierLines[cashier].transactionLock);
+		Wait(cashierLines[cashier].transactionCV,
+				cashierLines[cashier].transactionLock);
+	}
+
+	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
+			cashierLines[cashier]->name);*/
+	Signal(cashierLines[cashier].transactionCV,
+			cashierLines[cashier].transactionLock);
+	Release(cashierLines[cashier].transactionLock);
 }
 
 int main() {

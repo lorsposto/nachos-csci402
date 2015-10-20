@@ -38,6 +38,8 @@
 #define SC_DestroyLock		17
 #define SC_CreateCondition	18
 #define SC_DestroyCondition	19
+#define SC_Rand				20
+#define SC_PrintInt			21
 
 #define MAXFILENAME 256
 
@@ -159,6 +161,10 @@ int CreateCondition(char* name, int len);
 
 /* Destroy condition variable. */
 void DestroyCondition(int index);
+
+int Rand();
+
+void PrintInt(char * name);
 
 #endif /* IN_ASM */
 

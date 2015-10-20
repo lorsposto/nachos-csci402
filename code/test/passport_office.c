@@ -131,7 +131,7 @@ int Customer() {
 	customers[customerIndex].money = 100;
 	customers[customerIndex].type = CUSTOMER;
 	customerIndex++;
-	return customerIndex;
+	return customerIndex - 1;
 }
 
 int Senator(int ssn) {
@@ -144,7 +144,7 @@ int Senator(int ssn) {
 	customers[customerIndex].money = 100;
 	customers[customerIndex].type = SENATOR;
 	customerIndex++;
-	return customerIndex;
+	return customerIndex - 1;
 }
 
 int AppClerk(int index) {
@@ -167,7 +167,7 @@ int AppClerk(int index) {
 	appClerkLines[appClerkIndex].customer = -1;
 	appClerkLines[appClerkIndex].money = 0;
 	appClerkIndex++;
-	return appClerkIndex;
+	return appClerkIndex - 1;
 }
 
 int PicClerk(int index) {
@@ -190,7 +190,7 @@ int PicClerk(int index) {
 	picClerkLines[picClerkIndex].customer = -1;
 	picClerkLines[picClerkIndex].money = 0;
 	picClerkIndex++;
-	return picClerkIndex;
+	return picClerkIndex - 1;
 }
 
 int PassportClerk(int index) {
@@ -213,7 +213,7 @@ int PassportClerk(int index) {
 	passportClerkLines[passportClerkIndex].customer = -1;
 	passportClerkLines[passportClerkIndex].money = 0;
 	passportClerkIndex++;
-	return passportClerkIndex;
+	return passportClerkIndex - 1;
 }
 
 int Cashier(int index) {
@@ -763,10 +763,10 @@ void beAppClerk() {
 }
 
 void beCustomer() {
-
 	int targetLock;
 	int customer;
 	targetLock = CreateLock("Lock", 4);
+
 	Acquire(customerIndexLock);
 	customer = Customer();
 	Release(customerIndexLock);
@@ -784,6 +784,7 @@ void beCustomer() {
 			|| customers[customer].certified == false
 			|| customers[customer].gotPassport == false)) {
 
+
 		if (customers[customer].type != SENATOR
 				&& senatorInProcess == true) {
 			Acquire(senatorLock);
@@ -798,21 +799,20 @@ void beCustomer() {
 
 			if (customers[customer].picDone == false
 					|| customers[customer].appDone == false) {
-				/* picAppCustomerProcess(customerIndex); */
-				Yield();
+				picAppCustomerProcess(customerIndex); 
+
 			}
 			else if (customers[customer].appDone == true
 					&& customers[customer].picDone == true
 					&& customers[customer].certified == false
 					&& customers[customer].earlybird == false) {
-				/* passportCustomerProcess(customerIndex); */
-				Yield();
+				passportCustomerProcess(customerIndex); 
+
 			}
 			else if (customers[customer].certified == true
 					|| customers[customer].earlybird == true
 							&& customers[customer].gotPassport == false) {
-				/* cashierCustomerProcess(customerIndex); */
-				Yield();
+				cashierCustomerProcess(customerIndex); 
 			}
 
 			if (customers[customer].type != SENATOR
@@ -966,7 +966,7 @@ void beManager() {
 			if (passportClerkLines[i].state == BREAK
 					&& (passportClerkLines[i].bribeLineCount
 							+ passportClerkLines[i].regularLineCount > 2
-							|| senatorInProcess)) {
+							|| senatorInProcess == true)) {
 				passportClerkLines[i].state = AVAILABLE;
 				Signal(passportClerkLines[i].breakCV, passportLineLock);
 
@@ -1630,10 +1630,10 @@ int main() {
 
 	int NUM_CUSTOMERS = 10;
 	int NUM_SENATORS = 0;
-	int NUM_PIC_CLERKS = 0;
-	int NUM_APP_CLERKS = 0;
-	int NUM_PP_CLERKS = 0;
-	int NUM_CASHIERS = 0;
+	int NUM_PIC_CLERKS = 1;
+	int NUM_APP_CLERKS = 1;
+	int NUM_PP_CLERKS = 1;
+	int NUM_CASHIERS = 1;
 	int NUM_MANAGERS = 0;
 
 	int sen = NUM_SENATORS;
@@ -1664,7 +1664,6 @@ int main() {
 	for (i = 0; i < NUM_PP_CLERKS; ++i) {
 		Fork(bePassportClerk);
 	}
-
 	/*for (i = 0; i < NUM_CASHIERS; ++i) {
 	 struct Cashier c;
 	 cashierLines[i] = c;

@@ -181,6 +181,10 @@ void AddrSpace::addStack() {
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
 		int ppn = bitmap.Find();
+		if (ppn == -1) {
+			printf("Nachos is out of memory.\n");
+			interrupt->Halt();
+		}
 		pageTable[i].virtualPage = i;// for now, virtual page # = phys page #
 		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		pageTable[i].valid = TRUE;
@@ -213,6 +217,10 @@ void AddrSpace::expandTable() {
 			i++) {
 		// find a physical page number -L
 		int ppn = bitmap.Find();
+		if (ppn == -1) {
+			printf("Nachos is out of memory.\n");
+			interrupt->Halt();
+		}
 		newPageTable[i].virtualPage = i;// for now, virtual page # = phys page #
 		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		newPageTable[i].valid = TRUE;

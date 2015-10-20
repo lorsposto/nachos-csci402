@@ -128,6 +128,31 @@ V. Testing:  (For each test case, you must show)
 	+ Test Output
 - Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output. The grader of your submission will be wanting to compare the output they get with what you say the output is.
 
++ Part 2 Tests
++ helloworld: 
+	- helper user program that prints "Hello World".
++ matmult2: 
+	- helper user program that is a copy of matmult, but prints the output to console.
++ testexec: 
+	- executes the helloworld user program 5 times. 
+	- The output is the string "Hello world" printed 5 times, which proves that the user program executed successfully all five times.
++ testfork:
+	- forks a helloworld function 5 times. 
+	- The output is the string "Hello world" printed 5 times. This proves that each thread launched by fork successfully executed the function and finished.
++ testforkexec1:
+	- executes helloworld 2 times, matmult2 2 times, and forks a helloworld function 2 times
+	- output is "Hello world" 4 times and the results of matmult twice.
+	- if the output is satisfied, it proves each forked function and executed process successfully completed.
++ testforkexec2:
+	- executes matmult2, forks a hello world function, executes the testfork user program, then executes the helloworld user program.
+	- output is the result of matmult2 once, and "Hello world" 7 times total.
+	- this test demonstrates forking from within a user program executed by the Exec syscall.
+	- the output proves all forked functions and executed processes are successful, no matter whether the syscalls are called by the main process or thread.
++ testforkexecbad:
+	- attempts to call Exec syscall on a couple of nonexistent executables.
+	- prints an error indicating the files don't exist, and continues to complete the subsequent instructions.
+	- proves the Nachos will not blow up due to input errors and will continue to execute the remaining syscalls without a hitch.
+
 VI. Discussion:
 	+ Experiment expectation.  (What is supposed to happen.)
 	+ Experiment result.  (What actually happened.)

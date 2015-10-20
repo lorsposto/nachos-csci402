@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult sort testfiles testlock testcondition testexec testfork passport_office testrand testprint helloworld
+all: halt matmult matmult2 sort testfiles testlock testcondition testexec testforkexec1 testforkexec2 testforkexecbad testfork passport_office testrand testprint helloworld
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -55,6 +55,12 @@ matmult.o: matmult.c
 matmult: matmult.o start.o
 	$(LD) $(LDFLAGS) start.o matmult.o -o matmult.coff
 	../bin/coff2noff matmult.coff matmult
+
+matmult2.o: matmult2.c
+	$(CC) $(CFLAGS) -c matmult2.c
+matmult2: matmult2.o start.o
+	$(LD) $(LDFLAGS) start.o matmult2.o -o matmult2.coff
+	../bin/coff2noff matmult2.coff matmult2
 
 testfiles.o: testfiles.c
 	$(CC) $(CFLAGS) -c testfiles.c
@@ -80,12 +86,24 @@ testexec: testexec.o start.o
 	$(LD) $(LDFLAGS) start.o testexec.o -o testexec.coff
 	../bin/coff2noff testexec.coff testexec
 
-testmultiexec.o: testmultiexec.c
-	$(CC) $(CFLAGS) -c testmultiexec.c
-testmultiexec: testmultiexec.o start.o
-	$(LD) $(LDFLAGS) start.o testmultiexec.o -o testmultiexec.coff
-	../bin/coff2noff testmultiexec.coff testmultiexec
-	
+testforkexec1.o: testforkexec1.c
+	$(CC) $(CFLAGS) -c testforkexec1.c
+testforkexec1: testforkexec1.o start.o
+	$(LD) $(LDFLAGS) start.o testforkexec1.o -o testforkexec1.coff
+	../bin/coff2noff testforkexec1.coff testforkexec1
+
+testforkexec2.o: testforkexec2.c
+	$(CC) $(CFLAGS) -c testforkexec2.c
+testforkexec2: testforkexec2.o start.o
+	$(LD) $(LDFLAGS) start.o testforkexec2.o -o testforkexec2.coff
+	../bin/coff2noff testforkexec2.coff testforkexec2
+
+testforkexecbad.o: testforkexecbad.c
+	$(CC) $(CFLAGS) -c testforkexecbad.c
+testforkexecbad: testforkexecbad.o start.o
+	$(LD) $(LDFLAGS) start.o testforkexecbad.o -o testforkexecbad.coff
+	../bin/coff2noff testforkexecbad.coff testforkexecbad
+
 testfork.o: testfork.c
 	$(CC) $(CFLAGS) -c testfork.c
 testfork: testfork.o start.o

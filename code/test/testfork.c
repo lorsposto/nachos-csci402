@@ -10,9 +10,12 @@ void print() {
 }
 
 int main() {
-  Write("Testing Fork \n", 14, ConsoleOutput );
+  Write("testfork.c: this test forks a hello world function 5 times.\n", 70, ConsoleOutput );
   Fork(print);
-  Write("Testing Fork \n", 14, ConsoleOutput );
+  Fork(print);
+  Fork(print);
+  Fork(print);
   Fork(print);
   Write("Done testing Fork \n", 19, ConsoleOutput );
+  Exit(0);
 }

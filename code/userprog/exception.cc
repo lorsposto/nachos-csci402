@@ -362,6 +362,10 @@ void Exec_Syscall(int vaddr, int len) {
 
 	// Store its openfile pointer
 	f = fileSystem->Open(buf);
+	if (f == NULL) {
+		printf("Cannot execute -- no such executable \"%s\".\n", buf);
+		return;
+	}
 	delete[] buf;
 
 	// Create new addrespace for this executable file and update process table
@@ -389,13 +393,13 @@ void Exec_Syscall(int vaddr, int len) {
 	t->space = a;
 
 	// Fork the new thread. I call it exec_thread
-	printf("\tForking in exec.\n");
+//	printf("\tForking in exec.\n");
 	t->Fork((VoidFunctionPtr) exec_thread, vaddr);
 }
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-	printf("In kernel thread!!!\n");
+//	printf("In kernel thread!!!\n");
 	// Write to the register PCReg the virtual address
 	machine->WriteRegister(PCReg, vaddr);
 	// Write virtualaddress + 4 in NextPCReg
@@ -412,7 +416,7 @@ void kernel_thread(int vaddr) {
 }
 
 void Fork_Syscall(int vaddr, int len) {
-	printf("Entering Fork_Syscall\n");
+//	printf("Entering Fork_Syscall\n");
 
 	// Get the current process from the Process Table so we can use it for everything else
 	processLock.Acquire();

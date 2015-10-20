@@ -1,11 +1,14 @@
-/* testexec.c
- *	Simple program to test the exec system calls
+/* testexec1.c
+ *	Simple program to test the exec system calls by executing Hello World 5 times.
  */
 
 #include "syscall.h"
 
 int main() {
-   Write("testing Exec \n", 16, ConsoleOutput );
+   Write("testexec1: this test executes helloworld 5 times.\n", 51, ConsoleOutput );
+    Exec("../test/helloworld", 18);
+    Exec("../test/helloworld", 18);
+    Exec("../test/helloworld", 18);
     Exec("../test/helloworld", 18);
     Exec("../test/helloworld", 18);
 }

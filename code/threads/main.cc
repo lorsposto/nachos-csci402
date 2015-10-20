@@ -105,6 +105,7 @@ main(int argc, char **argv)
         
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {        	// run a user program
+        	RandomInit(atoi(*(argv + 1)));
 	    ASSERT(argc > 1);
             StartProcess(*(argv + 1));
             argCount = 2;

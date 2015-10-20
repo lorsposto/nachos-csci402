@@ -5,7 +5,17 @@
 #include "syscall.h"
 
 int main() {
-  int r;
-  r = Rand();
-  PrintInt(r);
+	int r;
+	r = Rand();
+	PrintInt(r);
+	Write("\n", 1, ConsoleOutput);
+	r = Rand();
+	PrintInt(r);
+	Write("\n", 1, ConsoleOutput);
+	r = Rand();
+	PrintInt(r);
+	Write("\n", 1, ConsoleOutput);
+	r = Rand();
+	PrintInt(r);
+	Write("\n", 1, ConsoleOutput);
 }

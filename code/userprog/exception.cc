@@ -800,7 +800,7 @@ void DestroyCondition_Syscall(int index) {
 }
 
 int Rand_Syscall() {
-	return rand();
+	return Random();
 }
 
 void PrintInt_Syscall(int num) {
@@ -873,7 +873,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");
-			CreateLock_Syscall(machine->ReadRegister(4),
+			rv = CreateLock_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
 			break;
 		case SC_DestroyLock:
@@ -882,7 +882,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateCondition:
 			DEBUG('a', "CreateCondition syscall.\n");
-			CreateCondition_Syscall(machine->ReadRegister(4),
+			rv = CreateCondition_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
 			break;
 		case SC_DestroyCondition:
@@ -899,7 +899,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Rand:
 			DEBUG('a', "Rand syscall.\n");
-			Rand_Syscall();
+			rv = Rand_Syscall();
 			break;
 		case SC_PrintInt:
 			DEBUG('a', "PrintInt syscall.\n");

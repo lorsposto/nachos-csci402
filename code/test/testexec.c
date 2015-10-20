@@ -5,10 +5,7 @@
 #include "syscall.h"
 
 int main() {
-  OpenFileId fd;
-  int bytesread;
-  char buf[20];
-
    Write("testing Exec \n", 16, ConsoleOutput );
-    Exec("../test/sort", 14);
+    Exec("../test/helloworld", 18);
+    Exec("../test/helloworld", 18);
 }

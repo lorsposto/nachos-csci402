@@ -5,6 +5,8 @@ typedef enum {
 	false, true
 } bool;
 
+void broadcastMoney();
+
 int NUM_CUSTOMERS = 0;
 int NUM_SENATORS = 0;
 int NUM_PIC_CLERKS = 0;
@@ -214,7 +216,57 @@ int Manager(int index) {
 	managers[managerIndex].counter = 0;
 }
 
-void bePassportClerk() {
+void broadcastMoney() {
+	int officeTotal = 0;
+	int appClerkTotal = 0;
+	int picClerkTotal = 0;
+	int passClerkTotal = 0;
+	int cashierTotal = 0;
+	int i;
+
+	for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+		Acquire(picClerkLines[i].transactionLock);
+		picClerkTotal += picClerkLines[i].money;
+		Release(picClerkLines[i].transactionLock);
+	}
+
+	for (i = 0; i < NUM_APP_CLERKS; ++i) {
+		Acquire(appClerkLines[i].transactionLock);
+		appClerkTotal += appClerkLines[i].money;
+		Release(appClerkLines[i].transactionLock);
+	}
+
+	for (i = 0; i < NUM_PP_CLERKS; ++i) {
+		Acquire(passportClerkLines[i].transactionLock);
+		passClerkTotal += passportClerkLines[i].money;
+		Release(passportClerkLines[i].transactionLock);
+	}
+
+	for (i = 0; i < NUM_CASHIERS; ++i) {
+		Acquire(cashierLines[i].transactionLock);
+		cashierTotal += cashierLines[i].money;
+		Release(cashierLines[i].transactionLock);
+	}
+
+	officeTotal = appClerkTotal + picClerkTotal + passClerkTotal + cashierTotal;
+
+	/* printf("%s has counted amounts of $%i for PictureClerks\n",
+			currentThread->getName(), picClerkTotal);
+
+	printf("%s has counted amounts of $%i for ApplicationClerks\n",
+			currentThread->getName(), appClerkTotal);
+
+	printf("%s has counted amounts of $%i for PassportClerks\n",
+			currentThread->getName(), passClerkTotal);
+
+	printf("%s has counted amounts of $%i for Cashiers\n",
+			currentThread->getName(), cashierTotal);
+
+	printf("%s has counted amounts of $%i for the passport office\n",
+			currentThread->getName(), officeTotal); */
+}
+
+void bePassportClerk(int passportClerkIndex) {
 	int myIndex, i;
 	Acquire(passportClerkIndexLock);
 	myIndex = PassportClerk(passportClerkIndex);
@@ -836,8 +888,8 @@ void picAppCustomerProcess(int customerIndex) {
 	int myLine = -1;
 	int chosePic = -1;
 	int lineSize = 1000;
-	unsigned int i;
 	int bribeChance = 0; /* rand() % 5; */
+	int i;
 
 	if (customers[customerIndex].picDone == false
 			&& customers[customerIndex].appDone == false) {
@@ -990,8 +1042,8 @@ void picAppCustomerProcess(int customerIndex) {
 void passportCustomerProcess(int customerIndex) {
 	int myLine = -1;
 	int lineSize = 1000;
-	unsigned int i;
 	int bribeChance = 0; /* rand() % 5; */
+	int i;
 
 	Acquire(passportLineLock);
 
@@ -1041,7 +1093,7 @@ void passportCustomerProcess(int customerIndex) {
 void cashierCustomerProcess(int customerIndex) {
 	int myLine = -1;
 	int lineSize = 1000;
-	unsigned int i;
+	int i;
 
 	Acquire(cashierLineLock);
 
@@ -1255,7 +1307,7 @@ int main() {
 
 	int sen = NUM_SENATORS;
 
-	unsigned int i;
+	int i;
 	int option;
 	char c;
 	bool validinput;

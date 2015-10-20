@@ -59,7 +59,7 @@ int cashierLineLock;
 int customerCounterLock;
 int managerCounterLock;
 int senatorLock;
-/* Semaphore senatorSema; */
+
 int senatorCV;
 int managerIndex = 0;
 int cashierIndex = 0;
@@ -330,6 +330,10 @@ void beCashier() {
 				/*printf(
 						"%s has signalled a Customer to come to their counter.\n",
 						cashierLines[cashierIndex]->name);*/
+				Write("Cashier ", 8, ConsoleOutput);
+				PrintInt(cashierIndex);
+				Write(" has signalled a Customer to come to their counter.\n", 52, ConsoleOutput);
+
 				Signal(cashierLines[cashierIndex].lineCV, cashierLineLock);
 				cashierLines[cashierIndex].state = BUSY;
 			}
@@ -337,9 +341,17 @@ void beCashier() {
 				cashierLines[cashierIndex].state = BREAK;
 				/*printf("%s is going on break.\n",
 						cashierLines[cashierIndex]->name);*/
+				Write("Cashier ", 8, ConsoleOutput);
+				PrintInt(cashierIndex);
+				Write(" is going on break.\n", 20, ConsoleOutput);
+
 				Wait(cashierLines[cashierIndex].breakCV, cashierLineLock);
 				/*printf("%s is coming off break.\n",
 						cashierLines[cashierIndex]->name);*/
+				Write("Cashier ", 8, ConsoleOutput);
+				PrintInt(cashierIndex);
+				Write(" is coming off break.\n", 22, ConsoleOutput);
+
 				Release(cashierLineLock);
 				break;
 			}
@@ -355,6 +367,16 @@ void beCashier() {
 				cashierLines[cashierIndex]->name,
 				cashierLines[cashierIndex]->customer->SSN,
 				cashierLines[cashierIndex]->customer->name);*/
+
+			Write("Cashier ", 8, ConsoleOutput);
+			PrintInt(cashierIndex);
+			Write(" has received SSN ", 18, ConsoleOutput);
+			PrintInt(customers[cashierLines[cashierIndex].customer].SSN);
+			Write(" from Customer ", 18, ConsoleOutput);
+			PrintInt(cashierLines[cashierIndex].customer);
+			Write(" .\n", 3, ConsoleOutput);
+
+
 
 			/* If the customer has finished everything*/
 			if (customers[cashierLines[cashierIndex].customer].appDone

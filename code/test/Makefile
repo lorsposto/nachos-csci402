@@ -79,6 +79,12 @@ testexec.o: testexec.c
 testexec: testexec.o start.o
 	$(LD) $(LDFLAGS) start.o testexec.o -o testexec.coff
 	../bin/coff2noff testexec.coff testexec
+
+testmultiexec.o: testmultiexec.c
+	$(CC) $(CFLAGS) -c testmultiexec.c
+testmultiexec: testmultiexec.o start.o
+	$(LD) $(LDFLAGS) start.o testmultiexec.o -o testmultiexec.coff
+	../bin/coff2noff testmultiexec.coff testmultiexec
 	
 testfork.o: testfork.c
 	$(CC) $(CFLAGS) -c testfork.c

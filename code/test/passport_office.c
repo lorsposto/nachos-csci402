@@ -833,11 +833,209 @@ void beManager() {
 }
 
 void picAppCustomerProcess(int customerIndex) {
+	int myLine = -1;
+	int chosePic = -1;
+	int lineSize = 1000;
+	unsigned int i;
+	int bribeChance = 0; /* rand() % 5; */
 
+	if (customers[customerIndex].picDone == false
+			&& customers[customerIndex].appDone == false) {
+
+		Acquire(picLineLock);
+		Acquire(appLineLock);
+
+		if (/* rand() % 2 */ 0 == 0) {
+
+			Release(appLineLock);
+
+			chosePic = 1;
+
+			for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+				if (picClerkLines[i].regularLineCount
+						+ picClerkLines[i].bribeLineCount < lineSize) {
+					myLine = i;
+					lineSize = picClerkLines[i].regularLineCount
+							+ picClerkLines[i].bribeLineCount;
+				}
+			}
+		}
+		else {
+
+			Release(picLineLock);
+
+			chosePic = 0;
+
+			for (i = 0; i < NUM_APP_CLERKS; ++i) {
+				if (appClerkLines[i].regularLineCount
+						+ appClerkLines[i].bribeLineCount < lineSize) {
+					myLine = i;
+					lineSize = appClerkLines[i].regularLineCount
+							+ appClerkLines[i].bribeLineCount;
+				}
+			}
+		}
+	}
+	else if (customers[customerIndex].picDone == false) {
+		Acquire(picLineLock);
+
+		chosePic = 1;
+
+		for (i = 0; i < NUM_PIC_CLERKS; ++i) {
+			if (picClerkLines[i].regularLineCount
+					+ picClerkLines[i].bribeLineCount < lineSize) {
+				myLine = i;
+				lineSize = picClerkLines[i].regularLineCount
+						+ picClerkLines[i].bribeLineCount;
+			}
+		}
+	}
+	else if (customers[customerIndex].appDone == false) {
+
+		Acquire(appLineLock);
+
+		chosePic = 0;
+
+		for (i = 0; i < NUM_APP_CLERKS; ++i) {
+			if (appClerkLines[i].regularLineCount
+					+ appClerkLines[i].bribeLineCount < lineSize) {
+				myLine = i;
+				lineSize = appClerkLines[i].regularLineCount
+						+ appClerkLines[i].bribeLineCount;
+			}
+		}
+	}
+
+	if (chosePic == 1) {
+
+		if (customers[customerIndex].money >= 600) {
+
+			if (bribeChance == 0) {
+				picClerkLines[myLine].bribeLineCount++;
+				/* printf("%s has gotten in bribe line for %s.\n",
+						customers[customerIndex].name,
+						picClerkLines[myLine].name); */
+				customers[customerIndex].money -= 500;
+				picClerkLines[myLine].money += 500;
+				/* printf("%s has received $500 from %s.\n",
+					picClerkLines[myLine].name, customers[customerIndex].name); */
+				Wait(picClerkLines[myLine].bribeLineCV, picLineLock);
+				picClerkLines[myLine].bribeLineCount--;
+			}
+			else {
+				picClerkLines[myLine].regularLineCount++;
+				/* printf("%s has gotten in regular line for %s.\n",
+						customers[customerIndex].name,
+						picClerkLines[myLine].name); */
+				Wait(picClerkLines[myLine].regularLineCV, picLineLock);
+				picClerkLines[myLine].regularLineCount--;
+			}
+
+		}
+		else {
+			picClerkLines[myLine].regularLineCount++;
+			/* printf("%s has gotten in regular line for %s.\n",
+					customers[customerIndex].name,
+					picClerkLines[myLine].name); */
+			Wait(picClerkLines[myLine].regularLineCV, picLineLock);
+			picClerkLines[myLine].regularLineCount--;
+		}
+
+		picClerkLines[myLine].state = BUSY;
+
+		Release(picLineLock);
+		/* picClerkTransaction(customerIndex, myLine); */
+	}
+	else {
+
+		if (customers[customerIndex].money >= 600) {
+
+			if (bribeChance == 0) {
+				appClerkLines[myLine].bribeLineCount++;
+				/* printf("%s has gotten in bribe line for %s.\n",
+						customers[customerIndex].name,
+						appClerkLines[myLine].name); */
+				customers[customerIndex].money -= 500;
+				appClerkLines[myLine].money += 500;
+				/* printf("%s has received $500 from %s.\n",
+					appClerkLines[myLine].name, customers[customerIndex].name); */
+				Wait(appClerkLines[myLine].bribeLineCV, appLineLock);
+				appClerkLines[myLine].bribeLineCount--;
+			}
+			else {
+				appClerkLines[myLine].regularLineCount++;
+				/* printf("%s has gotten in regular line for %s.\n",
+						customers[customerIndex]->name,
+						appClerkLines[myLine]->name); */
+				Wait(appClerkLines[myLine].regularLineCV, appLineLock);
+				appClerkLines[myLine].regularLineCount--;
+			}
+		}
+		else {
+			appClerkLines[myLine].regularLineCount++;
+			/* printf("%s has gotten in regular line for %s.\n",
+					customers[customerIndex].name,
+					appClerkLines[myLine].name); */
+			Wait(appClerkLines[myLine].regularLineCV, appLineLock);
+			appClerkLines[myLine].regularLineCount--;
+		}
+
+		appClerkLines[myLine].state = BUSY;
+
+		Release(appLineLock);
+		/* appClerkTransaction(customerIndex, myLine); */
+	}
 }
 
 void passportCustomerProcess(int customerIndex) {
+	int myLine = -1;
+	int lineSize = 1000;
+	unsigned int i;
+	int bribeChance = 0; /* rand() % 5; */
 
+	Acquire(passportLineLock);
+
+	for (i = 0; i < NUM_PP_CLERKS; ++i) {
+		if (passportClerkLines[i].regularLineCount < lineSize) {
+			myLine = i;
+			lineSize = passportClerkLines[i].regularLineCount;
+		}
+	}
+
+	if (customers[customerIndex].money >= 600) {
+		if (bribeChance == 0) {
+			passportClerkLines[myLine].bribeLineCount++;
+			/* printf("%s has gotten in bribe line for %s.\n",
+					customers[customerIndex].name,
+					passportClerkLines[myLine].name); */
+			customers[customerIndex].money -= 500;
+			passportClerkLines[myLine].money += 500;
+			/* printf("%s has received $500 from %s.\n",
+				passportClerkLines[myLine].name, customers[customerIndex]->name); */
+			Wait(passportClerkLines[myLine].bribeLineCV, passportLineLock);
+			passportClerkLines[myLine].bribeLineCount--;
+		}
+		else {
+			passportClerkLines[myLine].regularLineCount++;
+			/* printf("%s has gotten in regular line for %s.\n",
+					customers[customerIndex].name,
+					passportClerkLines[myLine].name); */
+			Wait(passportClerkLines[myLine].regularLineCV, passportLineLock);
+			passportClerkLines[myLine].regularLineCount--;
+		}
+	}
+	else {
+		passportClerkLines[myLine].regularLineCount++;
+		/* printf("%s has gotten in regular line for %s.\n",
+				customers[customerIndex].name,
+				passportClerkLines[myLine].name); */
+		Wait(passportClerkLines[myLine].regularLineCV, passportLineLock);
+		passportClerkLines[myLine].regularLineCount--;
+	}
+	passportClerkLines[myLine].state = BUSY;
+
+	Release(passportLineLock);
+	/* passportClerkTransaction(customerIndex, myLine); */
 }
 
 void cashierCustomerProcess(int customerIndex) {

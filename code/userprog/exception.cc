@@ -38,7 +38,7 @@ void Exit_Syscall(int status);
 void exec_thread(int vaddr);
 void Exec_Syscall(int vaddr, int len);
 void kernel_thread(int vaddr);
-void Fork_Syscall(int vaddr/*, int len*/);
+void Fork_Syscall(int vaddr, int len);
 void Yield_Syscall();
 void Acquire_Syscall(int index);
 void Release_Syscall(int index);
@@ -49,6 +49,8 @@ int CreateLock_Syscall(int vaddr, int len);
 void DestroyLock_Syscall(int index);
 int CreateCondition_Syscall(int vaddr, int len);
 void DestroyCondition_Syscall(int index);
+int Rand_Syscall();
+void PrintInt_Syscall(int num);
 
 int copyin(unsigned int vaddr, int len, char *buf) {
 	// Copy len bytes from the current thread's virtual address vaddr.
@@ -277,7 +279,6 @@ void Exit_Syscall(int status) {
 	currentThread->Finish();
 	processLock.Acquire();
 
-
 	//find the current thread we are in
 	process * myProcess = processTable[currentThread->space->processIndex];
 
@@ -311,7 +312,8 @@ void Exit_Syscall(int status) {
 
 			//reclaim the entire page table of the process
 			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
-				bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
+				bitmap.Clear(
+						currentThread->space->getPageTable()[i].physicalPage);
 			}
 
 			bitmapLock.Release();
@@ -393,23 +395,20 @@ void Exec_Syscall(int vaddr, int len) {
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-  printf("In kernel thread!!!\n");
-  // Write to the register PCReg the virtual address
-  machine->WriteRegister(PCReg, vaddr);
-  // Write virtualaddress + 4 in NextPCReg
-  machine->WriteRegister(NextPCReg, vaddr + 4);
-  // Write to the stack register, the starting position of the stack (addr of the first page) for this thread
-//  machine->WriteRegister(StackReg, currentThread->space->numPages * PageSize - 16);
+	printf("In kernel thread!!!\n");
+	// Write to the register PCReg the virtual address
+	machine->WriteRegister(PCReg, vaddr);
+	// Write virtualaddress + 4 in NextPCReg
+	machine->WriteRegister(NextPCReg, vaddr + 4);
+	// Write to the stack register, the starting position of the stack (addr of the first page) for this thread
 
-//  printf("Setting StackReg to %i for threadIndex %i, pages %i\n",
-//		  processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex] * PageSize - 16,
-//		  currentThread->threadIndex,
-//		  processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex]);
-  machine->WriteRegister(StackReg, processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex] * PageSize - 16);
-  // Call Restorestate function inorder to prevent information loss while context switching
-  currentThread->space->RestoreState();
-  // Call machine->Run()
-  machine->Run();
+	machine->WriteRegister(StackReg,
+			processTable[currentThread->space->processIndex]->threadStacks[currentThread->threadIndex]
+					* PageSize - 16);
+	// Call Restorestate function inorder to prevent information loss while context switching
+	currentThread->space->RestoreState();
+	// Call machine->Run()
+	machine->Run();
 }
 
 void Fork_Syscall(int vaddr, int len) {
@@ -425,13 +424,11 @@ void Fork_Syscall(int vaddr, int len) {
 	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
 	currentThread->space->expandTable();
 	/*updates the MACHINE'S page table (the registers currently in CPU basically).
-										setting the page table makes it correct for all FUTURE times the thread is swapped
-										in the CPU but we still need to change the current registers to use the new page table before
-										we delete the old one and garbage starts getting written to it*/
+	 setting the page table makes it correct for all FUTURE times the thread is swapped
+	 in the CPU but we still need to change the current registers to use the new page table before
+	 we delete the old one and garbage starts getting written to it*/
 
 	// delete old page table?
-
-//	p->threadStacks[t->threadIndex] = oldPageTableIndex + 8;
 	p->threadStacks[t->threadIndex] = currentThread->space->numPages;
 //	printf("Thread stack %i set to %i\n",t->threadIndex, currentThread->space->numPages);
 	p->numThreadsTotal++;
@@ -802,6 +799,14 @@ void DestroyCondition_Syscall(int index) {
 	kernelConditionLock.Release();
 }
 
+int Rand_Syscall() {
+	return Random();
+}
+
+void PrintInt_Syscall(int num) {
+	printf("%i", num);
+}
+
 void ExceptionHandler(ExceptionType which) {
 	int type = machine->ReadRegister(2); // Which syscall?
 	int rv = 0; 	// the return value from a syscall
@@ -868,7 +873,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");
-			CreateLock_Syscall(machine->ReadRegister(4),
+			rv = CreateLock_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
 			break;
 		case SC_DestroyLock:
@@ -877,7 +882,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateCondition:
 			DEBUG('a', "CreateCondition syscall.\n");
-			CreateCondition_Syscall(machine->ReadRegister(4),
+			rv = CreateCondition_Syscall(machine->ReadRegister(4),
 					machine->ReadRegister(5));
 			break;
 		case SC_DestroyCondition:
@@ -891,6 +896,14 @@ void ExceptionHandler(ExceptionType which) {
 		case SC_Exit:
 			DEBUG('a', "Exit syscall.\n");
 			Exit_Syscall(machine->ReadRegister(4));
+			break;
+		case SC_Rand:
+			DEBUG('a', "Rand syscall.\n");
+			rv = Rand_Syscall();
+			break;
+		case SC_PrintInt:
+			DEBUG('a', "PrintInt syscall.\n");
+			PrintInt_Syscall(machine->ReadRegister(4));
 			break;
 
 		}
@@ -908,3 +921,4 @@ void ExceptionHandler(ExceptionType which) {
 		interrupt->Halt();
 	}
 }
+

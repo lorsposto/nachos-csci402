@@ -138,8 +138,6 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 
 	size = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
 	numPages = divRoundUp(size, PageSize);// + divRoundUp(UserStackSize,PageSize);
-//	printf("Code size %#x\n", noffH.code.size);
-//	printf("First stack index should be at %i, %i\n", size, numPages+8);
 	// we need to increase the size
 	// to leave room for the stack
 	size = numPages * PageSize;
@@ -170,22 +168,10 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		// a separate page, we could set its
 		// pages to be read-only
 
-		/* Essentially this but simplified
-		 * executable->ReadAt(&(machine->mainMemory[PageSize*pageTable[i].physicalPage]),
-		 PageSize, 40 + pageTable[i].virtualPage*PageSize);*/
 		executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
 		PageSize, 40 + i * PageSize);
 	}
 	bitmapLock.Release();
-
-// zero out the entire address space, to zero the unitialized data segment 
-// and the stack segment
-
-	// When nachos is uniprogram, zeros out all of the memory. 
-//	bzero(machine->mainMemory, size);
-
-	// for each virtual page, copy in the code and stuff into physical memory -L
-
 }
 
 void AddrSpace::addStack() {

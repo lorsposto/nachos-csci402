@@ -43,7 +43,6 @@ StartProcess(char *filename)
 	p->numThreadsTotal = 1;
 	p->numThreadsRunning = 1; // when does this get incremented???
     p->threadStacks[0] = space->numPages;
-    printf("Thread stack 0 set to %i\n", space->numPages);
 	processTable[processIndex] = p;
 
 	processIndex++;

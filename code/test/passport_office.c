@@ -1209,10 +1209,21 @@ void passportCustomerProcess(int customerIndex) {
 			/* printf("%s has gotten in bribe line for %s.\n",
 					customers[customerIndex].name,
 					passportClerkLines[myLine].name); */
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customerIndex);
+			Write(" has gotten in the bribe line for PassportClerk ", 48, ConsoleOutput);
+			PrintInt(myLine);
+			Write(".\n", 2, ConsoleOutput);
+
 			customers[customerIndex].money -= 500;
 			passportClerkLines[myLine].money += 500;
 			/* printf("%s has received $500 from %s.\n",
 				passportClerkLines[myLine].name, customers[customerIndex]->name); */
+			Write("PassportClerk ", 15, ConsoleOutput);
+			PrintInt(myLine);
+			Write(" has received $500 from Customer ", 33, ConsoleOutput);
+			PrintInt(customerIndex);
+
 			Wait(passportClerkLines[myLine].bribeLineCV, passportLineLock);
 			passportClerkLines[myLine].bribeLineCount--;
 		}
@@ -1221,6 +1232,12 @@ void passportCustomerProcess(int customerIndex) {
 			/* printf("%s has gotten in regular line for %s.\n",
 					customers[customerIndex].name,
 					passportClerkLines[myLine].name); */
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customerIndex);
+			Write(" has gotten in regular line for PassportClerk ", 46, ConsoleOutput);
+			PrintInt(myLine);
+			Write(".\n", 2, ConsoleOutput);
+
 			Wait(passportClerkLines[myLine].regularLineCV, passportLineLock);
 			passportClerkLines[myLine].regularLineCount--;
 		}
@@ -1230,6 +1247,12 @@ void passportCustomerProcess(int customerIndex) {
 		/* printf("%s has gotten in regular line for %s.\n",
 				customers[customerIndex].name,
 				passportClerkLines[myLine].name); */
+		Write("Customer ", 9, ConsoleOutput);
+		PrintInt(customerIndex);
+		Write(" has gotten in regular line for PassportClerk ", 46, ConsoleOutput);
+		PrintInt(myLine);
+		Write(".\n", 2, ConsoleOutput);
+
 		Wait(passportClerkLines[myLine].regularLineCV, passportLineLock);
 		passportClerkLines[myLine].regularLineCount--;
 	}
@@ -1256,13 +1279,19 @@ void cashierCustomerProcess(int customerIndex) {
 	cashierLines[myLine].lineCount++;
 	/* printf("%s has gotten in regular line for %s.\n", customers[customerIndex]->name,
 			cashierLines[myLine]->name); */
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customerIndex);
+	Write(" has gotten in regular line for Cashier ", 40, ConsoleOutput);
+	PrintInt(myLine);
+	Write(".\n", 2, ConsoleOutput);
+
 	Wait(cashierLines[myLine].lineCV, cashierLineLock);
 	cashierLines[myLine].lineCount--;
 
 	cashierLines[myLine].state = BUSY;
 
 	Release(cashierLineLock);
-	/* cashierTransaction(customerIndex, myLine); */
+	cashierTransaction(customerIndex, myLine);
 }
 
 void picClerkTransaction(int customer, int clerk) {
@@ -1273,6 +1302,14 @@ void picClerkTransaction(int customer, int clerk) {
 	/* send SSN */
 	/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
 			customers[customer]->SSN, picClerkLines[clerk]->name);*/
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customerIndex);
+	Write(" has given SSN ", 25, ConsoleOutput);
+	PrintInt(customers[customerIndex].SSN);
+	Write(" to PictureClerk ", 17, ConsoleOutput);
+	PrintInt(clerk);
+	Write(".\n", 2, ConsoleOutput);
+
 	Signal(picClerkLines[clerk].transactionCV,
 			picClerkLines[clerk].transactionLock);
 
@@ -1285,15 +1322,26 @@ void picClerkTransaction(int customer, int clerk) {
 		Wait(picClerkLines[clerk].transactionCV,
 				picClerkLines[clerk].transactionLock);
 
-		if (/*(rand() % 10) % 2*/ 1 == 0) {
+		if (Rand() % 2 == 0) {
 			/*printf("%s does not like their picture from %s.\n",
 					currentThread->getName(), picClerkLines[clerk]->name);*/
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customerIndex);
+			Write(" does not like their picture from PictureClerk ", 47, ConsoleOutput);
+			PrintInt(clerk);
+			Write(".\n", 2, ConsoleOutput);
 			Signal(picClerkLines[clerk].transactionCV,
 					picClerkLines[clerk].transactionLock);
 		}
 		else {
 			/*printf("%s does like their picture from %s.\n",
 					currentThread->getName(), picClerkLines[clerk]->name);*/
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customerIndex);
+			Write(" does like their picture from PictureClerk ", 43, ConsoleOutput);
+			PrintInt(clerk);
+			Write(".\n", 2, ConsoleOutput);
+
 			customers[customer].picDone = true;
 			Signal(picClerkLines[clerk].transactionCV,
 					picClerkLines[clerk].transactionLock);
@@ -1304,6 +1352,13 @@ void picClerkTransaction(int customer, int clerk) {
 
 	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
 			picClerkLines[clerk]->name);*/
+
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customerIndex);
+	Write(" is leaving PictureClerk ", 25, ConsoleOutput);
+	PrintInt(clerk);
+	Write("'s counter.\n", 12, ConsoleOutput);
+
 	Signal(picClerkLines[clerk].transactionCV,
 			picClerkLines[clerk].transactionLock);
 	Release(picClerkLines[clerk].transactionLock);
@@ -1316,27 +1371,43 @@ void appClerkTransaction(int customer, int clerk) {
 	appClerkLines[clerk].customer = customer;
 	/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
 			customers[customer]->SSN, appClerkLines[clerk]->name);*/
-	
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customer);
+	Write(" has given SSN ", 25, ConsoleOutput);
+	PrintInt(customers[customerIndex].SSN);
+	Write(" to AppClerk ", 13, ConsoleOutput);
+	PrintInt(clerk);
+	Write(".\n", 2, ConsoleOutput);
+
 	Signal(appClerkLines[clerk].transactionCV,
 			appClerkLines[clerk].transactionLock);
 
 	/*printf("%s waiting for clerk %s to file the application.\n",
 	 currentThread->getName(), appClerkLines[clerk]->name);*/
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customer);
+	Write(" is waiting for clerk ", 22, ConsoleOutput);
+	PrintInt(clerk);
+	Write("to file the application.\n", 25, ConsoleOutput);
 	Wait(appClerkLines[clerk].transactionCV,
 			appClerkLines[clerk].transactionLock);
 
 	Signal(appClerkLines[clerk].transactionCV,
 			appClerkLines[clerk].transactionLock);
 
-	/*printf("%s is now leaving %s, releasing lock.\n", currentThread->getName(),
-	 appClerkLines[clerk]->name);*/
 	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
 			appClerkLines[clerk]->name);*/
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customer);
+	Write(" is leaving ApplicationClerk ", 29, ConsoleOutput);
+	PrintInt(clerk);
+	Write("'s counter.\n", 12, ConsoleOutput);
+
 	Release(appClerkLines[clerk].transactionLock);
 }
 
 void passportClerkTransaction(int customer, int clerk) {
-	int bribeChance;
+	int bribeChance = Rand() % 5;
 
 	while (passportClerkLines[clerk].approved == false) {
 
@@ -1345,6 +1416,13 @@ void passportClerkTransaction(int customer, int clerk) {
 
 		/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
 				customers[customer]->SSN, passportClerkLines[clerk]->name);*/
+		Write("Customer ", 9, ConsoleOutput);
+		PrintInt(customer);
+		Write(" has given SSN ", 25, ConsoleOutput);
+		PrintInt(customers[customerIndex].SSN);
+		Write(" to PassportClerk ", 18, ConsoleOutput);
+		PrintInt(clerk);
+		Write(".\n", 2, ConsoleOutput);
 
 		Signal(passportClerkLines[clerk].transactionCV,
 				passportClerkLines[clerk].transactionLock);
@@ -1365,6 +1443,11 @@ void passportClerkTransaction(int customer, int clerk) {
 
 			/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
 					passportClerkLines[clerk]->name);*/
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customer);
+			Write(" is leacing PassportClerk ", 26, ConsoleOutput);
+			PrintInt(clerk);
+			Write("'s counter.\n", 12, ConsoleOutput);
 
 			Signal(passportClerkLines[clerk].transactionCV,
 					passportClerkLines[clerk].transactionLock);
@@ -1378,22 +1461,37 @@ void passportClerkTransaction(int customer, int clerk) {
 
 		/*printf("%s has gone to %s too soon. They are going to the back of the line.\n", currentThread->getName(),
 			passportClerkLines[clerk]->name);*/
+		Write("Customer ", 9, ConsoleOutput);
+		PrintInt(customer);
+		Write(" has gone to PassportClerk ", 27, ConsoleOutput);
+		PrintInt(clerk);
+		Write(" too soon. They are going to the back of the line.\n", 51, ConsoleOutput);
 
 		/* the 5% chance of the passport clerk "making a mistake" happened and we must get back into line*/
 		Release(passportClerkLines[clerk].transactionLock);
 		Acquire(passportLineLock);
 
-		/*TODO: fix rand*/
-		bribeChance = 5;
+
 
 		if (bribeChance == 0) { /*decided to bribe*/
 			passportClerkLines[clerk].bribeLineCount++;
 			/*printf("%s has gotten in bribe line for %s.\n",
 					customers[customer]->name, passportClerkLines[clerk]->name);*/
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customer);
+			Write(" has gotten in the bribe line for PassportClerk ", 48, ConsoleOutput);
+			PrintInt(clerk);
+			Write(".\n", 2, ConsoleOutput);
+
 			customers[customer].money -= 500;
 			passportClerkLines[clerk].money += 500;
 			/*printf("%s has received $500 from %s.\n",
 					passportClerkLines[clerk]->name, customers[customer]->name);*/
+			Write("PassportClerk ", 15, ConsoleOutput);
+			PrintInt(clerk);
+			Write(" has received $500 from Customer ", 33, ConsoleOutput);
+			PrintInt(customer);
+
 			Wait(passportClerkLines[clerk].bribeLineCV, passportLineLock);
 			passportClerkLines[clerk].bribeLineCount--;
 		}
@@ -1401,6 +1499,11 @@ void passportClerkTransaction(int customer, int clerk) {
 			passportClerkLines[clerk].regularLineCount++;
 			/*printf("%s has gotten in regular line for %s.\n",
 					customers[customer]->name, passportClerkLines[clerk]->name);*/
+			Write("Customer ", 9, ConsoleOutput);
+			PrintInt(customer);
+			Write(" has gotten in regular line for PassportClerk ", 46, ConsoleOutput);
+			PrintInt(clerk);
+			Write(".\n", 2, ConsoleOutput);
 			Wait(passportClerkLines[clerk].regularLineCV, passportLineLock);
 			passportClerkLines[clerk].regularLineCount--;
 		}
@@ -1426,11 +1529,27 @@ void cashierTransaction(int customer, int cashier) {
 
 		/*printf("%s has given SSN %i to %s\n", customers[customer]->name,
 				customers[customer]->SSN, cashierLines[cashier]->name);*/
+
+		Write("Customer ", 9, ConsoleOutput);
+		PrintInt(customer);
+		Write(" has given SSN ", 25, ConsoleOutput);
+		PrintInt(customers[customerIndex].SSN);
+		Write(" to Cashier ", 12, ConsoleOutput);
+		PrintInt(cashier);
+		Write(".\n", 2, ConsoleOutput);
+
 		Wait(cashierLines[cashier].transactionCV,
 				cashierLines[cashier].transactionLock);
 
 		/*printf("%s has given %s $100.\n", currentThread->getName(),
 				cashierLines[cashier]->name);*/
+
+		Write("Customer ", 9, ConsoleOutput);
+		PrintInt(customer);
+		Write(" has given Cashier ", 29, ConsoleOutput);
+		PrintInt(cashier);
+		Write(" $100.\n", 7, ConsoleOutput);
+
 		Signal(cashierLines[cashier].transactionCV,
 				cashierLines[cashier].transactionLock);
 		Wait(cashierLines[cashier].transactionCV,
@@ -1439,6 +1558,12 @@ void cashierTransaction(int customer, int cashier) {
 
 	/*printf("%s is leaving %s's counter.\n", currentThread->getName(),
 			cashierLines[cashier]->name);*/
+	Write("Customer ", 9, ConsoleOutput);
+	PrintInt(customer);
+	Write(" is leaving Cashier ", 20, ConsoleOutput);
+	PrintInt(cashier);
+	Write("'s counter.\n", 12, ConsoleOutput);
+
 	Signal(cashierLines[cashier].transactionCV,
 			cashierLines[cashier].transactionLock);
 	Release(cashierLines[cashier].transactionLock);

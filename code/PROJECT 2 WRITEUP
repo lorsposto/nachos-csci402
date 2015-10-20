@@ -45,6 +45,7 @@ IV. Implementation:
 		thread.h/cc - addition of counter
 
 	+ Files added
+		passportoffice.c - passport office user program
 		helloworld.c - short program to test exec functionality
 		testcondition.c - testing condition functionality
 		testfork.c - testing fork functionality

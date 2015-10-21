@@ -48,15 +48,13 @@ IV. Implementation:
 		passport_office.c - passport office user program
 		run_passport_office.c - program running two passport offices
 		helloworld.c - short program to test exec functionality
-		testcondition.c - testing condition functionality
+		testcondition1.c - testing condition functionality
+		testcondition2.c - expanded test for locks and cvs
 		testfork.c - testing fork functionality
 		testlock.c - testing lock functionality	
 		testlockbad.c - testing bad calls to lock syscalls
-		testlockcv1.c - tests locks and cv combined
-		testlockcv2.c - expanded test for locks and cvs
-		testlockcv3.c - expanded test for locks and cvs
-		testlockcvbad1.c - testing bad input for conditions and locks
-		testlockcvbad2.c - testing additional bad input for conditions and locks
+		testconditionbad1.c - testing bad input for conditions and locks
+		testconditionbad2.c - testing additional bad input for conditions and locks
 		testprint.c - testing print int syscall
 		testrand.c - testing rand syscall
 		testforkexec1.c - testing fork/exec combined functionality
@@ -938,6 +936,110 @@ Hello World
 No threads ready or runnable, and no pending interrupts.
 Assuming the program completed.
 
++ testlock:
+	- attempts to create, acquire, release and destroy a lock (right order)
+	- Output:
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Releasing lock Lock 1.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testlockbad:
+	- attempts to create, release, acquire and destroy a lock (wrong order)
+	- Output:
+testlockbad: this test creates a lock and calls acquire and release in the wrong order.
+Creating lock Lock 1, index 0.
+Releasing lock Lock 1.
+        Non-owner thread main cannot release lock Lock 1!
+Acquiring lock Lock 1.
+Lock Lock 1 is still busy. Won't destroy.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testcondition1:
+	- attempts to create, broadcast and release a condition variable (with an associated lock)
+	- Output:
+testcondition1: this test creates a lock and condition and calls acquire, broadcast, and release in the right order.
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] broadcasting on lock [Lock 1].
+Releasing lock Lock 1.
+Condition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testcondition2:
+	- attempts to create, signal and release a condition variable (with an associated lock)
+	- Output:
+testcondition2: this test creates a lock and condition and calls acquire, signal, and release in the right order.
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] signaling on lock [Lock 1].
+Releasing lock Lock 1.
+Condition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testconditionbad1:
+	- attempts to create a condition variable without an associated lock
+	- Output:
+testconditionbad1: this test creates a condition without a valid lock.
+Creating condition Condition 1, index 0.
+Bad lock index to broadcast.
+Condition Condition 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testconditionbad2:
+	- attempts to create a condition without acquiring the associated lock
+	- Output:
+testconditionbad2: this test creates a lock and condition and calls broadcast without acquiring the lock.
+Creating lock Lock 1, index 0.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] broadcasting on lock [Lock 1].
+Trying to call Broadcast on Lock not owned by mainCondition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testprint:
+	- attempts to print the integer 5
+	- Output:
+5Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testrand:
+	- attempts to print random numbers
+	- Output:
+12345
+1406932606
+654583775
+1449466924
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
 VI. Discussion:
 	+ Experiment expectation.  (What is supposed to happen.)
 		passport_office: Runs a full simulation of 10 customers going through the passport office
@@ -949,10 +1051,10 @@ VI. Discussion:
 		testforkexecbad: Prints errors, otherwise executes.
 		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
 		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
-		testlockcv1 - calls acquire, signal, and release in the correct order and runs to completion
-		testlockcv2 - uses fork to check the functionality of a thread waiting on a condition then being signaled by another thread. thread waits, is signaled, and both run to completion.
-		testlockcvbad1 - prints error statement for trying to use condition with invalid lock
-		testlockcvbad2 - prints error statement for trying to call broadcase without acquiring the lock
+		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
+		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
+		testconditionbad1 - prints error statement for trying to use condition with invalid lock
+		testconditionbad2 - prints error statement for trying to call broadcase without acquiring the lock
 		testprint - print 5.
 		testrand - prints random number.
 	+ Experiment result.  (What actually happened.)
@@ -965,10 +1067,10 @@ VI. Discussion:
 		testforkexecbad: Prints errors, otherwise executs.
 		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
 		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
-		testlockcv1 - calls acquire, signal, and release in the correct order and runs to completion
-		testlockcv2 - uses fork to check the functionality of a thread waiting on a condition then being signaled by another thread. thread waits, is signaled, and both run to completion.
-		testlockcvbad1 - prints error statement for trying to use condition with invalid lock
-		testlockcvbad2 - prints error statement for trying to call broadcast without acquiring the lock
+		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
+		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
+		testconditionbad1 - prints error statement for trying to use condition with invalid lock
+		testconditionbad2 - prints error statement for trying to call broadcast without acquiring the lock
 		testprint - print 5.
 		testrand - prints random number.
 	+ Explanation
@@ -979,10 +1081,10 @@ VI. Discussion:
 		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad input.
 		testlock - Works because it correctly follows the order of creating, acquiring, then releasing the lock. This proves the intended functionality of our Lock still works evn with the new syscall wrapper.
 		testlockbad - Because a User can call the syscall with any input, this test ensures that the OS does not break with the user program gives invalid input.
-		testlockcv1 - Works because it correctly uses a singular lock and condition and calls signal, proving the functionality of conditions works.
-		testlockcv2 - Tests the "shared" state of a condition by having two threads interact with a singular condition, with one waiting and one signaling. Proves that our Conditions still work in their typical use case even with the new syscall wrapper.
-		testlockcvbad1 - Because a user program could botch the creation of a Condition, ensures that the OS is not affected by such an occasion.
-		testlockcvbad2 - You must have acquired the Lock to interact with a condition. This ensures that the conditions of Condition are met before Condition functionality can be used.
+		testcondition1 - Works because it correctly uses a singular lock and condition and calls broadcast, proving the functionality of conditions works.
+		testcondition2 - Works because it correctly uses a singular lock and condition and calls signal, proving the functionality of conditions works.
+		testconditionbad1 - Because a user program could botch the creation of a Condition, ensures that the OS is not affected by such an occasion.
+		testconditionbad2 - You must have acquired the Lock to interact with a condition. This ensures that the conditions of Condition are met before Condition functionality can be used.
 		testprint - Very simple utility syscall, so unsurpisingly works as intended.
 		testrand - Very simple utility syscall, so unsurpisingly works as intended.
 

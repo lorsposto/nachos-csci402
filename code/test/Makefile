@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition testlockcv1 testlockcv2 testlockcv3 testlockcvbad1 testlockcvbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld
+all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -80,41 +80,29 @@ testlockbad: testlockbad.o start.o
 	$(LD) $(LDFLAGS) start.o testlockbad.o -o testlockbad.coff
 	../bin/coff2noff testlockbad.coff testlockbad	
 
-testcondition.o: testcondition.c
-	$(CC) $(CFLAGS) -c testcondition.c
-testcondition: testcondition.o start.o
-	$(LD) $(LDFLAGS) start.o testcondition.o -o testcondition.coff
-	../bin/coff2noff testcondition.coff testcondition
+testcondition1.o: testcondition1.c
+	$(CC) $(CFLAGS) -c testcondition1.c
+testcondition1: testcondition1.o start.o
+	$(LD) $(LDFLAGS) start.o testcondition1.o -o testcondition1.coff
+	../bin/coff2noff testcondition1.coff testcondition1
 
-testlockcv1.o: testlockcv1.c
-	$(CC) $(CFLAGS) -c testlockcv1.c
-testlockcv1: testlockcv1.o start.o
-	$(LD) $(LDFLAGS) start.o testlockcv1.o -o testlockcv1.coff
-	../bin/coff2noff testlockcv1.coff testlockcv1
+testcondition2.o: testcondition2.c
+	$(CC) $(CFLAGS) -c testcondition2.c
+testcondition2: testcondition2.o start.o
+	$(LD) $(LDFLAGS) start.o testcondition2.o -o testcondition2.coff
+	../bin/coff2noff testcondition2.coff testcondition2
 
-testlockcv2.o: testlockcv2.c
-	$(CC) $(CFLAGS) -c testlockcv2.c
-testlockcv2: testlockcv2.o start.o
-	$(LD) $(LDFLAGS) start.o testlockcv2.o -o testlockcv2.coff
-	../bin/coff2noff testlockcv2.coff testlockcv2
+testconditionbad1.o: testconditionbad1.c
+	$(CC) $(CFLAGS) -c testconditionbad1.c
+testconditionbad1: testconditionbad1.o start.o
+	$(LD) $(LDFLAGS) start.o testconditionbad1.o -o testconditionbad1.coff
+	../bin/coff2noff testconditionbad1.coff testconditionbad1
 
-testlockcv3.o: testlockcv3.c
-	$(CC) $(CFLAGS) -c testlockcv3.c
-testlockcv3: testlockcv3.o start.o
-	$(LD) $(LDFLAGS) start.o testlockcv3.o -o testlockcv3.coff
-	../bin/coff2noff testlockcv3.coff testlockcv3
-
-testlockcvbad1.o: testlockcvbad1.c
-	$(CC) $(CFLAGS) -c testlockcvbad1.c
-testlockcvbad1: testlockcvbad1.o start.o
-	$(LD) $(LDFLAGS) start.o testlockcvbad1.o -o testlockcvbad1.coff
-	../bin/coff2noff testlockcvbad1.coff testlockcvbad1
-
-testlockcvbad2.o: testlockcvbad2.c
-	$(CC) $(CFLAGS) -c testlockcvbad2.c
-testlockcvbad2: testlockcvbad2.o start.o
-	$(LD) $(LDFLAGS) start.o testlockcvbad2.o -o testlockcvbad2.coff
-	../bin/coff2noff testlockcvbad2.coff testlockcvbad2	
+testconditionbad2.o: testconditionbad2.c
+	$(CC) $(CFLAGS) -c testconditionbad2.c
+testconditionbad2: testconditionbad2.o start.o
+	$(LD) $(LDFLAGS) start.o testconditionbad2.o -o testconditionbad2.coff
+	../bin/coff2noff testconditionbad2.coff testconditionbad2	
 
 testexec.o: testexec.c
 	$(CC) $(CFLAGS) -c testexec.c

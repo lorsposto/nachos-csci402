@@ -837,11 +837,6 @@ void beCustomer() {
 
 			}
 			else if (customers[customer].certified == true
-					|| customers[customer].earlybird == true
-							&& customers[customer].gotPassport == false) {
-				passportCustomerProcess(customer);
-			}
-			else if (customers[customer].certified == true
 					|| (customers[customer].earlybird == true
 							&& customers[customer].gotPassport == false)) {
 				cashierCustomerProcess(customer);
@@ -1327,9 +1322,6 @@ void passportCustomerProcess(int customerIndex) {
 				PrintInt(myLine);
 				Write(" has received $500 from Customer ", 33, ConsoleOutput);
 				PrintInt(customerIndex);
-
-				Wait(passportClerkLines[myLine].bribeLineCV, passportLineLock);
-				passportClerkLines[myLine].bribeLineCount--;
 			}
 			else {
 				passportClerkLines[myLine].regularLineCount++;
@@ -1367,7 +1359,7 @@ void passportCustomerProcess(int customerIndex) {
 	passportClerkLines[myLine].state = BUSY;
 
 	Release(passportLineLock);
-	/* passportClerkTransaction(customerIndex, myLine); */
+	passportClerkTransaction(customerIndex, myLine);
 }
 
 void cashierCustomerProcess(int customerIndex) {
@@ -1557,7 +1549,7 @@ void passportClerkTransaction(int customer, int clerk) {
 			 passportClerkLines[clerk]->name);*/
 			Write("Customer ", 9, ConsoleOutput);
 			PrintInt(customer);
-			Write(" is leacing PassportClerk ", 26, ConsoleOutput);
+			Write(" is leaving PassportClerk ", 26, ConsoleOutput);
 			PrintInt(clerk);
 			Write("'s counter.\n", 12, ConsoleOutput);
 

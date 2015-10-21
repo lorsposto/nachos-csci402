@@ -827,24 +827,24 @@ void beCustomer() {
 
 			if (customers[customer].picDone == false
 					|| customers[customer].appDone == false) {
-				picAppCustomerProcess(customerIndex);
+				picAppCustomerProcess(customer);
 			}
 			else if (customers[customer].appDone == true
 					&& customers[customer].picDone == true
 					&& customers[customer].certified == false
 					&& customers[customer].earlybird == false) {
-				passportCustomerProcess(customerIndex);
+				passportCustomerProcess(customer);
 
 			}
 			else if (customers[customer].certified == true
 					|| customers[customer].earlybird == true
 							&& customers[customer].gotPassport == false) {
-				passportCustomerProcess(customerIndex);
+				passportCustomerProcess(customer);
 			}
 			else if (customers[customer].certified == true
 					|| (customers[customer].earlybird == true
 							&& customers[customer].gotPassport == false)) {
-				cashierCustomerProcess(customerIndex);
+				cashierCustomerProcess(customer);
 			}
 
 			if (customers[customer].type != SENATOR
@@ -1349,7 +1349,7 @@ void passportCustomerProcess(int customerIndex) {
 			}
 		}
 		else {
-			passportClerkLines[myLine].regularLineCount++;
+
 			/* printf("%s has gotten in regular line for %s.\n",
 			 customers[customerIndex].name,
 			 passportClerkLines[myLine].name); */
@@ -1359,7 +1359,7 @@ void passportCustomerProcess(int customerIndex) {
 			ConsoleOutput);
 			PrintInt(myLine);
 			Write(".\n", 2, ConsoleOutput);
-
+			passportClerkLines[myLine].regularLineCount++;
 			Wait(passportClerkLines[myLine].regularLineCV, passportLineLock);
 			passportClerkLines[myLine].regularLineCount--;
 		}

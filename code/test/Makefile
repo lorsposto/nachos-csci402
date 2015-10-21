@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition testlockcv1 testlockcv2 testlockcv3 testlockcvbad1 testlockcvbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork passport_office testrand testprint helloworld
+all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition testlockcv1 testlockcv2 testlockcv3 testlockcvbad1 testlockcvbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -163,12 +163,18 @@ helloworld.o: helloworld.c
 helloworld: helloworld.o start.o
 	$(LD) $(LDFLAGS) start.o helloworld.o -o helloworld.coff
 	../bin/coff2noff helloworld.coff helloworld	
-	
+
 passport_office.o: passport_office.c
 	$(CC) $(CFLAGS) -c passport_office.c
 passport_office: passport_office.o start.o
 	$(LD) $(LDFLAGS) start.o passport_office.o -o passport_office.coff
-	../bin/coff2noff passport_office.coff passport_office		
+	../bin/coff2noff passport_office.coff passport_office	
+
+run_passport_office.o: run_passport_office.c
+	$(CC) $(CFLAGS) -c run_passport_office.c
+run_passport_office: run_passport_office.o start.o
+	$(LD) $(LDFLAGS) start.o run_passport_office.o -o run_passport_office.coff
+	../bin/coff2noff run_passport_office.coff run_passport_office		
 
 clean:
 	rm -f *.o *.coff

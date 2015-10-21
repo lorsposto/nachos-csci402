@@ -16,6 +16,8 @@ int main() {
     l = CreateLock("Lock 1", 6);
     c = CreateCondition("Condition 1",11);
 
+    Acquire(l);
+
     Fork(print);
 
     Wait(c, l);

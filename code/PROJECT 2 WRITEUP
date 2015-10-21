@@ -45,11 +45,23 @@ IV. Implementation:
 		thread.h/cc - addition of counter
 
 	+ Files added
-		passportoffice.c - passport office user program
+		passport_office.c - passport office user program
+		run_passport_office.c - program running two passport offices
 		helloworld.c - short program to test exec functionality
 		testcondition.c - testing condition functionality
 		testfork.c - testing fork functionality
 		testlock.c - testing lock functionality	
+		testlockbad.c - testing bad calls to lock syscalls
+		testlockcv1.c - tests locks and cv combined
+		testlockcv2.c - expanded test for locks and cvs
+		testlockcv3.c - expanded test for locks and cvs
+		testlockcvbad1.c - testing bad input for conditions and locks
+		testlockcvbad2.c - testing additional bad input for conditions and locks
+		testprint.c - testing print int syscall
+		testrand.c - testing rand syscall
+		testforkexec1.c - testing fork/exec combined functionality
+		testforkexec2.c - testing fork/exec combined functionality
+		testforkexecbad.c - testing bad input for fork/exec commands
 
 	+ Data Structures added, and the file they were added to.
 		system.h/cc - 
@@ -97,6 +109,8 @@ IV. Implementation:
 				DestroyLock(int index) - interface for userprogram to destroy a Lock no longer in use
 				CreateCondition(char* name, int len) -  interface for userprogram to create a Condition to use
 				DestroyCondition(int index) - interface for userprogram to destroy a Lock no longer in use
+				Rand() - generate a random number
+				PrintInt(char * name) - print an integer value to the console
 
 			exception.h/cc
 				Exit_Syscall(int status) - terminates the execution of the currently running thread
@@ -114,6 +128,9 @@ IV. Implementation:
 				DestroyLock_Syscall(int index) - destroys lock contained at index
 				CreateCondition_Syscall(int vaddr, int len) - creates a condition with given name
 				DestroyCondition_Syscall(int index) - destroys condition contained at index
+				Rand_Syscall() - generates a random number for a user program
+				PrintInt_Syscall() - prints an int for a user program
+
 
 	+ Functions modified and in which file.
 			addrspace.cc:
@@ -124,42 +141,78 @@ IV. Implementation:
 				StartProcess(char *filename) - add very first process to the process table
 
 V. Testing:  (For each test case, you must show)
-	+ How to test
-- How to run the test cases, the commands, the arguments and so on.
-	+ Test Output
-- Describe the testing output. You don't have to dump all the output info. Just make sure your description can exactly reflect your output. The grader of your submission will be wanting to compare the output they get with what you say the output is.
 
-+ Part 2 Tests
 + helloworld: 
 	- helper user program that prints "Hello World".
 + matmult2: 
 	- helper user program that is a copy of matmult, but prints the output to console.
++ passport_office:
+	- fully-converted passport office as a user program
+	- The output is the output from Project 1 of 10 customers going through the passport office.
+	- Output:
++ run_passport_office:
+	- runs the passport office twice
+	- The output is from two different passport offices serving 10 customers to completion
+	- Output:
 + testexec: 
 	- executes the helloworld user program 5 times. 
 	- The output is the string "Hello world" printed 5 times, which proves that the user program executed successfully all five times.
+	- Output: Hello World
+			  Hello World
+			  Hello World
+			  Hello World
+			  Hello World
 + testfork:
 	- forks a helloworld function 5 times. 
 	- The output is the string "Hello world" printed 5 times. This proves that each thread launched by fork successfully executed the function and finished.
+	- Output: Hello World
+			  Hello World
+			  Hello World
+			  Hello World
+			  Hello World
 + testforkexec1:
 	- executes helloworld 2 times, matmult2 2 times, and forks a helloworld function 2 times
-	- output is "Hello world" 4 times and the results of matmult twice.
 	- if the output is satisfied, it proves each forked function and executed process successfully completed.
+	- Output: 7220
+			  Hello World
+			  Hello World
+			  7220
+			  Hello World
+			  Hello World
 + testforkexec2:
 	- executes matmult2, forks a hello world function, executes the testfork user program, then executes the helloworld user program.
-	- output is the result of matmult2 once, and "Hello world" 7 times total.
 	- this test demonstrates forking from within a user program executed by the Exec syscall.
 	- the output proves all forked functions and executed processes are successful, no matter whether the syscalls are called by the main process or thread.
+	- Output: 
+
 + testforkexecbad:
 	- attempts to call Exec syscall on a couple of nonexistent executables.
 	- prints an error indicating the files don't exist, and continues to complete the subsequent instructions.
 	- proves the Nachos will not blow up due to input errors and will continue to execute the remaining syscalls without a hitch.
+	- Output:
 
 VI. Discussion:
 	+ Experiment expectation.  (What is supposed to happen.)
+		passport_office: 
+		run_passport_office:
+		testexec: "Hello World" is printed 5 times to the console.
+		testfork: "Hello World" is printed 5 times to the console.
+		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
+		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
+		testforkexecbad: Prints error.
 	+ Experiment result.  (What actually happened.)
+		pasport_office:
+		run_pasport_office:
+		testexec: "Hello World" is printed 5 times to the console.
+		testfork: "Hello World" is printed 5 times to the console.
+		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
+		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
+		testforkexecbad: Prints error.
 	+ Explanation
-		- Explain your experiment result - how it proves what 
-		  you were supposed to prove.
+		testexec: Because the helloworld program is being launched using the Exec syscall, we know that Exec correctly creates a new process. Using Exec multiple times shows that our program is correctly handling the allocation of memory.
+		testfork: Because we are creating additional threads with the Fork syscall, we know that we are successfully adding threads to the process that are launching and completing. Using Fork multiple times shows that our program is correctly handling allocation of memory within a singular process.
+		testforkexec1: This program proves that we support not only multiple single-threaded programs and multithreaded uniprograms, but multithreaded multiprogram execution. Because the print statements execute correctly, we know that we can handle both multiple programs and multiple threads.
+		testforkexec2: This programs proves that we can fork from within a program created using Exec. This shows that we can not only use fork from our original process but from new created processes, further proving our memory allocation robustness and correctness.
+		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad inpu.
 
 VIII. Miscellaneous:
-- Whatever else you want the grader know about your development.  You can create your own subsections headings here.

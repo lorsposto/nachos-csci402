@@ -120,19 +120,20 @@ void Lock::Acquire() {
 //	printf("%s is trying to acquire lock %s.\n", currentThread->getName(),
 //			name);
 	if (isHeldByCurrentThread()) {
-//		printf("\tThread %s already has the lock %s!\n", currentThread->getName(),
-//				name);
+		DEBUG('t', "\tThread %s already has the lock %s!\n", currentThread->getName(),
+				name);
 		(void) interrupt->SetLevel(oldLevel);
 		return;
 	}
 	if (state == BUSY) {
 		queue->Append((void *) currentThread);
+		DEBUG('t',"\t%s is busy, owned by thread %s\n", name, ownerThread->getName());
 		currentThread->Sleep();
 	}
 	state = BUSY;
 	ownerThread = currentThread;
 
-//	printf("%s acquired lock %s.\n", ownerThread->getName(), name);
+	DEBUG('t', "\t%s acquired lock %s.\n", ownerThread->getName(), name);
 	(void) interrupt->SetLevel(oldLevel);
 }
 void Lock::Release() {
@@ -144,14 +145,14 @@ void Lock::Release() {
 		return;
 	}
 	else if (!queue->IsEmpty()) {
-//		printf("%s released lock %s. ", ownerThread->getName(), name);
+		DEBUG('t',"\t%s released lock %s. ", ownerThread->getName(), name);
 		ownerThread = (Thread *) queue->Remove();
-//		printf("New owner is %s.\n", ownerThread->getName());
+		DEBUG('t',"\tNew owner is %s.\n", ownerThread->getName());
 		scheduler->ReadyToRun(ownerThread);
 	}
 	else {
 		state = AVAILABLE;
-//		printf("%s released lock %s.\n", ownerThread->getName(), name);
+		DEBUG('t', "\t%s released lock %s.\n", ownerThread->getName(), name);
 		ownerThread = NULL;
 	}
 //			printf("%s released lock %s.\n", currentThread->getName(), name);

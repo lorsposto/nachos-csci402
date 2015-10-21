@@ -399,7 +399,7 @@ void Exec_Syscall(int vaddr, int len) {
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-//	printf("In kernel thread!!!\n");
+	DEBUG('t',"In kernel thread for thread index %i!!!\n", currentThread->threadIndex);
 	// Write to the register PCReg the virtual address
 	machine->WriteRegister(PCReg, vaddr);
 	// Write virtualaddress + 4 in NextPCReg
@@ -416,13 +416,15 @@ void kernel_thread(int vaddr) {
 }
 
 void Fork_Syscall(int vaddr, int len) {
-//	printf("Entering Fork_Syscall\n");
+	DEBUG('t',"Entering Fork_Syscall\n");
 
 	// Get the current process from the Process Table so we can use it for everything else
 	processLock.Acquire();
 	process* p = processTable[currentThread->space->processIndex];
 	// Create a New thread. This would be a kernel thread
-	Thread* t = new Thread("kernel_thread", p->numThreadsTotal);
+	char * name = new char[20];
+	sprintf(name, "kernel_thread %i", p->numThreadsTotal);
+	Thread* t = new Thread(name, p->numThreadsTotal);
 	// Update the Process Table for Multiprogramming part
 	int oldPageTableIndex = p->threadStacks[currentThread->threadIndex];
 	TranslationEntry* oldPageTable = currentThread->space->getPageTable();
@@ -475,9 +477,9 @@ void Acquire_Syscall(int index) {
 		kernelLockLock.Release();
 		return;
 	}
-	printf("Acquiring lock %s.\n", kernelLockList[index].lock->getName());
-	kernelLockList[index].lock->Acquire();
 	kernelLockLock.Release();
+	DEBUG('t',"Acquiring lock %s.\n", kernelLockList[index].lock->getName());
+	kernelLockList[index].lock->Acquire();
 }
 
 void Release_Syscall(int index) {
@@ -501,9 +503,9 @@ void Release_Syscall(int index) {
 		kernelLockLock.Release();
 		return;
 	}
-	printf("Releasing lock %s.\n", kernelLockList[index].lock->getName());
-	kernelLockList[index].lock->Release();
 	kernelLockLock.Release();
+	DEBUG('t',"Releasing lock %s.\n", kernelLockList[index].lock->getName());
+	kernelLockList[index].lock->Release();
 
 	if (kernelLockList[index].isToBeDeleted) {
 		DestroyLock_Syscall(index);
@@ -537,11 +539,13 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 		// bad index
 		printf("Bad lock index to acquire.\n");
 		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
 		printf("No lock at index %i.\n", lockIndex);
+		kernelConditionLock.Release();
 		kernelLockLock.Release();
 		return;
 	}
@@ -549,18 +553,18 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
 		printf("Lock %s does not belong to current thread.\n",
 				kernelLockList[lockIndex].lock->getName());
+		kernelConditionLock.Release();
 		kernelLockLock.Release();
 		return;
 	}
 
-	printf("Condition [%s] waiting on lock [%s].\n",
+	DEBUG('t',"Condition [%s] waiting on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
-	kernelConditionList[conditionIndex].condition->Wait(
-			kernelLockList[lockIndex].lock);
-
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
+	kernelConditionList[conditionIndex].condition->Wait(
+			kernelLockList[lockIndex].lock);
 }
 
 void Signal_Syscall(int conditionIndex, int lockIndex) {
@@ -590,12 +594,14 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 		// bad index
 		printf("Bad lock index to acquire.\n");
 		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
 		printf("No lock at index %i.\n", lockIndex);
 		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
@@ -603,17 +609,17 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 		printf("Lock %s does not belong to current thread.\n",
 				kernelLockList[lockIndex].lock->getName());
 		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
-	printf("Condition [%s] signaling on lock [%s].\n",
+	DEBUG('t',"Condition [%s] signaling on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
-	kernelConditionList[conditionIndex].condition->Signal(
-			kernelLockList[lockIndex].lock);
-
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
+	kernelConditionList[conditionIndex].condition->Signal(
+			kernelLockList[lockIndex].lock);
 
 	if (kernelConditionList[conditionIndex].isToBeDeleted) {
 		DestroyCondition_Syscall(conditionIndex);
@@ -647,30 +653,32 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 		// bad index
 		printf("Bad lock index to broadcast.\n");
 		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
 		printf("No lock at index %i.\n", lockIndex);
-		kernelLockLock.Acquire();
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
 		printf("Lock %s does not belong to current thread.\n",
 				kernelLockList[lockIndex].lock->getName());
-		kernelLockLock.Acquire();
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
 		return;
 	}
 
-	printf("Condition [%s] broadcasting on lock [%s].\n",
+	DEBUG('t',"Condition [%s] broadcasting on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
-	kernelConditionList[conditionIndex].condition->Broadcast(
-			kernelLockList[lockIndex].lock);
-
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
+	kernelConditionList[conditionIndex].condition->Broadcast(
+			kernelLockList[lockIndex].lock);
 
 	if (kernelConditionList[conditionIndex].isToBeDeleted) {
 		DestroyCondition_Syscall(conditionIndex);
@@ -695,7 +703,6 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 	// Create the new lock...
 	kernelLockLock.Acquire();
-	printf("Creating lock %s, index %i.\n", buf, kernelLockIndex);
 	int createdLockIndex = kernelLockIndex;
 	kernelLockList[kernelLockIndex].lock = new Lock(buf);
 	kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
@@ -705,6 +712,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 	kernelLockLock.Release();
 
 	delete[] buf;
+	DEBUG('t',"Creating lock %s, index %i.\n", buf, createdLockIndex);
 	return createdLockIndex;
 }
 
@@ -724,7 +732,7 @@ void DestroyLock_Syscall(int index) {
 	}
 
 	if (kernelLockList[index].lock->isBusy()) {
-		printf("Lock %s is still busy. Won't destroy.\n",
+		DEBUG('t',"Lock %s is still busy. Won't destroy.\n",
 				kernelLockList[index].lock->getName());
 		kernelLockList[kernelLockIndex].isToBeDeleted = true;
 		kernelLockLock.Release();
@@ -733,7 +741,7 @@ void DestroyLock_Syscall(int index) {
 
 	if (!kernelLockList[index].lock->isBusy()
 			|| kernelLockList[kernelLockIndex].isToBeDeleted) {
-		printf("Lock %s will be destroyed.\n",
+		DEBUG('t',"Lock %s will be destroyed.\n",
 				kernelLockList[index].lock->getName());
 		kernelLockList[kernelLockIndex].isToBeDeleted = true;
 		kernelLockList[kernelLockIndex].lock = NULL;
@@ -759,7 +767,6 @@ int CreateCondition_Syscall(int vaddr, int len) {
 
 	// Create the new condition variable...
 	kernelConditionLock.Acquire();
-	printf("Creating condition %s, index %i.\n", buf, kernelConditionIndex);
 	int createdConditionIndex = kernelConditionIndex;
 	kernelConditionList[kernelConditionIndex].condition = new Condition(buf);
 	kernelConditionList[kernelConditionIndex].addrsp = currentThread->space;
@@ -768,6 +775,7 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	kernelConditionLock.Release();
 
 	delete[] buf;
+	DEBUG('t',"Creating condition %s, index %i.\n", buf, createdConditionIndex);
 	return createdConditionIndex;
 }
 
@@ -786,7 +794,7 @@ void DestroyCondition_Syscall(int index) {
 	}
 
 	if (!kernelConditionList[index].condition->isQueueEmpty()) {
-		printf("Threads are still using condition %s. Won't destroy.\n",
+		DEBUG('t',"Threads are still using condition %s. Won't destroy.\n",
 				kernelConditionList[index].condition->getName());
 		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
 		kernelConditionLock.Release();
@@ -795,7 +803,7 @@ void DestroyCondition_Syscall(int index) {
 
 	if (kernelConditionList[index].condition->isQueueEmpty()
 			|| kernelConditionList[kernelConditionIndex].isToBeDeleted) {
-		printf("Condition %s will be destroyed.\n",
+		DEBUG('t',"Condition %s will be destroyed.\n",
 				kernelConditionList[index].condition->getName());
 		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
 		kernelConditionList[kernelConditionIndex].condition = NULL;

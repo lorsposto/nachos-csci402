@@ -946,7 +946,15 @@ VI. Discussion:
 		testfork: "Hello World" is printed 5 times to the console.
 		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
 		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
-		testforkexecbad: Prints error.
+		testforkexecbad: Prints errors, otherwise executes.
+		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
+		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
+		testlockcv1 - calls acquire, signal, and release in the correct order and runs to completion
+		testlockcv2 - uses fork to check the functionality of a thread waiting on a condition then being signaled by another thread. thread waits, is signaled, and both run to completion.
+		testlockcvbad1 - prints error statement for trying to use condition with invalid lock
+		testlockcvbad2 - prints error statement for trying to call broadcase without acquiring the lock
+		testprint - print 5.
+		testrand - prints random number.
 	+ Experiment result.  (What actually happened.)
 		pasport_office: Successfully runs full simulation of 10 customers going through passport office
 		run_pasport_office: Successfully runs two full simulations of customers going through the passport office
@@ -954,12 +962,29 @@ VI. Discussion:
 		testfork: "Hello World" is printed 5 times to the console.
 		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
 		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
-		testforkexecbad: Prints error.
+		testforkexecbad: Prints errors, otherwise executs.
+		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
+		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
+		testlockcv1 - calls acquire, signal, and release in the correct order and runs to completion
+		testlockcv2 - uses fork to check the functionality of a thread waiting on a condition then being signaled by another thread. thread waits, is signaled, and both run to completion.
+		testlockcvbad1 - prints error statement for trying to use condition with invalid lock
+		testlockcvbad2 - prints error statement for trying to call broadcast without acquiring the lock
+		testprint - print 5.
+		testrand - prints random number.
 	+ Explanation
 		testexec: Because the helloworld program is being launched using the Exec syscall, we know that Exec correctly creates a new process. Using Exec multiple times shows that our program is correctly handling the allocation of memory.
 		testfork: Because we are creating additional threads with the Fork syscall, we know that we are successfully adding threads to the process that are launching and completing. Using Fork multiple times shows that our program is correctly handling allocation of memory within a singular process.
 		testforkexec1: This program proves that we support not only multiple single-threaded programs and multithreaded uniprograms, but multithreaded multiprogram execution. Because the print statements execute correctly, we know that we can handle both multiple programs and multiple threads.
 		testforkexec2: This programs proves that we can fork from within a program created using Exec. This shows that we can not only use fork from our original process but from new created processes, further proving our memory allocation robustness and correctness.
-		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad inpu.
+		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad input.
+		testlock - Works because it correctly follows the order of creating, acquiring, then releasing the lock. This proves the intended functionality of our Lock still works evn with the new syscall wrapper.
+		testlockbad - Because a User can call the syscall with any input, this test ensures that the OS does not break with the user program gives invalid input.
+		testlockcv1 - Works because it correctly uses a singular lock and condition and calls signal, proving the functionality of conditions works.
+		testlockcv2 - Tests the "shared" state of a condition by having two threads interact with a singular condition, with one waiting and one signaling. Proves that our Conditions still work in their typical use case even with the new syscall wrapper.
+		testlockcvbad1 - Because a user program could botch the creation of a Condition, ensures that the OS is not affected by such an occasion.
+		testlockcvbad2 - You must have acquired the Lock to interact with a condition. This ensures that the conditions of Condition are met before Condition functionality can be used.
+		testprint - Very simple utility syscall, so unsurpisingly works as intended.
+		testrand - Very simple utility syscall, so unsurpisingly works as intended.
+
 
 VIII. Miscellaneous:

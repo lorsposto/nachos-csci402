@@ -1,387 +1,1092 @@
-Title:  Writeup for Project 1, Fall 2015
-Date:   09/20/15
-Group:	Erika Johnson	erikajoh@usc.edu	
+ Title:  Writeup for Project 2, Fall 2015
+ Date:  10/18/15
+ Group:	Erika Johnson	erikajoh@usc.edu	
 		Heather Persson	hpersson@usc.edu	
-		Lorraine Sposto	llsposto@usc.edu	
- 
+		Lorraine Sposto	llsposto@usc.edu
+
 I. Requirements:
-- Implement locks and condition variables.
-- Simulate the United States Passport Office with the following types of people: Customer, ApplicationClerk, PictureClerk, PassportClerk, Cashier, Manager and Senator.
-- In normal operation, the Customer enters the passport office trying to acquire a completed passport. Then, the Customer chooses to visit either the ApplicationClerk or the PictureClerk, and then the other after. The ApplicationClerk accepts a completed Application, consisting of an application and social security number from the Customer. The PictureClerk takes pictures of Customers. Next, the Customer visits the Cashier to pay $100 to receive a passport. Managers tell the various Clerks when to start working and also broadcast the total amount of money that the passport office has at fairly regular intervals of time.
-- Customers have a random percentage to not like their picture.
-- Once a Customer has paid for their passport by the Cashier, they are done and should leave the passport office.
-- Customers randomly decide whether to get their application taken or picture taken first.
-- Customers go to the shortest line for the clerk they are visiting.
-- Customers start with a randomly determined amount of money in increments of $100, $600, $1100 and $1600, up to a total of $1600.
-- Customers can "bribe" any clerk with $500 to move up to the front of the line.
-- Clerks have a money amount that goes up when they receive a "bribe".
-- Clerks go on break if they have no Customers in their line.
-- Customers have some nonzero percentage chance of not liking their picture.
-- If a Customer shows up to a PassportClerk before both the application and picture are completed, they must wait a random amount time (from 100-1000 Yield() calls).
-- Cashiers only take the $100 passport fee from the Customer if they see a "certification" by the PassportClerk; otherwise the Customer must wait a random amount of time (from 100-1000 Yield() calls).
-- Cashiers have a money amount that goes up when they receive a payment.
-- Managers must wake up Clerks on break when more than 3 Customers get in line.
-- The exception to the above statement occurs when all clerks of a given type are on break and there is at least one customer waiting in line. This is prevent the state at the end with a few straggling customers never being served.
-- Managers must fairly regularly broadcast how much money the passport office has made.
-- Senators get to use the passport office by themselves; all Customers not being served must leave the office (and those being served must be served and then leave) when a Senator arrives.
-- Customers who were evicted by the Senator's arrival must get back in the same type of line they were in before, after the Senator finishes and leaves.
-- Customers who show up while a Senator is being served must wait in an "outside" line.
-- No race conditions in the passport office.
-- The simulation must work for up to 50 Customers, 1-5 Clerks and Cashier, 1 Manager, and up to 10 Senators.
+- Expand the exception handler to handle new types of interrupts for new syscalls
+- Implement the following new system calls: Fork, Exec, Exit, Yield
+- Implement system calls for Locks (Acquire, Release) and Conditions (Wait, Signal, and Broadcast) that essentially wrap our implementation from Part 1.
+- Implement any other system calls required for use and testing, such as CreateLock, CreateCondition, DestroyLock, DestroyCondiiton and system calls required to upgrade our PassportOffice (such as a Print syscall)
+- Bulletproof the kernal from errors sent by user program calls.
+- Upgrade the method of memory allocation to a mapped relationship of physical to virtual to allow for multiple programs to run at once.
+- Provide way to copy data between the kernel and the user 
+- Support multi-threaded multi-programs
+- Update the passport office from a part of the Nachos kernal code to a userprogram that can run multiple instances of itself
+- Develop tests for all functionality added
 
 II. Assumptions:
-- The manager knows how many customers are in the passport office at any given time, so when there are no customers left the office can close (i.e. the program terminates).
-- The manager can wake up a clerk with < 3 customers in line if and only if all other clerks of the same type are on break to ensure the straggling customers at the end of the simulation can be served.
+	- A thread will explicitly exit out of itself
+	- Nachos has finished running when the last running process finishes.
 
 III. Design:
-- Components: Semaphore, Lock, Condition, Customer (incl. Senator), Clerk (incl. App, Pic and Passport), Cashier, Manager.
-- Locks and Condition variables (and Semaphore for Senator) will be used to prevent race conditions and ensure mutual exclusion.
-- Components will be created and forked into their own threads in the main function, where their "be" function (e.g. beManager, beCustomer, etc.) will be called.
-- "Be" functions will start various components in the passport office in continuous execution until they have finished carrying out their roles.
-- "Transaction" functions will help execute actions and handle simulated messaging between the various components.
+- System calls are handled through the exception handler. The exception handler receives an exception and checks for the corresponding value before executing the correcting system call.
+- For the Fork system call, we must create a new thread, then resize the running process's page table to make room for 8 more pages for the new thread. After doing so, we update the appropriate values for the process (location of new thread stack, number of running threads, etc) and call the OS fork.
+- For the Exec system call, we must read in the process that is setting up to execute. We must then create a new address space and process, update the process table accordingly, then create a first thread for the process and fork it from the currently executing thread.
+- For the Exit system call, we must consider 3 cases. If the thread is not the last thread in the process, it simply frees up its own stack before finishing. If the thread is the last thread in a process, it must clean up the entire process's page table before finishing itself. If the thread is the last thread in the last process, it must halt all of Nachos.
+- For the Yeild system call, the machine simply yields.
+- For the Lock and Condition system calls, the system call itself simply checks for invalid values of the Lock/Condition before passing the handling off to our implemntation of Locks and Conditions from Project 1.
+- Page Table must keep track of the relationship between virtual and physical pages, and is unique to every process that is created
+- The Process Table keeps track of all processes. Processes are indexed on creation so that they may be kept track of in the process table.
+- A process contains and address space, an array to keep track of thread stacks, the and number of currently active threads.
+- A thread contains an index that indicates it is the nth thread created in the process. In this way, the location of the first page of their stack can be referenced in the process struct.
+- A thread interfaces with the process table by looking at the index of its address space, which is the same for all threads in a process. The process interfaces with threads by using their index to access their thread stack. 
 
 IV. Implementation:
-+ Files Modified
-- synch.h, synch.cc: lock and condition code.
-- threadtest.cc: testing code.
-+ Files added
-- passport_office.cc: passport simulation code.
-+ Data Structures added, and the file they were added to.
-- Customer struct (in passport_office.cc): can be REGULAR or SENATOR type. Can have state AVAILABLE, BUSY or BREAK. Has name, SSN, picDone, appDone, certified, gotPassport, money and type. Constructed with name, ssn and type specified.
-- Clerk struct (in passport_office.cc): can be APP, PIC or PP type. Has name, index, approved, bribeLineCount, regularLineCount, type, state, regularLineCV, bribeLineCV, transactionCV, transactionLock, breakCV, breakLock, customer and money. Can be constructed with name, index and type specified; otherwise, defaults to no name, -1 index and APP type.
-- Cashier struct (in passport_office.cc): can have state AVAILABLE, BUSY or BREAK. Has name, index, approved, lineCount, money, state, lineCV, transactionCV, transactionLock, breakCV, breakLock and customer. Can be constructed with name and index specified; otherwise, defaults to no name and -1 index.
-- Manager struct (in passport_office.cc): has name, index and counter. Constructed with name and index specified; counter starts at 0.
-- Locks (in passport_office.cc): picLineLock, appLineLock, passportLineLock, cashierLineLock, customerCounterLock, senatorLock. Used to prevent race conditions.
-- Senator also has senatorSema and senatorCV in addition to the lock, to ensure mutual exclusion.
-- Lines/Arrays (in passport_office.cc): picClerkLines, appClerkLines,passportClerkLines, cashierLines, managers and customers. Used to keep track of the multiple instances of each type.
-+ Data Structures modified, and the file they were added to.
-- Lock class (in synch.h, synch.cc): implemented constructor, destructor and member functions (see "functions modified" section below).
-- Condition class (in synch.h, synch.cc): implemented constructor, destructor and member functions (see "functions modified" section below).
-+ Functions added and in which file.
-- void broadcastMoney() (in passport_office.cc): called by Manager, to print out ("announce") the subtotals of money each clerk/cashier has and the grand total of money the passport office has.
-- void beCustomer(int customerIndex) (in passport_office.cc): starts continuous Customer execution and has Customer go through the steps to obtain a passport, sending mesages to various clerks/cashier as needed along the way.
-- void bePicClerk(int clerkIndex) (in passport_office.cc): starts continuous Pic Clerk execution and handles messages from Customer.
-- void beAppClerk(int clerkIndex) (in passport_office.cc): starts continuous App Clerk execution and handles messages from Customer.
-- void bePassportClerk(int clerkIndex) (in passport_office.cc): starts continuous Passport Clerk execution and handles messages from Customer.
-- void beCashier(int cashierIndex) (in passport_office.cc): starts continuous Cashier execution and handles messages from Customer.
-- void beManager(int index) (in passport_office.cc): starts continuous Manager execution and handles waking up clerks/cashier when needed. Terminates when there are no more customers in the passport office.
-- void picClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and Pic Clerk.
-- void appClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and App Clerk.
-- void passportClerkTransaction(int customer, int clerk) (in passport_office.cc): handles messaging between Customer and Passport Clerk.
-- void cashierTransaction(int customer, int cashier) (in passport_office.cc): handles messaging between Customer and Cashier.
-- void picAppCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Pic/App part of the Customer's process, for testing.
-- void passportCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Passport part of the Customer's process, for testing.
-- void cashierCustomerProcess(int customerIndex) (in passport_office.cc): executes just the Cashier part of the Customer's process, for testing.
-- void testCase1() (in passport_office.cc): tests that Customers always take the shortest line, but no 2 customers ever choose the same shortest line at the same time (see "testing" section below).
-- void testCase2() (in passport_office.cc): tests that Managers only read from one Clerks' total money received at any given time (see "testing" section below).
-- void testCase3() (in passport_office.cc): tests that Customers do not leave until they are given their passport by the Cashier, and that the Cashier doesn't start serving another Customer until the last Customer has left (see "testing" section below).
-- void testCase4() (in passport_office.cc): tests that Clerks go on break when they have no Customers waiting in their line (see "testing" section below).
-- void testCase5() (in passport_office.cc): tests that Managers wake Clerks up from breaks when lines get too long (see "testing" section below).
-- void testCase6() (in passport_office.cc): tests that the entire simulation never suffers from a race condition (see "testing" section below).
-- void testCase7() (in passport_office.cc): tests that Customers behave properly when Senators arrive (see "testing" section below).
-- void testCase8() (in passport_office.cc): tests the entire simulation.
-- void PassportOffice() (in passport_office.cc): runs the simulation under normal circumstances.
-+ Functions modified and in which file.
-- Lock::Lock(char* debugName) (in synch.cc): Lock constructor. Initializes name, state (AVAILABLE), ownerThread (NULL) and queue.
-- Lock::~Lock() (in synch.cc): Lock destructor. Deletes queue.
-- bool Lock::isHeldByCurrentThread() (in synch.cc): checks if currentThread and ownerThread are the same and returns true or false accordingly.
-- void Lock::Acquire() (in synch.cc): acquires the Lock if possible, sets state to BUSY and sets ownerThread to currentThread.
-- void Lock::Release() (in synch.cc): releases the Lock if possible, sets state to AVAILABLE and sets ownerThread to NULL.
-- Condition::Condition(char* debugName) (in synch.cc): Condition constructor. Initializes name, waitingLock (NULL) and queue.
-- Condition::~Condition() (in synch.cc): Condition destructor. Deletes name, waitingLock and queue.
-- void Condition::Wait(Lock* conditionLock) (in synch.cc): waits for condition if possible. Disables interrupts, then adds currentThread to queue, releases Lock, puts currentThread to sleep, acquires conditionLock and finally re-enables interrupts.
-- void Condition::Signal(Lock* conditionLock) (in synch.cc): signals one thread to wake up, if possible. Disables interrupts, then removes and schedules one thread from the queue, sets waitingLock to NULL and finally re-enables interrupts.
-- void Condition::Broadcast(Lock *conditionLock) (in synch.cc): broadcasts to all threads to wake up, if possible. Calls Signal() until queue is empty.
+	+ Files Modified
+		addrspace.cc - updated constructor to correclty map virtual memory to a physical page, changing variable scope (or using getters/setters) to be able to be accessed by threads
+		exception.cc - implementation of all new system calls
+		progtest.cc - updating the process table with the very first process
+		start.s - added assembly for new system calls
+		syscall.h - added new #define values for new system calls, created function prototypes
+		system.h - new global variables delcarations
+		system.cc - new global varaible initialization
+		thread.h/cc - addition of counter
+
+	+ Files added
+		passport_office.c - passport office user program
+		run_passport_office.c - program running two passport offices
+		helloworld.c - short program to test exec functionality
+		testcondition1.c - testing condition functionality
+		testcondition2.c - expanded test for locks and cvs
+		testfork.c - testing fork functionality
+		testlock.c - testing lock functionality	
+		testlockbad.c - testing bad calls to lock syscalls
+		testconditionbad1.c - testing bad input for conditions and locks
+		testconditionbad2.c - testing additional bad input for conditions and locks
+		testprint.c - testing print int syscall
+		testrand.c - testing rand syscall
+		testforkexec1.c - testing fork/exec combined functionality
+		testforkexec2.c - testing fork/exec combined functionality
+		testforkexecbad.c - testing bad input for fork/exec commands
+
+	+ Data Structures added, and the file they were added to.
+		system.h/cc - 
+			struct kernelCondition {
+				Condition * condition;
+				AddrSpace * addrsp;
+				bool isToBeDeleted;
+			};
+
+			struct kernelLock {
+				Lock * lock;
+				AddrSpace * addrsp;
+				bool isToBeDeleted;
+			};
+
+			struct process {
+				int * threadStacks;
+				int numThreadsRunning; 
+				int numThreadsTotal;
+			};
+
+			kernelCondition kernelConditionList[]
+			kernelLock kernelLockList[] 
+			BitMap bitmap
+			Lock bitmapLock
+			process processTable[]
+			Lock processLock
+
+	+ Data Structures modified, and the file they were added to.
+			
+		addrspace.h:
+			AddrSpace - addition of int for processIndex and numPages
+		thread.h 
+			Thread - addition of int for threadIndex
+
+	+ Functions added and in which file.
+			syscall.h (prototypes):
+				Yield() - interface for userprogram to call Yield 
+				Acquire(int index) - interface for userprogram to call Acquire
+				Release(int index) - interface for userprogram to call Releae
+				Wait(int conditionIndex, int lockIndex) - interface for userprogram to call Wait
+				Signal(int conditionIndex, int lockIndex) - interface for userprogram to call Signal
+				Broadcast(int conditionIndex, int lockIndex) - interface for userprogram to call Broadcast
+				CreateLock(char* name, int len) - interface for userprogram to create a Lock to use
+				DestroyLock(int index) - interface for userprogram to destroy a Lock no longer in use
+				CreateCondition(char* name, int len) -  interface for userprogram to create a Condition to use
+				DestroyCondition(int index) - interface for userprogram to destroy a Lock no longer in use
+				Rand() - generate a random number
+				PrintInt(char * name) - print an integer value to the console
+
+			exception.h/cc
+				Exit_Syscall(int status) - terminates the execution of the currently running thread
+				Exec_Syscall(int vaddr, int len) - begins a new process
+				exec_thread(int vaddr) - helper funciton to kick off new process
+				kernel_thread(int vaddr) - helper function to kick off new thread
+				Fork_Syscall(int vaddr) - creates a new thread within a process
+				Yield_Syscall(int vaddr) - relinquishes control of the CPU
+				Acquire_Syscall(int index) - acquires the lock with the given index
+				Release_Syscall(int index) - releases lock with the given index
+				Wait_Syscall(int conditionIndex, int lockIndex) - has the condition at the given index wait to be signaled
+				Signal_Syscall(int conditionIndex, int lockIndex) - signals the first waiting thread on the condition at the given index
+				Broadcast_Syscall(int conditionIndex, int lockIndex) - signals all waiting threads on the condition at the given index
+				CreateLock_Syscall(int vaddr, int len) - creates a lock with given name
+				DestroyLock_Syscall(int index) - destroys lock contained at index
+				CreateCondition_Syscall(int vaddr, int len) - creates a condition with given name
+				DestroyCondition_Syscall(int index) - destroys condition contained at index
+				Rand_Syscall() - generates a random number for a user program
+				PrintInt_Syscall() - prints an int for a user program
+
+
+	+ Functions modified and in which file.
+			addrspace.cc:
+				AddrSpace(OpenFile *executable) - change from supporting uniprogram to multiprogram by splitting out physical/virtual to a non-direct mapping
+			exception.cc:
+				ExceptionHandler(ExceptionType which) - expand for new syscall cases
+			progtest.cc:
+				StartProcess(char *filename) - add very first process to the process table
 
 V. Testing:  (For each test case, you must show)
-+ How to test
-- Run the following command:
-	nachos
-- A menu will print from standard out, from which you can choose one of the test cases.
-- Test cases do no require input, except for #8 - custom execution.
-- Custom test case is normal execution of the passport office once given input of Clerk, Cashier, Customer, Senator, and Manager counts.
 
-+ Test Output
-- Test Case 1: Customers always take the shortest line, but no 2 customers ever choose the same shortest line at the same time.
-- Application Clerk 0 begins with 0 people in line 
-- Application Clerk 1 begins with 5 people in line 
-- Application Clerk 1 begins with 5 people in line 
-- 10 Customers to go to the Application Clerks
-- Expected output:
-	Customer 0 has gotten in regular line for Application Clerk 0.
-	Customer 1 has gotten in regular line for Application Clerk 0.
-	Customer 2 has gotten in regular line for Application Clerk 0.
-	Customer 3 has gotten in regular line for Application Clerk 0.
-	Customer 4 has gotten in regular line for Application Clerk 0.
-	Customer 5 has gotten in regular line for Application Clerk 0.
-	Customer 6 has gotten in regular line for Application Clerk 1.
-	Customer 7 has gotten in regular line for Application Clerk 2.
-	Customer 8 has gotten in regular line for Application Clerk 0.
-	Customer 9 has gotten in regular line for Application Clerk 1.
++ helloworld: 
+	- helper user program that prints "Hello World".
++ matmult2: 
+	- helper user program that is a copy of matmult, but prints the output to console.
++ passport_office:
+	- fully-converted passport office as a user program
+	- The output is the output from Project 1 of 10 customers going through the passport office.
+	- Output:
+Cashier 0 is going on break.
+PictureClerk 0 is going on break.
+ApplicationClerk 0 is going on break.
+Customer 0 is entering the passport office.
+Customer 0 has gotten in the regular line for PictureClerk 0.
+Customer 1 is entering the passport office.
+Customer 1 has gotten in the regular line for PictureClerk 0.
+Customer 2 is entering the passport office.
+Customer 2 has gotten in the regular line for PictureClerk 0.
+Customer 3 is entering the passport office.
+Customer 3 has gotten in the regular line for PictureClerk 0.
+Customer 4 is entering the passport office.
+Customer 4 has gotten in the regular line for PictureClerk 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up a PictureClerk.PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 0 from Customer  .0 .
+PictureClerk 0 has taken a picture of Customer 0.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 0 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 0 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 1 from Customer  .1 .
+PictureClerk 0 has taken a picture of Customer 1.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 1 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 2 from Customer  .2 .
+PictureClerk 0 has taken a picture of Customer 2.
+Customer 5 does like their picture from PictureClerk 0.
+Manager 0 has woken up an ApplicationClerk.
+PictureClerk 0 has been told that Customer 2 does like their picture.
+ApplicationClerk 0 is coming off break.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 2 has gotten in regular line for AppClerk 0.
+Customer 0 has given SSN  to Pictu0 to AppClerk 0.
+Customer 0 is waiting for clerk 0to file the application.
+PictureClerk 0 has signalled a Customer to come to their counter.
+ApplicationClerk 0 has received SSN 0 from Customer  .0 .
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 3 from Customer  .3 .
+PictureClerk 0 has taken a picture of Customer 3.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 3 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 3.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 3 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 3 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 4 from Customer  .4 .
+PictureClerk 0 has taken a picture of Customer 4.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 4 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 4 has gotten in regular line for AppClerk 0.
+PictureClerk 0 is going on break.
+ApplicationClerk 0 has recorded a complete application for Customer 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Customer 0 is leaving ApplicationClerk 0's counter.
+Customer 0 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 1 has given SSN  to Pictu0 to AppClerk 0.
+Customer 1 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 1 from Customer  .1 .
+Manager 0 has woken up a PassportClerk.
+PassportClerk 0 is coming off break.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 0 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 0 from Customer  .0 .
+PassportClerk 0 has determined that Customer 0 does have both their application and picture completed
+ApplicationClerk 0 has recorded a complete application for Customer 1.
+Customer 1 is leaving ApplicationClerk 0's counter.
+Customer 1 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 2 has given SSN  to Pictu0 to AppClerk 0.
+Customer 2 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 2 from Customer  .2 .
+ApplicationClerk 0 has recorded a complete application for Customer 2.
+Customer 2 is leaving ApplicationClerk 0's counter.
+Customer 2 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 3 has given SSN  to Pictu0 to AppClerk 0.
+Customer 3 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has recorded Customer 0 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Customer 0 is leaving PassportClerk 0's counter.
+Customer 0 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 1 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 1 from Customer  .1 .
+PassportClerk 0 has determined that Customer 1 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 0 from Customer  .0 .
+Cashier 0 has verified that0 has been certified by a PassportClerk.
+Customer 0 has given SSN  to Pictu0 to Cashier 0.
+Customer 0 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 0 after certification.Cashier 0 has provided Customer 0 their completed passport.Cashier 0 has recorded that Customer 0 has been given their completed passport.
+Customer 0 is leaving Cashier 0's counter.
+Customer 0 is leaving the Passport Office
+Cashier 0 is going on break.
+ApplicationClerk 0 has recorded a complete application for Customer 3.
+Customer 3 is leaving ApplicationClerk 0's counter.
+Customer 3 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to AppClerk 0.
+Customer 4 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 4 from Customer  .4 .
+PassportClerk 0 has recorded Customer 1 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $100 for Cashiers
+Manager  has counted amounts of $100 for the passport office
+Customer 1 is leaving PassportClerk 0's counter.
+Customer 1 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 2 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 2 from Customer  .2 .
+PassportClerk 0 has determined that Customer 2 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+ApplicationClerk 0 has recorded a complete application for Customer 4.
+Cashier 0 has received SSN 1 from Customer  .1 .
+Cashier 0 has verified that1 has been certified by a PassportClerk.
+Customer 4 is leaving ApplicationClerk 0's counter.
+Customer 4 has gotten in regular line for PassportClerk 0.
+Customer 1 has given SSN  to Pictu0 to Cashier 0.
+ApplicationClerk 0 is going on break.
+Customer 1 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 1 after certification.Cashier 0 has provided Customer 1 their completed passport.Cashier 0 has recorded that Customer 1 has been given their completed passport.
+Customer 1 is leaving Cashier 0's counter.
+Customer 1 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 2 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $200 for Cashiers
+Manager  has counted amounts of $200 for the passport office
+Customer 2 is leaving PassportClerk 0's counter.
+Customer 2 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 3 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has determined that Customer 3 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 2 from Customer  .2 .
+Cashier 0 has verified that2 has been certified by a PassportClerk.
+Customer 2 has given SSN  to Pictu0 to Cashier 0.
+Customer 2 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 2 after certification.Cashier 0 has provided Customer 2 their completed passport.Cashier 0 has recorded that Customer 2 has been given their completed passport.
+Customer 2 is leaving Cashier 0's counter.
+Customer 2 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 3 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $300 for Cashiers
+Manager  has counted amounts of $300 for the passport office
+Customer 3 is leaving PassportClerk 0's counter.
+Customer 3 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 4 from Customer  .4 .
+PassportClerk 0 has determined that Customer 4 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 3 from Customer  .3 .
+Cashier 0 has verified that3 has been certified by a PassportClerk.
+Customer 3 has given SSN  to Pictu0 to Cashier 0.
+Customer 3 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 3 after certification.Cashier 0 has provided Customer 3 their completed passport.Cashier 0 has recorded that Customer 3 has been given their completed passport.
+Customer 3 is leaving Cashier 0's counter.
+Customer 3 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 4 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $400 for Cashiers
+Manager  has counted amounts of $400 for the passport office
+Customer 4 is leaving PassportClerk 0's counter.
+Customer 4 has gotten in regular line for Cashier 0.
+PassportClerk 0 is going on break.
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 4 from Customer  .4 .
+Cashier 0 has verified that4 has been certified by a PassportClerk.
+Customer 4 has given SSN  to Pictu0 to Cashier 0.
+Customer 4 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 4 after certification.Cashier 0 has provided Customer 4 their completed passport.Cashier 0 has recorded that Customer 4 has been given their completed passport.
+Customer 4 is leaving Cashier 0's counter.
+Customer 4 is leaving the Passport Office
+Cashier 0 is going on break.
 
-- Test Case 2: Managers only read one from one Clerk's total money received, at a time.
-- 1 Picture Clerks
-- 1 Application Clerks
-- 1 Passport Clerk
-- 1 Cashier
-- 1 Manager
-- Expected output:
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $0 for Cashiers
-	Manager 0 has counted amounts of $0 for the passport office
-	Manager 0 has counted amounts of $200 for PictureClerks
-	Manager 0 has counted amounts of $200 for ApplicationClerks
-	Manager 0 has counted amounts of $200 for PassportClerks
-	Manager 0 has counted amounts of $200 for Cashiers
-	Manager 0 has counted amounts of $800 for the passport office
-	Manager 0 has counted amounts of $300 for PictureClerks
-	Manager 0 has counted amounts of $200 for ApplicationClerks
-	Manager 0 has counted amounts of $300 for PassportClerks
-	Manager 0 has counted amounts of $300 for Cashiers
-	Manager 0 has counted amounts of $1100 for the passport office
-	Manager 0 has counted amounts of $400 for PictureClerks
-	Manager 0 has counted amounts of $400 for ApplicationClerks
-	Manager 0 has counted amounts of $400 for PassportClerks
-	Manager 0 has counted amounts of $400 for Cashiers
-	Manager 0 has counted amounts of $1600 for the passport office
-	Manager 0 has counted amounts of $500 for PictureClerks
-	Manager 0 has counted amounts of $500 for ApplicationClerks
-	Manager 0 has counted amounts of $500 for PassportClerks
-	Manager 0 has counted amounts of $500 for Cashiers
-	Manager 0 has counted amounts of $2000 for the passport office
++ run_passport_office:
+	- runs the passport office twice
+	- The output is from two different passport offices serving 10 customers to completion
+	- Output:
+run_passport_office: executes two instances of the passport office.
+PassportClerk 0 is going on break.
+        Non-owner thread kernel_thread 2 cannot release lock ppClerkIndexLock!
+Cashier 0 is going on break.
+PictureClerk 0 is going on break.
+ApplicationClerk 0 is going on break.
+Customer 0 is entering the passport office.
+Customer 0 has gotten in the regular line for PictureClerk 0.
+Customer 1 is entering the passport office.
+Customer 1 has gotten in the regular line for PictureClerk 0.
+Customer 2 is entering the passport office.
+Customer 2 has gotten in the regular line for PictureClerk 0.
+Customer 3 is entering the passport office.
+Customer 3 has gotten in the regular line for PictureClerk 0.
+Customer 4 is entering the passport office.
+Customer 4 has gotten in the regular line for PictureClerk 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up a PictureClerk.PassportClerk 0 is going on break.
+        Non-owner thread kernel_thread 2 cannot release lock ppClerkIndexLock!
+Cashier 0 is going on break.
+PictureClerk 0 is going on break.
+ApplicationClerk 0 is going on break.
+Customer 0 is entering the passport office.
+Customer 0 has gotten in regular line for AppClerk 0.
+Customer 1 is entering the passport office.
+Customer 1 has gotten in regular line for AppClerk 0.
+Customer 2 is entering the passport office.
+Customer 2 has gotten in regular line for AppClerk 0.
+Customer 3 is entering the passport office.
+Customer 3 has gotten in regular line for AppClerk 0.
+Customer 4 is entering the passport office.
+Customer 4 has gotten in regular line for AppClerk 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up an ApplicationClerk.
+PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+ApplicationClerk 0 is coming off break.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+Customer 0 has given SSN  to Pictu0 to AppClerk 0.
+Customer 0 is waiting for clerk 0to file the application.
+PictureClerk 0 has received SSN 0 from Customer  .0 .
+PictureClerk 0 has taken a picture of Customer 0.
+ApplicationClerk 0 has received SSN 0 from Customer  .0 .
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 0 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 0 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 1 from Customer  .1 .
+PictureClerk 0 has taken a picture of Customer 1.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 1.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 1.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 1 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 2 from Customer  .2 .
+PictureClerk 0 has taken a picture of Customer 2.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 2 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 2 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 3 from Customer  .3 .
+PictureClerk 0 has taken a picture of Customer 3.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 3 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 3 has gotten in regular line for AppClerk 0.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 4 from Customer  .4 .
+PictureClerk 0 has taken a picture of Customer 4.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 4 does like their picture.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up an ApplicationClerk.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 4 has gotten in regular line for AppClerk 0.
+ApplicationClerk 0 is coming off break.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+PictureClerk 0 is going on break.
+Customer 0 has given SSN  to Pictu0 to AppClerk 0.
+Customer 0 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 0 from Customer  .0 .
+ApplicationClerk 0 has recorded a complete application for Customer 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Customer 0 is leaving ApplicationClerk 0's counter.
+Customer 0 has gotten in the regular line for PictureClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 1 has given SSN  to Pictu0 to AppClerk 0.
+Customer 1 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 1 from Customer  .1 .
+ApplicationClerk 0 has recorded a complete application for Customer 0.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Customer 0 is leaving ApplicationClerk 0's counter.
+Customer 0 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 1 has given SSN  to Pictu0 to AppClerk 0.
+Customer 1 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 1 from Customer  .1 .
+Manager 0 has woken up a PassportClerk.
+PassportClerk 0 is coming off break.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 0 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 0 from Customer  .0 .
+PassportClerk 0 has determined that Customer 0 does have both their application and picture completed
+Manager 0 has woken up a PictureClerk.PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 0 from Customer  .0 .
+PictureClerk 0 has taken a picture of Customer 0.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 0 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 0.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 0 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 0 has gotten in regular line for PassportClerk 0.
+PictureClerk 0 is going on break.
+ApplicationClerk 0 has recorded a complete application for Customer 1.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up a PassportClerk.
+Customer 1 is leaving ApplicationClerk 0's counter.
+Customer 1 has gotten in the regular line for PictureClerk 0.
+PassportClerk 0 is coming off break.
+PassportClerk 0 has signalled a Customer to come to their counter.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 0 has given SSN  to Pictu0 to PassportClerk 0.
+Customer 2 has given SSN  to Pictu0 to AppClerk 0.
+Customer 2 is waiting for clerk 0to file the application.
+PassportClerk 0 has received SSN 0 from Customer  .0 .
+PassportClerk 0 has determined that Customer 0 does have both their application and picture completed
+ApplicationClerk 0 has received SSN 2 from Customer  .2 .
+Manager 0 has woken up a PictureClerk.PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+PictureClerk 0 has received SSN 1 from Customer  .1 .
+PictureClerk 0 has taken a picture of Customer 1.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 1.
+ApplicationClerk 0 has recorded a complete application for Customer 1.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 1 does like their picture.
+Customer 1 is leaving ApplicationClerk 0's counter.
+Customer 1 has gotten in regular line for PassportClerk 0.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 1 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+PictureClerk 0 is going on break.
+Customer 2 has given SSN  to Pictu0 to AppClerk 0.
+Customer 2 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 2 from Customer  .2 .
+ApplicationClerk 0 has recorded a complete application for Customer 2.
+Customer 2 is leaving ApplicationClerk 0's counter.
+Customer 2 has gotten in the regular line for PictureClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 3 has given SSN  to Pictu0 to AppClerk 0.
+Customer 3 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has recorded Customer 0 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Customer 0 is leaving PassportClerk 0's counter.
+Customer 0 has gotten in regular line for Cashier 0.
+ApplicationClerk 0 has recorded a complete application for Customer 2.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 2 is leaving ApplicationClerk 0's counter.
+Customer 2 has gotten in regular line for PassportClerk 0.
+Customer 1 has given SSN  to Pictu0 to PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+PassportClerk 0 has received SSN 1 from Customer  .1 .
+PassportClerk 0 has determined that Customer 1 does have both their application and picture completed
+Customer 3 has given SSN  to Pictu0 to AppClerk 0.
+Customer 3 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has recorded Customer 0 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $0 for Cashiers
+Manager  has counted amounts of $0 for the passport office
+Manager 0 has woken up a PictureClerk.Customer 0 is leaving PassportClerk 0's counter.
+Customer 0 has gotten in regular line for Cashier 0.
+PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+Customer 1 has given SSN  to Pictu0 to PassportClerk 0.
+PictureClerk 0 has received SSN 2 from Customer  .2 .
+PictureClerk 0 has taken a picture of Customer 2.
+PassportClerk 0 has received SSN 1 from Customer  .1 .
+PassportClerk 0 has determined that Customer 1 does have both their application and picture completed
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 2 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 2.
+Customer 5 does not like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 2 does not like their picture.
+PictureClerk 0 has taken a picture of Customer 2.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 2 does like their picture.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 2 has gotten in regular line for PassportClerk 0.
+Manager 0 has woken up a Cashier.
+PictureClerk 0 is going on break.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Manager 0 has woken up a Cashier.
+Cashier 0 has received SSN 0 from Customer  .0 .
+Cashier 0 has verified that0 has been certified by a PassportClerk.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Customer 0 has given SSN  to Pictu0 to Cashier 0.
+Cashier 0 has received SSN 0 from Customer  .0 .
+Cashier 0 has verified that0 has been certified by a PassportClerk.
+Customer 0 has given Cashier  $100.
+ 0 $100.
+Customer 0 has given SSN  to Pictu0 to Cashier 0.
+Cashier 0 has received the $100 from Customer 0 after certification.Cashier 0 has provided Customer 0 their completed passport.Cashier 0 has recorded that Customer 0 has been given their completed passport.
+Customer 0 is leaving Cashier 0's counter.
+Customer 0 is leaving the Passport Office
+Customer 0 has given Cashier  $100.
+ 0 $100.
+Cashier 0 is going on break.
+Cashier 0 has received the $100 from Customer 0 after certification.Cashier 0 has provided Customer 0 their completed passport.Cashier 0 has recorded that Customer 0 has been given their completed passport.
+Customer 0 is leaving Cashier 0's counter.
+Customer 0 is leaving the Passport Office
+Cashier 0 is going on break.
+ApplicationClerk 0 has recorded a complete application for Customer 3.
+Customer 3 is leaving ApplicationClerk 0's counter.
+Customer 3 has gotten in the regular line for PictureClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to AppClerk 0.
+Customer 4 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 4 from Customer  .4 .
+ApplicationClerk 0 has recorded a complete application for Customer 3.
+Customer 3 is leaving ApplicationClerk 0's counter.
+Customer 3 has gotten in regular line for PassportClerk 0.
+ApplicationClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to AppClerk 0.
+Customer 4 is waiting for clerk 0to file the application.
+ApplicationClerk 0 has received SSN 4 from Customer  .4 .
+ApplicationClerk 0 has recorded a complete application for Customer 4.
+Customer 4 is leaving ApplicationClerk 0's counter.
+Customer 4 has gotten in the regular line for PictureClerk 0.
+PassportClerk 0 has recorded Customer 1 passport documentation
+ApplicationClerk 0 is going on break.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $100 for Cashiers
+Manager  has counted amounts of $100 for the passport office
+Customer 1 is leaving PassportClerk 0's counter.
+Customer 1 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 2 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 2 from Customer  .2 .
+PassportClerk 0 has determined that Customer 2 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 1 from Customer  .1 .
+Cashier 0 has verified that1 has been certified by a PassportClerk.
+Customer 1 has given SSN  to Pictu0 to Cashier 0.
+Customer 1 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 1 after certification.Cashier 0 has provided Customer 1 their completed passport.Cashier 0 has recorded that Customer 1 has been given their completed passport.
+Customer 1 is leaving Cashier 0's counter.
+Customer 1 is leaving the Passport Office
+PassportClerk 0 has recorded Customer 1 passport documentation
+Cashier 0 is going on break.
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $100 for Cashiers
+Manager  has counted amounts of $100 for the passport office
+Manager 0 has woken up a PictureClerk.Customer 1 is leaving PassportClerk 0's counter.
+Customer 1 has gotten in regular line for Cashier 0.
+PictureClerk 0 is coming off break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+Customer 2 has given SSN  to Pictu0 to PassportClerk 0.
+PictureClerk 0 has received SSN 3 from Customer  .3 .
+PictureClerk 0 has taken a picture of Customer 3.
+PassportClerk 0 has received SSN 2 from Customer  .2 .
+PassportClerk 0 has determined that Customer 2 does have both their application and picture completed
+Customer 5 does like their picture from PictureClerk 0.
+ApplicationClerk 0 has recorded a complete application for Customer 4.
+PictureClerk 0 has been told that Customer 3 does like their picture.
+Manager 0 has woken up a Cashier.
+Customer 4 is leaving ApplicationClerk 0's counter.
+Customer 4 has gotten in regular line for PassportClerk 0.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 3 has gotten in regular line for PassportClerk 0.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+ApplicationClerk 0 is going on break.
+PictureClerk 0 has signalled a Customer to come to their counter.
+Customer 5 has given SSN  to Pictu0 to PictureClerk 0.
+Cashier 0 has received SSN 1 from Customer  .1 .
+Cashier 0 has verified that1 has been certified by a PassportClerk.
+PictureClerk 0 has received SSN 4 from Customer  .4 .
+PictureClerk 0 has taken a picture of Customer 4.
+Customer 1 has given SSN  to Pictu0 to Cashier 0.
+Customer 5 does like their picture from PictureClerk 0.
+PictureClerk 0 has been told that Customer 4 does like their picture.
+Customer 1 has given Cashier  $100.
+ 0 $100.
+Customer 5 is leaving PictureClerk 0's counter.
+Customer 4 has gotten in regular line for PassportClerk 0.
+Cashier 0 has received the $100 from Customer 1 after certification.Cashier 0 has provided Customer 1 their completed passport.Cashier 0 has recorded that Customer 1 has been given their completed passport.
+PictureClerk 0 is going on break.
+Customer 1 is leaving Cashier 0's counter.
+Customer 1 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 2 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $200 for Cashiers
+Manager  has counted amounts of $200 for the passport office
+Customer 2 is leaving PassportClerk 0's counter.
+Customer 2 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 3 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has determined that Customer 3 does have both their application and picture completed
+PassportClerk 0 has recorded Customer 2 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $200 for Cashiers
+Manager  has counted amounts of $200 for the passport office
+Customer 2 is leaving PassportClerk 0's counter.
+Customer 2 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 3 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 3 from Customer  .3 .
+PassportClerk 0 has determined that Customer 3 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 2 from Customer  .2 .
+Cashier 0 has verified that2 has been certified by a PassportClerk.
+Customer 2 has given SSN  to Pictu0 to Cashier 0.
+Customer 2 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 2 after certification.Cashier 0 has provided Customer 2 their completed passport.Cashier 0 has recorded that Customer 2 has been given their completed passport.
+Customer 2 is leaving Cashier 0's counter.
+Customer 2 is leaving the Passport Office
+Cashier 0 is going on break.
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 2 from Customer  .2 .
+Cashier 0 has verified that2 has been certified by a PassportClerk.
+Customer 2 has given SSN  to Pictu0 to Cashier 0.
+Customer 2 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 2 after certification.Cashier 0 has provided Customer 2 their completed passport.Cashier 0 has recorded that Customer 2 has been given their completed passport.
+Customer 2 is leaving Cashier 0's counter.
+Customer 2 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 3 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $300 for Cashiers
+Manager  has counted amounts of $300 for the passport office
+Customer 3 is leaving PassportClerk 0's counter.
+Customer 3 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 4 from Customer  .4 .
+PassportClerk 0 has determined that Customer 4 does have both their application and picture completed
+PassportClerk 0 has recorded Customer 3 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $300 for Cashiers
+Manager  has counted amounts of $300 for the passport office
+Customer 3 is leaving PassportClerk 0's counter.
+Customer 3 has gotten in regular line for Cashier 0.
+PassportClerk 0 has signalled a Customer to come to their counter.
+Customer 4 has given SSN  to Pictu0 to PassportClerk 0.
+PassportClerk 0 has received SSN 4 from Customer  .4 .
+PassportClerk 0 has determined that Customer 4 does have both their application and picture completed
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 3 from Customer  .3 .
+Cashier 0 has verified that3 has been certified by a PassportClerk.
+Customer 3 has given SSN  to Pictu0 to Cashier 0.
+Customer 3 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 3 after certification.Cashier 0 has provided Customer 3 their completed passport.Cashier 0 has recorded that Customer 3 has been given their completed passport.
+Customer 3 is leaving Cashier 0's counter.
+Customer 3 is leaving the Passport Office
+Cashier 0 is going on break.
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 3 from Customer  .3 .
+Cashier 0 has verified that3 has been certified by a PassportClerk.
+Customer 3 has given SSN  to Pictu0 to Cashier 0.
+Customer 3 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 3 after certification.Cashier 0 has provided Customer 3 their completed passport.Cashier 0 has recorded that Customer 3 has been given their completed passport.
+Customer 3 is leaving Cashier 0's counter.
+Customer 3 is leaving the Passport Office
+Cashier 0 is going on break.
+PassportClerk 0 has recorded Customer 4 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $400 for Cashiers
+Manager  has counted amounts of $400 for the passport office
+Customer 4 is leaving PassportClerk 0's counter.
+Customer 4 has gotten in regular line for Cashier 0.
+PassportClerk 0 is going on break.
+PassportClerk 0 has recorded Customer 4 passport documentation
+Manager  has counted amounts of $0 for PictureClerks
+Manager  has counted amounts of $0 for ApplicationClerks
+Manager  has counted amounts of $0 for PassportClerks
+Manager  has counted amounts of $400 for Cashiers
+Manager  has counted amounts of $400 for the passport office
+Customer 4 is leaving PassportClerk 0's counter.
+Customer 4 has gotten in regular line for Cashier 0.
+PassportClerk 0 is going on break.
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 4 from Customer  .4 .
+Cashier 0 has verified that4 has been certified by a PassportClerk.
+Customer 4 has given SSN  to Pictu0 to Cashier 0.
+Customer 4 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 4 after certification.Cashier 0 has provided Customer 4 their completed passport.Cashier 0 has recorded that Customer 4 has been given their completed passport.
+Customer 4 is leaving Cashier 0's counter.
+Customer 4 is leaving the Passport Office
+Cashier 0 is going on break.
+Manager 0 has woken up a Cashier.
+Cashier 0 is coming off break.
+Cashier 0 has signalled a Customer to come to their counter.
+Cashier 0 has received SSN 4 from Customer  .4 .
+Cashier 0 has verified that4 has been certified by a PassportClerk.
+Customer 4 has given SSN  to Pictu0 to Cashier 0.
+Customer 4 has given Cashier  $100.
+ 0 $100.
+Cashier 0 has received the $100 from Customer 4 after certification.Cashier 0 has provided Customer 4 their completed passport.Cashier 0 has recorded that Customer 4 has been given their completed passport.
+Customer 4 is leaving Cashier 0's counter.
+Customer 4 is leaving the Passport Office
+Cashier 0 is going on break.
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
 
-- Test Case 3: Customers do not leave until they are given their passport by the Cashier. The Cashier does not start on another customer until they know that the last Customer has left their area
-- 3 Customers
-- 1 Cashier
-- 1 Manager 
-- Expected output:
-	Cashier 0 is going on break.
-	Customer 0 has gotten in regular line for Cashier 0.
-	Customer 1 has gotten in regular line for Cashier 0.
-	Customer 2 has gotten in regular line for Cashier 0.
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $0 for Cashiers
-	Manager 0 has counted amounts of $0 for the passport office
-	Manager 0 has woken up a Cashier
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 0 from Customer 0
-	Cashier 0 has verified that Customer 0 has been certified by a PassportClerk
-	Customer 0 has given SSN 0 to Cashier 0
-	Customer 0 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 0 after certification
-	Cashier 0 has provided Customer 0 their completed passport
-	Cashier 0 has recorded that Customer 0 has been given their completed passport
-	Customer 0 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 1 from Customer 1
-	Cashier 0 has verified that Customer 1 has been certified by a PassportClerk
-	Customer 1 has given SSN 1 to Cashier 0
-	Customer 1 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 1 after certification
-	Cashier 0 has provided Customer 1 their completed passport
-	Cashier 0 has recorded that Customer 1 has been given their completed passport
-	Customer 1 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 2 from Customer 2
-	Cashier 0 has verified that Customer 2 has been certified by a PassportClerk
-	Customer 2 has given SSN 2 to Cashier 0
-	Customer 2 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 2 after certification
-	Cashier 0 has provided Customer 2 their completed passport
-	Cashier 0 has recorded that Customer 2 has been given their completed passport
-	Customer 2 is leaving the Passport Office.
-	Cashier 0 is going on break.
++ testexec: 
+	- executes the helloworld user program 5 times. 
+	- The output is the string "Hello world" printed 5 times, which proves that the user program executed successfully all five times.
+	- Output: Hello World
+			  Hello World
+			  Hello World
+			  Hello World
+			  Hello World
++ testfork:
+	- forks a helloworld function 5 times. 
+	- The output is the string "Hello world" printed 5 times. This proves that each thread launched by fork successfully executed the function and finished.
+	- Output: Hello World
+			  Hello World
+			  Hello World
+			  Hello World
+			  Hello World
++ testforkexec1:
+	- executes helloworld 2 times, matmult2 2 times, and forks a helloworld function 2 times
+	- if the output is satisfied, it proves each forked function and executed process successfully completed.
+	- Output: 7220
+			  Hello World
+			  Hello World
+			  7220
+			  Hello World
+			  Hello World
++ testforkexec2:
+	- executes matmult2, forks a hello world function, executes the testfork user program, then executes the helloworld user program.
+	- this test demonstrates forking from within a user program executed by the Exec syscall.
+	- the output proves all forked functions and executed processes are successful, no matter whether the syscalls are called by the main process or thread.
+	- Output: 
+testforkexec2: executes matmult2, forks a hello world function, executes the testfork user program, then executes the helloworld user program.
 
-- Test Case 4: Clerks go on break when they have no one waiting in their line
-- 1 Picture Clerks
-- 1 Application Clerks
-- 1 Passport Clerk
-- 1 Cashier
-- Expected output:
-	Passport Clerk 0 is going on break.
-	Cashier 0 is going on break.
-	Pic Clerk 0 is going on break.
-	Application Clerk 0 is going on break.
+7220
+Hello World
+ttestfork.c: this test forks a hello world function 5 times.
+Done tDone testing Fork 
+Hello World
+Hello world. 
+Hello world. 
+Hello world. 
+Hello world. 
+Hello world. 
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+Machine halting!
 
-- Test Case 5: Managers get Clerks off their break when lines get too long
-- 1 Cashier
-- 0 Customers
-- Expected output:
-	Cashier 0 is going on break.
-	Manager 0 has woken up a Cashier
-	Cashier 0 is coming off break.
-	Cashier 0 has signalled a Customer to come to their counter.
++ testforkexecbad:
+	- attempts to call Exec syscall on a couple of nonexistent executables.
+	- prints an error indicating the files don't exist, and continues to complete the subsequent instructions.
+	- proves the Nachos will not blow up due to input errors and will continue to execute the remaining syscalls without a hitch.
+	- Output:
+testforkexec1: this test executes helloworld 2 times, matmult2 2 times, and forks a helloworld function 2 times.
+Cannot execute -- no such executable "../test/matmu2".
+Cannot execute -- no such executable "../test/hellrld".
 
-- Test Case 6: Total sales never suffers from a race condition
-- 5 Customers
-- 3 Managers
-- 1 Cashier
-- Expected output:
-	Cashier 0 is going on break.
-	Customer 0 has gotten in regular line for Cashier 0.
-	Customer 1 has gotten in regular line for Cashier 0.
-	Customer 2 has gotten in regular line for Cashier 0.
-	Customer 3 has gotten in regular line for Cashier 0.
-	Customer 4 has gotten in regular line for Cashier 0.
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $0 for Cashiers
-	Manager 0 has counted amounts of $0 for the passport office
-	Manager 0 has woken up a Cashier
-	Manager 1 has counted amounts of $0 for PictureClerks
-	Manager 1 has counted amounts of $0 for ApplicationClerks
-	Manager 1 has counted amounts of $0 for PassportClerks
-	Manager 1 has counted amounts of $0 for Cashiers
-	Manager 1 has counted amounts of $0 for the passport office
-	Manager 2 has counted amounts of $0 for PictureClerks
-	Manager 2 has counted amounts of $0 for ApplicationClerks
-	Manager 2 has counted amounts of $0 for PassportClerks
-	Manager 2 has counted amounts of $0 for Cashiers
-	Manager 2 has counted amounts of $0 for the passport office
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 0 from Customer 0
-	Cashier 0 has verified that Customer 0 has been certified by a PassportClerk
-	Customer 0 has given SSN 0 to Cashier 0
-	Customer 0 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 0 after certification
-	Cashier 0 has provided Customer 0 their completed passport
-	Cashier 0 has recorded that Customer 0 has been given their completed passport
-	Customer 0 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 1 from Customer 1
-	Cashier 0 has verified that Customer 1 has been certified by a PassportClerk
-	Customer 1 has given SSN 1 to Cashier 0
-	Customer 1 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 1 after certification
-	Cashier 0 has provided Customer 1 their completed passport
-	Cashier 0 has recorded that Customer 1 has been given their completed passport
-	Customer 1 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 2 from Customer 2
-	Cashier 0 has verified that Customer 2 has been certified by a PassportClerk
-	Customer 2 has given SSN 2 to Cashier 0
-	Customer 2 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 2 after certification
-	Cashier 0 has provided Customer 2 their completed passport
-	Cashier 0 has recorded that Customer 2 has been given their completed passport
-	Customer 2 is leaving the Passport Office.
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $300 for Cashiers
-	Manager 0 has counted amounts of $300 for the passport office
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 3 from Customer 3
-	Cashier 0 has verified that Customer 3 has been certified by a PassportClerk
-	Customer 3 has given SSN 3 to Cashier 0
-	Customer 3 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 3 after certification
-	Cashier 0 has provided Customer 3 their completed passport
-	Cashier 0 has recorded that Customer 3 has been given their completed passport
-	Customer 3 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 4 from Customer 4
-	Cashier 0 has verified that Customer 4 has been certified by a PassportClerk
-	Customer 4 has given SSN 4 to Cashier 0
-	Customer 4 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 4 after certification
-	Cashier 0 has provided Customer 4 their completed passport
-	Cashier 0 has recorded that Customer 4 has been given their completed passport
-	Customer 4 is leaving the Passport Office.
-	Cashier 0 is going on break.
+Hello World
+Hello World
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
 
-- Test Case 7: The behavior of Customers is proper when Senators arrive. This is before, during, and after.
-- 1 Senator
-- 3 Customers
-- 1 Cashier
-- Expected output:
-	Cashier 0 is going on break.
-	Senator 0 has gotten in regular line for Cashier 0.
-	Customer 1 is going outside the Passport Office because there is a Senator present.
-	Customer 2 is going outside the Passport Office because there is a Senator present.
-	Customer 3 is going outside the Passport Office because there is a Senator present.
-	Manager 0 has counted amounts of $0 for PictureClerks
-	Manager 0 has counted amounts of $0 for ApplicationClerks
-	Manager 0 has counted amounts of $0 for PassportClerks
-	Manager 0 has counted amounts of $0 for Cashiers
-	Manager 0 has counted amounts of $0 for the passport office
-	Manager 0 has woken up a Cashier
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 0 from Senator 0
-	Cashier 0 has verified that Senator 0 has been certified by a PassportClerk
-	Senator 0 has given SSN 0 to Cashier 0
-	Senator 0 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Senator 0 after certification
-	Cashier 0 has provided Senator 0 their completed passport
-	Cashier 0 has recorded that Senator 0 has been given their completed passport
-	Senator 0 is leaving the Passport Office.
-	Cashier 0 is going on break.
-	Customer 1 has gotten in regular line for Cashier 0.
-	Customer 2 has gotten in regular line for Cashier 0.
-	Customer 3 has gotten in regular line for Cashier 0.
-	Manager 0 has woken up a Cashier
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 1 from Customer 1
-	Cashier 0 has verified that Customer 1 has been certified by a PassportClerk
-	Customer 1 has given SSN 1 to Cashier 0
-	Customer 1 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 1 after certification
-	Cashier 0 has provided Customer 1 their completed passport
-	Cashier 0 has recorded that Customer 1 has been given their completed passport
-	Customer 1 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 2 from Customer 2
-	Cashier 0 has verified that Customer 2 has been certified by a PassportClerk
-	Customer 2 has given SSN 2 to Cashier 0
-	Customer 2 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 2 after certification
-	Cashier 0 has provided Customer 2 their completed passport
-	Cashier 0 has recorded that Customer 2 has been given their completed passport
-	Customer 2 is leaving the Passport Office.
-	Cashier 0 has signalled a Customer to come to their counter.
-	Cashier 0 has received SSN 3 from Customer 3
-	Cashier 0 has verified that Customer 3 has been certified by a PassportClerk
-	Customer 3 has given SSN 3 to Cashier 0
-	Customer 3 has given Cashier 0 $100.
-	Cashier 0 has received the $100 from Customer 3 after certification
-	Cashier 0 has provided Customer 3 their completed passport
-	Cashier 0 has recorded that Customer 3 has been given their completed passport
-	Customer 3 is leaving the Passport Office.
-	Cashier 0 is going on break.
++ testlock:
+	- attempts to create, acquire, release and destroy a lock (right order)
+	- Output:
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Releasing lock Lock 1.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testlockbad:
+	- attempts to create, release, acquire and destroy a lock (wrong order)
+	- Output:
+testlockbad: this test creates a lock and calls acquire and release in the wrong order.
+Creating lock Lock 1, index 0.
+Releasing lock Lock 1.
+        Non-owner thread main cannot release lock Lock 1!
+Acquiring lock Lock 1.
+Lock Lock 1 is still busy. Won't destroy.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testcondition1:
+	- attempts to create, broadcast and release a condition variable (with an associated lock)
+	- Output:
+testcondition1: this test creates a lock and condition and calls acquire, broadcast, and release in the right order.
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] broadcasting on lock [Lock 1].
+Releasing lock Lock 1.
+Condition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testcondition2:
+	- attempts to create, signal and release a condition variable (with an associated lock)
+	- Output:
+testcondition2: this test creates a lock and condition and calls acquire, signal, and release in the right order.
+Creating lock Lock 1, index 0.
+Acquiring lock Lock 1.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] signaling on lock [Lock 1].
+Releasing lock Lock 1.
+Condition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testconditionbad1:
+	- attempts to create a condition variable without an associated lock
+	- Output:
+testconditionbad1: this test creates a condition without a valid lock.
+Creating condition Condition 1, index 0.
+Bad lock index to broadcast.
+Condition Condition 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testconditionbad2:
+	- attempts to create a condition without acquiring the associated lock
+	- Output:
+testconditionbad2: this test creates a lock and condition and calls broadcast without acquiring the lock.
+Creating lock Lock 1, index 0.
+Creating condition Condition 1, index 0.
+Condition [Condition 1] broadcasting on lock [Lock 1].
+Trying to call Broadcast on Lock not owned by mainCondition Condition 1 will be destroyed.
+Lock Lock 1 will be destroyed.
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testprint:
+	- attempts to print the integer 5
+	- Output:
+5Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
+
++ testrand:
+	- attempts to print random numbers
+	- Output:
+12345
+1406932606
+654583775
+1449466924
+Finishing thread "main"
+Sleeping thread "main"
+No threads ready or runnable, and no pending interrupts.
+Assuming the program completed.
 
 VI. Discussion:
-+ Experiment expectation.  (What is supposed to happen.)
-- Test Case 1 - Customers are expected to choose the shortest of the availables lines, but more than one customer will not choose a certain line at the same time.
-- Test Case 2 - Managers only read money from one clerk at a time, not all clerks at once.
-- Test Case 3 - Customers do not leave until they are approved to receive a passport by the cashier. This involves having taken and picture and submitting an application, thus being certified to get a passport, and then paying the fee. The next customer in line does not approach the counter until the current customer leaves the counter.
-- Test Case 4 - Clerks are expected to go on break when there are 0 people in line.
-- Test Case 5 - Managers get Clerks off their break when lines get too long. When a manager detects the clerk's line has risen above 3, they wake up the clerk.
-- Test Case 6 - Total sales never suffers from a race condition. Each clerk announcement should sum up to each office-wide announcement, and the money total at the end should be accurate to the previously announced sums.
-- Test Case 7 - When a senator arrives, customers in the office finish the steps they are on and leave the office. Once the senator completes getting a passport, the customers return to the office and begin where they left off
-
-+ Experiment result.  (What actually happened.)
-- Test Case 1 - Customers choose the least populated line until all lines were equal in length. After that, customers choose different lines in sequential order, and never the same line at once.
-- Test Case 2 - Managers read values for each clerk, of each type, individually. Their sums at each announcement add up correctly.
-- Test Case 3 - Each customer approaches the cashier. Only after the cashier checks that the picture, application, and certification step are complete can the customer get a passport. The only way the customer can pass this point is to wait for the cashier's approval and receive a passport; then the customer can leave. The next customer in line waits for the clerk to signal them to the counter, which occurs after the customer has left.
-- Test Case 4 - Each of the launched clerks immediately goes on break because their line counts are 0, since there are no customers to get in line.
-- Test Case 5 - A Cashier begins with a line count = 0, which is gradually incremented. Managers wake up a cashier when line count > 3
-- Test Case 6 - Total sales at each announcement sum up correctly, and at the end of execution the values sum up.
-- Test Case 7 - Customers and Senator enter the passport office. Customers leave because the Senator is about to start his passport process. Once the Senator leaves, the Customers return to complete their processes.
-
-+ Explanation
-- Test Case 1 - This makes sense and is in agreement with what is to be proven because to choose a line, customers traverse each line sequentially to choose the shortest. If multiple lines have equivalent and minimum values, the customer will choose the first occuring line. Customers cannot choose the same line at one time because they must acquire a lock before they can assess the length of the lines. If more than one customer could perform this process at one time, one customers choice could affect the line count and make the other customer's choice incorrect. Since customers can only choose lines one at a time, it is guaranteed that the line count each customer is viewing is accurate.
-- Test Case 2 - When a manager is reading the money of a clerk, the manager acquires (and subsquently releases) a lock specific to that clerk. The manager does not acquire every lock for every clerk, and then read all the values and make an annoucement. Therefore, it is possible that the Total of money at the time of a manager's announcement could have changed. However, the manager's announcement would not reveal any inaccuracies because the manager would be oblivious to these update -- he has already read and stored values before making the announcements.
-- Test Case 3 - Customers cannot leave until they receive their passport because they must satisfy the three requirements of 1. picture, 2. application, and 3. cerification. They must also satisfy the condition of having a passport to be able to leave the office. The only way to certify all of these conditions is through the cashier, from whom they receive their passport. Thus, customers cannot bypass this step to leave the passport office. Additionally, customers must be signaled by cashiers to come up to the counter; the cashier does not do so until the previous customer has left.
-- Test Case 4 - Because no customers are launched in this case, each clerk type goes on break and is never awoken by a manager. This means that all of the clerk line counts are 0, which is the criteria to go on break. Because there are no customers to get in line, the criteria for a manager to wake up clerks is not satisfied either.
-- Test Case 5 - Because the initial line count of the cashier = 0, the cashier will immediately go on break. The line count begins incrementing, but the increasing line size does not affect the cashier directly. When the manager thread runs, and the manager notices the line count > 3, the manager will wake up the cashier. 
-- Test Case 6 - It is apparent that there are no race conditions because the money amounts being announced by the manager increment in a logical order. They do not toggle up and down or take on strange values because only one thread can access these money counts at a time. Write access to the money fields is controlled by acquiring locks to update these values upon a transaction.
-- Test Case 7 - Even though the Customers can enter the passport office, by first checking on whether a Senator is present before looking for a line, they know to leave the passport office when they detect a Senator. They do so by waiting on a condition variable, and when the senator is finished he signals all customers to return. Because customer state is maintained by fields that indicate which steps they have completed, when they return to the office they automatically return to the next correct step they need to complete. Customers only check for senators when they are choosing a line, so each customer will complete his current itneraction before leaving the office.
+	+ Experiment expectation.  (What is supposed to happen.)
+		passport_office: Runs a full simulation of 10 customers going through the passport office
+		run_passport_office: Executes two full simulations of two different passport offices going through their customers
+		testexec: "Hello World" is printed 5 times to the console.
+		testfork: "Hello World" is printed 5 times to the console.
+		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
+		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
+		testforkexecbad: Prints errors, otherwise executes.
+		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
+		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
+		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
+		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
+		testconditionbad1 - prints error statement for trying to use condition with invalid lock
+		testconditionbad2 - prints error statement for trying to call broadcase without acquiring the lock
+		testprint - print 5.
+		testrand - prints random number.
+	+ Experiment result.  (What actually happened.)
+		pasport_office: Successfully runs full simulation of 10 customers going through passport office
+		run_pasport_office: Successfully runs two full simulations of customers going through the passport office
+		testexec: "Hello World" is printed 5 times to the console.
+		testfork: "Hello World" is printed 5 times to the console.
+		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
+		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
+		testforkexecbad: Prints errors, otherwise executs.
+		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
+		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
+		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
+		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
+		testconditionbad1 - prints error statement for trying to use condition with invalid lock
+		testconditionbad2 - prints error statement for trying to call broadcast without acquiring the lock
+		testprint - print 5.
+		testrand - prints random number.
+	+ Explanation
+		testexec: Because the helloworld program is being launched using the Exec syscall, we know that Exec correctly creates a new process. Using Exec multiple times shows that our program is correctly handling the allocation of memory.
+		testfork: Because we are creating additional threads with the Fork syscall, we know that we are successfully adding threads to the process that are launching and completing. Using Fork multiple times shows that our program is correctly handling allocation of memory within a singular process.
+		testforkexec1: This program proves that we support not only multiple single-threaded programs and multithreaded uniprograms, but multithreaded multiprogram execution. Because the print statements execute correctly, we know that we can handle both multiple programs and multiple threads.
+		testforkexec2: This programs proves that we can fork from within a program created using Exec. This shows that we can not only use fork from our original process but from new created processes, further proving our memory allocation robustness and correctness.
+		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad input.
+		testlock - Works because it correctly follows the order of creating, acquiring, then releasing the lock. This proves the intended functionality of our Lock still works evn with the new syscall wrapper.
+		testlockbad - Because a User can call the syscall with any input, this test ensures that the OS does not break with the user program gives invalid input.
+		testcondition1 - Works because it correctly uses a singular lock and condition and calls broadcast, proving the functionality of conditions works.
+		testcondition2 - Works because it correctly uses a singular lock and condition and calls signal, proving the functionality of conditions works.
+		testconditionbad1 - Because a user program could botch the creation of a Condition, ensures that the OS is not affected by such an occasion.
+		testconditionbad2 - You must have acquired the Lock to interact with a condition. This ensures that the conditions of Condition are met before Condition functionality can be used.
+		testprint - Very simple utility syscall, so unsurpisingly works as intended.
+		testrand - Very simple utility syscall, so unsurpisingly works as intended.
 
 
 VIII. Miscellaneous:
-- Whatever else you want the grader know about your development.  You can create your own subsections headings here.

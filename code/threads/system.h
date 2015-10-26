@@ -34,6 +34,8 @@ extern Timer *timer;				// the hardware alarm clock
 class AddrSpace;
 class BitMap;
 
+extern int currentTLBEntry;
+
 #ifdef USER_PROGRAM
 #include "../userprog/bitmap.h"
 #include "machine.h"

@@ -328,7 +328,7 @@ void exec_thread(int vaddr) {
 	// Initialize the register by using currentThread->space
 	currentThread->space->InitRegisters();
 	// Call Restore State through currentThread->space
-	currentThread->space->RestoreState();
+//	currentThread->space->RestoreState();
 	// Call machine->Run()
 	machine->Run();
 }
@@ -926,6 +926,19 @@ void ExceptionHandler(ExceptionType which) {
 		machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
 		machine->WriteRegister(NextPCReg, machine->ReadRegister(PCReg) + 4);
 		return;
+	}
+	else if (which == PageFaultException) {
+		IntStatus oldLevel = interrupt->SetLevel(IntOff);
+		int vpn = machine->ReadRegister(BadVAddrReg)/PageSize;
+		TranslationEntry entry = currentThread->space->getPageTable()[vpn];
+		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
+		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
+		machine->tlb[currentTLBEntry].valid = true;
+		machine->tlb[currentTLBEntry].dirty = false;
+		machine->tlb[currentTLBEntry].use = false;
+		currentTLBEntry = (currentTLBEntry+1)%TLBSize;
+//		printf("PageFaultException %i\t", currentTLBEntry);
+		(void) interrupt->SetLevel(oldLevel);
 	}
 	else {
 		cout << "Unexpected user mode exception - which:" << which << "  type:"

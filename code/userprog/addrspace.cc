@@ -289,6 +289,9 @@ void AddrSpace::InitRegisters() {
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() {
+	for(int i=0; i < TLBSize; i++) {
+			machine->tlb[i].valid = false;
+		}
 }
 
 //----------------------------------------------------------------------
@@ -300,8 +303,11 @@ void AddrSpace::SaveState() {
 //----------------------------------------------------------------------
 
 void AddrSpace::RestoreState() {
-	machine->pageTable = pageTable;
-	machine->pageTableSize = numPages;
+//	machine->pageTable = pageTable;
+//	machine->pageTableSize = numPages;
+	for(int i=0; i < TLBSize; i++) {
+		machine->tlb[i].valid = false;
+	}
 }
 
 TranslationEntry* AddrSpace::getPageTable() {

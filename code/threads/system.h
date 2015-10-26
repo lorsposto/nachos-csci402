@@ -36,6 +36,12 @@ class BitMap;
 
 extern int currentTLBEntry;
 
+class IPTEntry : public TranslationEntry {
+public:
+	AddrSpace * space;
+};
+
+extern IPTEntry ipt[];
 #ifdef USER_PROGRAM
 #include "../userprog/bitmap.h"
 #include "machine.h"

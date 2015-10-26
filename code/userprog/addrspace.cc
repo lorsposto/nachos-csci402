@@ -168,6 +168,15 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		// a separate page, we could set its
 		// pages to be read-only
 
+		// ITP population
+		ipt[ppn].virtualPage = i;
+		ipt[ppn].physicalPage = ppn;
+		ipt[ppn].valid = TRUE;
+		ipt[ppn].use = FALSE;
+		ipt[ppn].dirty = FALSE;
+		ipt[ppn].readOnly = FALSE;
+		ipt[ppn].space = currentThread->space; // space pointers
+
 		executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
 		PageSize, 40 + i * PageSize);
 	}
@@ -185,7 +194,7 @@ void AddrSpace::addStack() {
 			printf("Nachos is out of memory.\n");
 			interrupt->Halt();
 		}
-		pageTable[i].virtualPage = i;// for now, virtual page # = phys page #
+		pageTable[i].virtualPage = i; // for now, virtual page # = phys page #
 		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		pageTable[i].valid = TRUE;
 		pageTable[i].use = FALSE;
@@ -193,13 +202,22 @@ void AddrSpace::addStack() {
 		pageTable[i].readOnly = FALSE; // if the code segment was entirely on
 		// a separate page, we could set its
 		// pages to be read-only
+
+		// ITP population
+		ipt[ppn].virtualPage = i;
+		ipt[ppn].physicalPage = ppn;
+		ipt[ppn].valid = TRUE;
+		ipt[ppn].use = FALSE;
+		ipt[ppn].dirty = FALSE;
+		ipt[ppn].readOnly = FALSE;
+		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	numPages += 8;
 	bitmapLock.Release();
 }
 
 void AddrSpace::expandTable() {
-	TranslationEntry* newPageTable = new TranslationEntry[numPages+8]; // is this math right?
+	TranslationEntry* newPageTable = new TranslationEntry[numPages + 8]; // is this math right?
 	// copy over old existing pages
 	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = 0; i < numPages; i++) {
@@ -213,15 +231,14 @@ void AddrSpace::expandTable() {
 
 	bitmapLock.Acquire();
 	// initialize new empty pages
-	for (unsigned int i = numPages; i < numPages+8;
-			i++) {
+	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
 		int ppn = bitmap.Find();
 		if (ppn == -1) {
 			printf("Nachos is out of memory.\n");
 			interrupt->Halt();
 		}
-		newPageTable[i].virtualPage = i;// for now, virtual page # = phys page #
+		newPageTable[i].virtualPage = i; // for now, virtual page # = phys page #
 		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		newPageTable[i].valid = TRUE;
 		newPageTable[i].use = FALSE;
@@ -229,6 +246,15 @@ void AddrSpace::expandTable() {
 		newPageTable[i].readOnly = FALSE; // if the code segment was entirely on
 		// a separate page, we could set its
 		// pages to be read-only
+
+		// ITP population
+		ipt[ppn].virtualPage = i;
+		ipt[ppn].physicalPage = ppn;
+		ipt[ppn].valid = TRUE;
+		ipt[ppn].use = FALSE;
+		ipt[ppn].dirty = FALSE;
+		ipt[ppn].readOnly = FALSE;
+		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	bitmapLock.Release();
 	numPages += 8;
@@ -289,9 +315,9 @@ void AddrSpace::InitRegisters() {
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() {
-	for(int i=0; i < TLBSize; i++) {
-			machine->tlb[i].valid = false;
-		}
+	for (int i = 0; i < TLBSize; i++) {
+		machine->tlb[i].valid = false;
+	}
 }
 
 //----------------------------------------------------------------------
@@ -305,7 +331,7 @@ void AddrSpace::SaveState() {
 void AddrSpace::RestoreState() {
 //	machine->pageTable = pageTable;
 //	machine->pageTableSize = numPages;
-	for(int i=0; i < TLBSize; i++) {
+	for (int i = 0; i < TLBSize; i++) {
 		machine->tlb[i].valid = false;
 	}
 }

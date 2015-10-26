@@ -399,7 +399,8 @@ void Exec_Syscall(int vaddr, int len) {
 
 /* Helper function for Fork */
 void kernel_thread(int vaddr) {
-	DEBUG('t',"In kernel thread for thread index %i!!!\n", currentThread->threadIndex);
+	DEBUG('t', "In kernel thread for thread index %i!!!\n",
+			currentThread->threadIndex);
 	// Write to the register PCReg the virtual address
 	machine->WriteRegister(PCReg, vaddr);
 	// Write virtualaddress + 4 in NextPCReg
@@ -416,7 +417,7 @@ void kernel_thread(int vaddr) {
 }
 
 void Fork_Syscall(int vaddr, int len) {
-	DEBUG('t',"Entering Fork_Syscall\n");
+	DEBUG('t', "Entering Fork_Syscall\n");
 
 	// Get the current process from the Process Table so we can use it for everything else
 	processLock.Acquire();
@@ -478,7 +479,7 @@ void Acquire_Syscall(int index) {
 		return;
 	}
 	kernelLockLock.Release();
-	DEBUG('t',"Acquiring lock %s.\n", kernelLockList[index].lock->getName());
+	DEBUG('t', "Acquiring lock %s.\n", kernelLockList[index].lock->getName());
 	kernelLockList[index].lock->Acquire();
 }
 
@@ -504,7 +505,7 @@ void Release_Syscall(int index) {
 		return;
 	}
 	kernelLockLock.Release();
-	DEBUG('t',"Releasing lock %s.\n", kernelLockList[index].lock->getName());
+	DEBUG('t', "Releasing lock %s.\n", kernelLockList[index].lock->getName());
 	kernelLockList[index].lock->Release();
 
 	if (kernelLockList[index].isToBeDeleted) {
@@ -558,7 +559,7 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 		return;
 	}
 
-	DEBUG('t',"Condition [%s] waiting on lock [%s].\n",
+	DEBUG('t', "Condition [%s] waiting on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
 	kernelLockLock.Release();
@@ -613,7 +614,7 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 		return;
 	}
 
-	DEBUG('t',"Condition [%s] signaling on lock [%s].\n",
+	DEBUG('t', "Condition [%s] signaling on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
 	kernelLockLock.Release();
@@ -672,7 +673,7 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 		return;
 	}
 
-	DEBUG('t',"Condition [%s] broadcasting on lock [%s].\n",
+	DEBUG('t', "Condition [%s] broadcasting on lock [%s].\n",
 			kernelConditionList[conditionIndex].condition->getName(),
 			kernelLockList[lockIndex].lock->getName());
 	kernelLockLock.Release();
@@ -712,7 +713,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 	kernelLockLock.Release();
 
 	delete[] buf;
-	DEBUG('t',"Creating lock %s, index %i.\n", buf, createdLockIndex);
+	DEBUG('t', "Creating lock %s, index %i.\n", buf, createdLockIndex);
 	return createdLockIndex;
 }
 
@@ -732,7 +733,7 @@ void DestroyLock_Syscall(int index) {
 	}
 
 	if (kernelLockList[index].lock->isBusy()) {
-		DEBUG('t',"Lock %s is still busy. Won't destroy.\n",
+		DEBUG('t', "Lock %s is still busy. Won't destroy.\n",
 				kernelLockList[index].lock->getName());
 		kernelLockList[kernelLockIndex].isToBeDeleted = true;
 		kernelLockLock.Release();
@@ -741,7 +742,7 @@ void DestroyLock_Syscall(int index) {
 
 	if (!kernelLockList[index].lock->isBusy()
 			|| kernelLockList[kernelLockIndex].isToBeDeleted) {
-		DEBUG('t',"Lock %s will be destroyed.\n",
+		DEBUG('t', "Lock %s will be destroyed.\n",
 				kernelLockList[index].lock->getName());
 		kernelLockList[kernelLockIndex].isToBeDeleted = true;
 		kernelLockList[kernelLockIndex].lock = NULL;
@@ -775,7 +776,8 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	kernelConditionLock.Release();
 
 	delete[] buf;
-	DEBUG('t',"Creating condition %s, index %i.\n", buf, createdConditionIndex);
+	DEBUG('t', "Creating condition %s, index %i.\n", buf,
+			createdConditionIndex);
 	return createdConditionIndex;
 }
 
@@ -794,7 +796,7 @@ void DestroyCondition_Syscall(int index) {
 	}
 
 	if (!kernelConditionList[index].condition->isQueueEmpty()) {
-		DEBUG('t',"Threads are still using condition %s. Won't destroy.\n",
+		DEBUG('t', "Threads are still using condition %s. Won't destroy.\n",
 				kernelConditionList[index].condition->getName());
 		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
 		kernelConditionLock.Release();
@@ -803,7 +805,7 @@ void DestroyCondition_Syscall(int index) {
 
 	if (kernelConditionList[index].condition->isQueueEmpty()
 			|| kernelConditionList[kernelConditionIndex].isToBeDeleted) {
-		DEBUG('t',"Condition %s will be destroyed.\n",
+		DEBUG('t', "Condition %s will be destroyed.\n",
 				kernelConditionList[index].condition->getName());
 		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
 		kernelConditionList[kernelConditionIndex].condition = NULL;
@@ -929,15 +931,36 @@ void ExceptionHandler(ExceptionType which) {
 	}
 	else if (which == PageFaultException) {
 		IntStatus oldLevel = interrupt->SetLevel(IntOff);
-		int vpn = machine->ReadRegister(BadVAddrReg)/PageSize;
-		TranslationEntry entry = currentThread->space->getPageTable()[vpn];
-		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
-		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
-		machine->tlb[currentTLBEntry].valid = true;
-		machine->tlb[currentTLBEntry].dirty = false;
-		machine->tlb[currentTLBEntry].use = false;
-		currentTLBEntry = (currentTLBEntry+1)%TLBSize;
-//		printf("PageFaultException %i\t", currentTLBEntry);
+		int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
+		int ppn = -1;
+		bool valid;
+		AddrSpace * space = NULL;
+		for (int i = 0; i < NumPhysPages; ++i) {
+			if (vpn == ipt[i].virtualPage) {
+				ppn = i;
+				if (ipt[i].valid) {
+					valid = true;
+//					if(currentThread->space == ipt[i].space) {
+//						space = ipt[i].space;
+//					}
+					break;
+				}
+			}
+		}
+		if (ppn < 0 || !valid) {
+			DEBUG('a', "Virtual page number %i does not exist in IPT.\n", vpn);
+			DEBUG('a', "PPN %i, VALID %i, SPACE %x\n", ppn, valid, space);
+
+		}
+		else {
+			IPTEntry entry = ipt[ppn];
+			machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
+			machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
+			machine->tlb[currentTLBEntry].valid = true;
+			machine->tlb[currentTLBEntry].dirty = false;
+			machine->tlb[currentTLBEntry].use = false;
+			currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
+		}
 		(void) interrupt->SetLevel(oldLevel);
 	}
 	else {

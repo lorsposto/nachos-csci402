@@ -14,32 +14,40 @@
 #define SYSCALLS_H
 
 #include "copyright.h"
+#include "../network/post.h"
 
 /* system call codes -- used by the stubs to tell the kernel which system call
  * is being asked for
  */
-#define SC_Halt				0
-#define SC_Exit				1
-#define SC_Exec				2
-#define SC_Join				3
-#define SC_Create			4
-#define SC_Open				5
-#define SC_Read				6
-#define SC_Write			7
-#define SC_Close			8
-#define SC_Fork				9
-#define SC_Yield			10
-#define SC_Acquire			11
-#define SC_Release			12
-#define SC_Wait				13
-#define SC_Signal			14
-#define SC_Broadcast		15
-#define SC_CreateLock		16
-#define SC_DestroyLock		17
-#define SC_CreateCondition	18
-#define SC_DestroyCondition	19
-#define SC_Rand				20
-#define SC_PrintInt			21
+#define SC_Halt					0
+#define SC_Exit					1
+#define SC_Exec					2
+#define SC_Join					3
+#define SC_Create				4
+#define SC_Open					5
+#define SC_Read					6
+#define SC_Write				7
+#define SC_Close				8
+#define SC_Fork					9
+#define SC_Yield				10
+#define SC_Acquire				11
+#define SC_Release				12
+#define SC_Wait					13
+#define SC_Signal				14
+#define SC_Broadcast			15
+#define SC_CreateLock			16
+#define SC_DestroyLock			17
+#define SC_CreateCondition		18
+#define SC_DestroyCondition		19
+#define SC_Rand					20
+#define SC_PrintInt				21
+#define SC_Send					22
+#define SC_Receive				23
+
+#define RPC_CreateLock			24
+#define RPC_DestroyLock			25
+#define RPC_CreateCondition		26
+#define RPC_DestroyCondition	27
 
 #define MAXFILENAME 256
 
@@ -165,6 +173,15 @@ void DestroyCondition(int index);
 int Rand();
 
 void PrintInt(char * name);
+
+void Send(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
+		// Send a message to a mailbox on a remote 
+			// machine.  The fromBox in the MailHeader is 
+			// the return box for ack's.
+
+void Receive(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data);
+    	// Retrieve a message from "box".  Wait if
+			// there is no message in the box.
 
 #endif /* IN_ASM */
 

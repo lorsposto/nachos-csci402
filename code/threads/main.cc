@@ -38,6 +38,7 @@
 //    -n sets the network reliability
 //    -m sets this machine's host id (needed for the network)
 //    -o runs a simple test of the Nachos network software
+//	  -server sets this machine to be the server
 //
 //  NOTE -- flags are ignored until the relevant assignment.
 //  Some of the flags are interpreted here; some in system.cc.
@@ -151,6 +152,9 @@ main(int argc, char **argv)
 						// start up another nachos
             MailTest(atoi(*(argv + 1)));
             argCount = 2;
+        }
+        if (!strcmp(*argv, "-server")) {
+        	// TODO: make this machine the server
         }
 #endif // NETWORK
     }

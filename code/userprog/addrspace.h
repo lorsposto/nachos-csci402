@@ -22,6 +22,17 @@
 #define MaxOpenFiles 256
 #define MaxChildSpaces 256
 
+class PageTableEntry : public TranslationEntry {
+public:
+	enum DiskLocation {
+		SWAP,
+		EXECUTABLE,
+		MEMORY
+	};
+	int byteOffset;
+	DiskLocation diskLocation;
+};
+
 class AddrSpace {
   public:
     AddrSpace(OpenFile *executable);	// Create an address space,
@@ -37,7 +48,7 @@ class AddrSpace {
     Table fileTable;			// Table of openfiles
 
     TranslationEntry* getPageTable();
-    void setPageTable(TranslationEntry * newtable);
+    void setPageTable(PageTableEntry * newtable);
 
     //my index in the process table
     int processIndex;
@@ -47,8 +58,10 @@ class AddrSpace {
     void addStack();
     void expandTable();
 
+    OpenFile * myExecutable;
+
  private:
-    TranslationEntry *pageTable;	// Assume linear page table translation
+    PageTableEntry *pageTable;	// Assume linear page table translation
 					// for now!
 
 };

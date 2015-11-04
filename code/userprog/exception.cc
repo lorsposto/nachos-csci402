@@ -854,6 +854,103 @@ void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char 
 		}
 }
 
+int handleMemoryFull() {
+	if (swapFile == NULL) {
+		swapFile = fileSystem->Open(swapFileName);
+	}
+//	if (swapFile == NULL) {
+//
+//	}
+	// change to some sort of handling
+	ASSERT(swapFile != NULL);
+
+	// if random
+	int evictPPN = -1;
+	int readFrom = -1;
+	if (1) {
+		evictPPN = rand() % NumPhysPages;
+		// if dirty write to swap file
+		if (ipt[evictPPN].dirty) {
+			// update page table
+			int vpn = ipt[evictPPN].virtualPage;
+			currentThread->space->getPageTable()[vpn].dirty = TRUE;
+			readFrom = swapFileBM.Find();
+			// handling
+			ASSERT(readFrom != -1);
+			// WHAT ARE THE ARGS?
+			char * from = machine->ReadAt
+			swapFile->WriteAt(, PageSize, readFrom);
+		}
+		// return ppn for handleIPTMiss to populate IPT
+		return evictPPN;
+	}
+	// if FIFO
+	else if (0) {
+
+	}
+}
+
+int handleIPTMiss(int vpn) {
+	int ppn = bitmap.Find();
+	if (ppn == -1) {
+		ppn = handleMemoryFull();
+		// swap file shit
+	}
+
+	// memory full
+	PageTableEntry * pte = currentThread->space->getPageTable()[vpn];
+	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
+		currentThread->space->executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
+		PageSize, pte->byteOffset);
+
+
+		ipt[ppn].virtualPage = vpn;
+		ipt[ppn].physicalPage = ppn;
+		ipt[ppn].valid = TRUE;
+		ipt[ppn].use = FALSE;
+		ipt[ppn].dirty = FALSE;
+		ipt[ppn].readOnly = FALSE;
+		ipt[ppn].space = currentThread->space; // space pointers
+	}
+}
+
+void handlePageFault() {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);
+	int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
+	int ppn = -1;
+	bool valid;
+	AddrSpace * space = NULL;
+	for (int i = 0; i < NumPhysPages; ++i) {
+		if (vpn == ipt[i].virtualPage) {
+			ppn = i;
+			if (ipt[i].valid) {
+				valid = true;
+				if (currentThread->space == ipt[i].space) {
+					space = ipt[i].space;
+				}
+				break;
+			}
+		}
+	}
+	if (ppn < 0) {
+		ppn = handleIPTMiss(vpn);
+	}
+	if (ppn < 0 || !valid) {
+		DEBUG('a', "Virtual page number %i does not exist in IPT.\n", vpn);
+		DEBUG('a', "PPN %i, VALID %i, SPACE %x\n", ppn, valid, space);
+	}
+	else {
+		IPTEntry entry = ipt[ppn];
+		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
+		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
+		machine->tlb[currentTLBEntry].valid = true;
+		machine->tlb[currentTLBEntry].dirty = false;
+		machine->tlb[currentTLBEntry].use = false;
+		currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
+	}
+	(void) interrupt->SetLevel(oldLevel);
+}
+
 void ExceptionHandler(ExceptionType which) {
 	int type = machine->ReadRegister(2); // Which syscall?
 	int rv = 0; 	// the return value from a syscall
@@ -971,38 +1068,7 @@ void ExceptionHandler(ExceptionType which) {
 		return;
 	}
 	else if (which == PageFaultException) {
-		IntStatus oldLevel = interrupt->SetLevel(IntOff);
-		int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
-		int ppn = -1;
-		bool valid;
-		AddrSpace * space = NULL;
-		for (int i = 0; i < NumPhysPages; ++i) {
-			if (vpn == ipt[i].virtualPage) {
-				ppn = i;
-				if (ipt[i].valid) {
-					valid = true;
-//					if(currentThread->space == ipt[i].space) {
-//						space = ipt[i].space;
-//					}
-					break;
-				}
-			}
-		}
-		if (ppn < 0 || !valid) {
-			DEBUG('a', "Virtual page number %i does not exist in IPT.\n", vpn);
-			DEBUG('a', "PPN %i, VALID %i, SPACE %x\n", ppn, valid, space);
-
-		}
-		else {
-			IPTEntry entry = ipt[ppn];
-			machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
-			machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
-			machine->tlb[currentTLBEntry].valid = true;
-			machine->tlb[currentTLBEntry].dirty = false;
-			machine->tlb[currentTLBEntry].use = false;
-			currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
-		}
-		(void) interrupt->SetLevel(oldLevel);
+		handlePageFault();
 	}
 	else {
 		cout << "Unexpected user mode exception - which:" << which << "  type:"

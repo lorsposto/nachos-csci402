@@ -123,9 +123,10 @@ static void SwapHeader(NoffHeader *noffH) {
 AddrSpace::AddrSpace(OpenFile *executable) :
 		fileTable(MaxOpenFiles) {
 	NoffHeader noffH;
-	unsigned int i, size;
+	unsigned int i, size, codeInitPages;
 	int ppn;
 
+	this->myExecutable = executable;
 	// Don't allocate the input or output to disk files
 	fileTable.Put(0);
 	fileTable.Put(0);
@@ -138,6 +139,9 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 
 	size = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
 	numPages = divRoundUp(size, PageSize);// + divRoundUp(UserStackSize,PageSize);
+
+	codeInitPages = divRoundUp(noffH.code.size + noffH.initData.size, PageSize);
+
 	// we need to increase the size
 	// to leave room for the stack
 	size = numPages * PageSize;
@@ -150,18 +154,18 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 	DEBUG('a', "Initializing address space, num pages %d, size %d\n", numPages,
 			size);
 // first, set up the translation 
-	pageTable = new TranslationEntry[numPages + 8];
+	pageTable = new PageTableEntry[numPages + 8];
 	bitmapLock.Acquire(); // maybe within the loop?
 	for (i = 0; i < numPages; i++) {
 		// find a physical page number -L
-		ppn = bitmap.Find();
-		if (ppn == -1) {
-			printf("Nachos is out of memory.\n");
-			interrupt->Halt();
-		}
+//		ppn = bitmap.Find();
+//		if (ppn == -1) {
+//			printf("Nachos is out of memory.\n");
+//			interrupt->Halt();
+//		}
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
-		pageTable[i].valid = TRUE;
+//		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		pageTable[i].valid = FALSE;
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
 		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
@@ -169,16 +173,20 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		// pages to be read-only
 
 		// ITP population
-		ipt[ppn].virtualPage = i;
-		ipt[ppn].physicalPage = ppn;
-		ipt[ppn].valid = TRUE;
-		ipt[ppn].use = FALSE;
-		ipt[ppn].dirty = FALSE;
-		ipt[ppn].readOnly = FALSE;
-		ipt[ppn].space = currentThread->space; // space pointers
+//		ipt[ppn].virtualPage = i;
+//		ipt[ppn].physicalPage = ppn;
+//		ipt[ppn].valid = FALSE;
+//		ipt[ppn].use = FALSE;
+//		ipt[ppn].dirty = FALSE;
+//		ipt[ppn].readOnly = FALSE;
+//		ipt[ppn].space = currentThread->space; // space pointers
 
-		executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
-		PageSize, 40 + i * PageSize);
+//		executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
+//		PageSize, 40 + i * PageSize);
+		pageTable[i].byteOffset = 40 + i * PageSize;
+		if(i < codeInitPages) {
+			pageTable[i].diskLocation = PageTableEntry::EXECUTABLE;
+		}
 	}
 	bitmapLock.Release();
 }
@@ -189,13 +197,13 @@ void AddrSpace::addStack() {
 	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
-		int ppn = bitmap.Find();
-		if (ppn == -1) {
-			printf("Nachos is out of memory.\n");
-			interrupt->Halt();
-		}
+//		int ppn = bitmap.Find();
+//		if (ppn == -1) {
+//			printf("Nachos is out of memory.\n");
+//			interrupt->Halt();
+//		}
 		pageTable[i].virtualPage = i; // for now, virtual page # = phys page #
-		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+//		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
 		pageTable[i].valid = TRUE;
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
@@ -204,20 +212,20 @@ void AddrSpace::addStack() {
 		// pages to be read-only
 
 		// ITP population
-		ipt[ppn].virtualPage = i;
-		ipt[ppn].physicalPage = ppn;
-		ipt[ppn].valid = TRUE;
-		ipt[ppn].use = FALSE;
-		ipt[ppn].dirty = FALSE;
-		ipt[ppn].readOnly = FALSE;
-		ipt[ppn].space = currentThread->space; // space pointers
+//		ipt[ppn].virtualPage = i;
+//		ipt[ppn].physicalPage = ppn;
+//		ipt[ppn].valid = FALSE;
+//		ipt[ppn].use = FALSE;
+//		ipt[ppn].dirty = FALSE;
+//		ipt[ppn].readOnly = FALSE;
+//		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	numPages += 8;
 	bitmapLock.Release();
 }
 
 void AddrSpace::expandTable() {
-	TranslationEntry* newPageTable = new TranslationEntry[numPages + 8]; // is this math right?
+	PageTableEntry* newPageTable = new PageTableEntry[numPages + 8]; // is this math right?
 	// copy over old existing pages
 	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = 0; i < numPages; i++) {
@@ -233,14 +241,14 @@ void AddrSpace::expandTable() {
 	// initialize new empty pages
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
-		int ppn = bitmap.Find();
-		if (ppn == -1) {
-			printf("Nachos is out of memory.\n");
-			interrupt->Halt();
-		}
+//		int ppn = bitmap.Find();
+//		if (ppn == -1) {
+//			printf("Nachos is out of memory.\n");
+//			interrupt->Halt();
+//		}
 		newPageTable[i].virtualPage = i; // for now, virtual page # = phys page #
-		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
-		newPageTable[i].valid = TRUE;
+//		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		newPageTable[i].valid = FALSE;
 		newPageTable[i].use = FALSE;
 		newPageTable[i].dirty = FALSE;
 		newPageTable[i].readOnly = FALSE; // if the code segment was entirely on
@@ -248,13 +256,13 @@ void AddrSpace::expandTable() {
 		// pages to be read-only
 
 		// ITP population
-		ipt[ppn].virtualPage = i;
-		ipt[ppn].physicalPage = ppn;
-		ipt[ppn].valid = TRUE;
-		ipt[ppn].use = FALSE;
-		ipt[ppn].dirty = FALSE;
-		ipt[ppn].readOnly = FALSE;
-		ipt[ppn].space = currentThread->space; // space pointers
+//		ipt[ppn].virtualPage = i;
+//		ipt[ppn].physicalPage = ppn;
+//		ipt[ppn].valid = FALSE;
+//		ipt[ppn].use = FALSE;
+//		ipt[ppn].dirty = FALSE;
+//		ipt[ppn].readOnly = FALSE;
+//		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	bitmapLock.Release();
 	numPages += 8;
@@ -340,6 +348,6 @@ TranslationEntry* AddrSpace::getPageTable() {
 	return pageTable;
 }
 
-void AddrSpace::setPageTable(TranslationEntry * newtable) {
+void AddrSpace::setPageTable(PageTableEntry * newtable) {
 	pageTable = newtable;
 }

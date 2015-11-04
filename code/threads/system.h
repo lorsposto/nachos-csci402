@@ -36,6 +36,10 @@ class BitMap;
 
 extern int currentTLBEntry;
 
+extern OpenFile * swapFile;
+extern char * swapFileName;
+extern BitMap swapFileBM;
+
 class IPTEntry : public TranslationEntry {
 public:
 	AddrSpace * space;

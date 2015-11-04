@@ -156,6 +156,17 @@ main(int argc, char **argv)
         if (!strcmp(*argv, "-server")) {
         	// TODO: make this machine the server
         }
+
+        if (!strcmp(*argv, "-P")) {
+        	ASSERT(argc > 1);
+        	if(*(argv + 1) == "FIFO") {
+        		isFIFO = true;
+        	} else if(*(argv + 1) == "RAND") {
+        		isFIFO = false;
+        	} else {
+        		printf("Unrecognized replacement policy after -P flag\n");
+        	}
+        }
 #endif // NETWORK
     }
 

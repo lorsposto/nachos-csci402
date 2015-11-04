@@ -867,7 +867,7 @@ int handleMemoryFull() {
 	// if random
 	int evictPPN = -1;
 	int readFrom = -1;
-	if (1) {
+	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
 		// if dirty write to swap file
 		if (ipt[evictPPN].dirty) {
@@ -885,7 +885,7 @@ int handleMemoryFull() {
 		return evictPPN;
 	}
 	// if FIFO
-	else if (0) {
+	else if (isFIFO) {
 
 	}
 }

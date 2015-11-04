@@ -62,6 +62,8 @@ struct process {
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
 
+extern bool isFIFO; //if not FIFO, RAND
+
 extern process * processTable[];
 extern int processIndex;
 extern int activeProcesses;

@@ -66,6 +66,53 @@ extern void MailTest(int networkID);
 extern void Part2(void), TestSuite(void), PassportOffice(void);
 #endif
 
+//maybe should not be in main.cc
+void beServer() {
+	/*while(true) {
+		1.	Wait for request msg
+		2.	Parse request
+		3.	Validate args
+		4.	Do the work
+		5.	If cient can continue – send reply else queue reply (???)
+	}*/
+	while(true) {
+
+		PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		// Wait for the first message from the other machine - WHAT SHOULD FIRST ARG BE???
+    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    	printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
+
+    	//Convert buffer into int
+    	int requestNumber = *((int*)buffer);
+
+    	switch(requestNumber) {
+    		default:
+    			printf("Unrecognized request: %s\n", buffer);
+    			ASSERT(false);
+    			break;
+    		case 1:
+    			printf("Request to Create Lock\n");
+    			break;
+    		case 2:
+    			printf("Request to Destroy Lock\n");
+    			break;
+    		case 3:
+    			printf("Request to Create Condition\n");
+    			break;
+    		case 4:
+    			printf("Request to Destroy Condition\n");
+    			break;
+    	}
+
+    	//"if client can continue, send reply else queue reply?"
+	}
+}
+
+
+
 //----------------------------------------------------------------------
 // main
 // 	Bootstrap the operating system kernel.  
@@ -153,10 +200,6 @@ main(int argc, char **argv)
             MailTest(atoi(*(argv + 1)));
             argCount = 2;
         }
-        if (!strcmp(*argv, "-server")) {
-        	// TODO: make this machine the server
-        }
-
         if (!strcmp(*argv, "-P")) {
         	ASSERT(argc > 1);
         	if(*(argv + 1) == "FIFO") {
@@ -166,6 +209,9 @@ main(int argc, char **argv)
         	} else {
         		printf("Unrecognized replacement policy after -P flag\n");
         	}
+        }
+        if (!strcmp(*argv, "-server")) {
+        	beServer();
         }
 #endif // NETWORK
     }

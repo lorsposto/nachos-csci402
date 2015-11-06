@@ -52,7 +52,8 @@ void DestroyCondition_Syscall(int index);
 int Rand_Syscall();
 void PrintInt_Syscall(int num);
 void Send_Syscall(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
-void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data);
+void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
+		char *data);
 
 int copyin(unsigned int vaddr, int len, char *buf) {
 	// Copy len bytes from the current thread's virtual address vaddr.
@@ -827,31 +828,32 @@ void Send_Syscall(PacketHeader pktHdr, PacketHeader mailHdr, char *data) {
 
 }
 
-void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data) {
+void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
+		char *data) {
 
 	int type = 0; // TODO: use stringstream to get this from data
 
 	switch (type) {
-		default:
-			DEBUG('a', "Unknown remote procedure call!\n");
-		case RPC_CreateLock:
-			DEBUG('a', "CreateLock remote procedure call.\n");
-			// TODO: networking stuff
-			break;
-		case RPC_DestroyLock:
-			DEBUG('a', "DestroyLock remote procedure call.\n");
-			// TODO: networking stuff
-			break;
-		case RPC_CreateCondition:
-			DEBUG('a', "CreateCondition remote procedure call.\n");
-			// TODO: networking stuff
-			break;
-		case RPC_DestroyCondition:
-			DEBUG('a', "DestroyCondition remote procedure call.\n");
-			// TODO: networking stuff
-			break;
+	default:
+		DEBUG('a', "Unknown remote procedure call!\n");
+	case RPC_CreateLock:
+		DEBUG('a', "CreateLock remote procedure call.\n");
+		// TODO: networking stuff
+		break;
+	case RPC_DestroyLock:
+		DEBUG('a', "DestroyLock remote procedure call.\n");
+		// TODO: networking stuff
+		break;
+	case RPC_CreateCondition:
+		DEBUG('a', "CreateCondition remote procedure call.\n");
+		// TODO: networking stuff
+		break;
+	case RPC_DestroyCondition:
+		DEBUG('a', "DestroyCondition remote procedure call.\n");
+		// TODO: networking stuff
+		break;
 		// TODO: monitor variable RPCs
-		}
+	}
 }
 
 int handleMemoryFull() {
@@ -866,28 +868,40 @@ int handleMemoryFull() {
 
 	// if random
 	int evictPPN = -1;
-	int readFrom = -1;
+	int swapWritLoc = -1;
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
 		// if dirty write to swap file
-		if (ipt[evictPPN].dirty) {
-			// update page table
-			int vpn = ipt[evictPPN].virtualPage;
-			currentThread->space->getPageTable()[vpn].dirty = TRUE;
-			readFrom = swapFileBM.Find();
-			// handling
-			ASSERT(readFrom != -1);
-			// WHAT ARE THE ARGS?
-			char * from = machine->ReadAt
-			swapFile->WriteAt(, PageSize, readFrom);
-		}
-		// return ppn for handleIPTMiss to populate IPT
-		return evictPPN;
 	}
 	// if FIFO
 	else if (isFIFO) {
-
+		if (pageQueue.size() == 0) {
+			// spmething
+		}
+		ASSERT(pageQueue.size() > 0)
+		// page to be evicted
+		int vpn = pageQueue.pop();
+		// find the PPN where the VP is loaded
+		for (int i=0; i < NumPhysPages; ++i) {
+			if (ipt[i].virtualPage == vpn) {
+				evictPPN = i;
+				break;
+			}
+		}
 	}
+	// page replacement
+	if (ipt[evictPPN].dirty) {
+		// update page table
+		int vpn = ipt[evictPPN].virtualPage;
+		currentThread->space->getPageTable()[vpn].dirty = TRUE;
+		swapWritLoc = swapFileBM.Find();
+		// handling
+		ASSERT(swapWritLoc != -1);
+		// WHAT ARE THE ARGS?
+		swapFile->WriteAt(machine->mainMemory, PageSize, swapWritLoc);
+	}
+	// return ppn for handleIPTMiss to populate IPT
+	return evictPPN;
 }
 
 int handleIPTMiss(int vpn) {
@@ -900,9 +914,9 @@ int handleIPTMiss(int vpn) {
 	// memory full
 	PageTableEntry * pte = currentThread->space->getPageTable()[vpn];
 	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
-		currentThread->space->executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
-		PageSize, pte->byteOffset);
-
+		currentThread->space->executable->ReadAt(
+				&(machine->mainMemory[PageSize * ppn]),
+				PageSize, pte->byteOffset);
 
 		ipt[ppn].virtualPage = vpn;
 		ipt[ppn].physicalPage = ppn;
@@ -969,7 +983,8 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Open:
 			DEBUG('a', "Open syscall.\n");
-			rv = Open_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = Open_Syscall(machine->ReadRegister(4),
+					machine->ReadRegister(5));
 			break;
 		case SC_Write:
 			DEBUG('a', "Write syscall.\n");
@@ -1011,7 +1026,8 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_Broadcast:
 			DEBUG('a', "Broadcast syscall.\n");
-			Broadcast_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			Broadcast_Syscall(machine->ReadRegister(4),
+					machine->ReadRegister(5));
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");

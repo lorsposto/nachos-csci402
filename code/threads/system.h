@@ -17,6 +17,9 @@
 #include "stats.h"
 #include "timer.h"
 #include "machine.h"
+#include <queue>
+
+//using std::queue;
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -35,6 +38,9 @@ class AddrSpace;
 class BitMap;
 
 extern int currentTLBEntry;
+
+extern bool isFIFO; //if not FIFO, RAND
+extern queue<int> pageQueue;
 
 extern OpenFile * swapFile;
 extern char * swapFileName;
@@ -61,8 +67,6 @@ struct process {
 	int numThreadsRunning; // to check in exit if it's safe to kill the process
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
-
-extern bool isFIFO; //if not FIFO, RAND
 
 extern process * processTable[];
 extern int processIndex;

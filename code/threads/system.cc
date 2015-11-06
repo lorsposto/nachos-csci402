@@ -21,6 +21,7 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
 bool isFIFO = true; //assumption: if -P option is not used we want FIFO
+queue<int> pageQueue;
 
 int currentTLBEntry = 0;
 IPTEntry ipt[NumPhysPages];

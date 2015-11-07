@@ -863,10 +863,26 @@ int handleMemoryFull() {
 	// if random
 	int evictPPN = -1;
 	int swapWriteLoc = -1;
+
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
 		// if dirty write to swap file
+
+		if (ipt[evictPPN].dirty) {
+			// update page table
+			int vpn = ipt[evictPPN].virtualPage;
+			currentThread->space->getPageTable()[vpn].dirty = TRUE;
+			readFrom = swapFileBM.Find();
+			// handling
+			ASSERT(readFrom != -1);
+			// WHAT ARE THE ARGS?
+			//char * from = machine->ReadAt
+			//swapFile->WriteAt(, PageSize, readFrom);
+		}
+		// return ppn for handleIPTMiss to populate IPT
+		return evictPPN;
 	}
+	
 	// if FIFO
 	else if (isFIFO) {
 		if (pageQueue.isEmpty()) {

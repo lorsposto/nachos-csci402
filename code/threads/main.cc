@@ -53,6 +53,9 @@
 
 #include "utility.h"
 #include "system.h"
+#include <string>       // std::string
+#include <iostream>     // std::cout
+#include <sstream>  
 
 // External functions used by this file
 
@@ -65,7 +68,41 @@ extern void MailTest(int networkID);
 extern void Part2(void), TestSuite(void), PassportOffice(void);
 #endif
 
+
 #ifdef NETWORK
+
+
+void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	//this currently does not prevent locks with the same name
+	kernelLockLock.Acquire();
+	int createdLockIndex = kernelLockIndex;
+	kernelLockList[kernelLockIndex].lock = new Lock(lockName);
+	kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
+	kernelLockList[kernelLockIndex].isToBeDeleted = false;
+	// the next new lock's index
+	kernelLockIndex++;
+	kernelLockLock.Release();
+
+	std::stringstream ss;
+	ss << createdLockIndex;
+	const char* intStr = ss.str().c_str();
+
+	outPktHdr.to = inPktHdr.from;
+    outMailHdr.to = inMailHdr.from;
+
+    outMailHdr.length = strlen(intStr) + 1;
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr)); 
+
+     if ( !success ) {
+      printf("CREATE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+}
+
 //maybe should not be in main.cc
 void beServer() {
 	/*while(true) {
@@ -81,33 +118,42 @@ void beServer() {
 		MailHeader inMailHdr;
 		char buffer[MaxMailSize];
 
-		// Wait for the first message from the other machine - WHAT SHOULD FIRST ARG BE???
-		postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-		printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
+    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    	printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 
-		//Convert buffer into int
-		int requestNumber = *((int*)buffer);
+    	char* temp = buffer;
+    	char* split;
 
-		switch(requestNumber) {
-			default:
-			printf("Unrecognized request: %s\n", buffer);
-			ASSERT(false);
-			break;
-			case 1:
-			printf("Request to Create Lock\n");
-			break;
-			case 2:
-			printf("Request to Destroy Lock\n");
-			break;
-			case 3:
-			printf("Request to Create Condition\n");
-			break;
-			case 4:
-			printf("Request to Destroy Condition\n");
-			break;
-		}
+    	split = strtok(temp, " ");
 
-		//"if client can continue, send reply else queue reply?"
+    	//first number
+    	int requestNumber = *((int*)split);
+    	printf("REQUEST NUMBER: %d\n", requestNumber);
+
+
+    	switch(requestNumber) {
+    		default:
+    			printf("Unrecognized request: %s\n", split);
+    			ASSERT(false);
+    			break;
+    		case 1:
+    			printf("Request to Create Lock\n");
+    			char* lockName = strtok(NULL, " ");
+    			printf("LOCK NAME: %s\n", lockName);
+    			CreateLock(lockName, inPktHdr, inMailHdr);
+    			break;
+    		case 2:
+    			printf("Request to Destroy Lock\n");
+    			break;
+    		case 3:
+    			printf("Request to Create Condition\n");
+    			break;
+    		case 4:
+    			printf("Request to Destroy Condition\n");
+    			break;
+    	}
+
+    	//"if client can continue, send reply else queue reply?"
 	}
 }
 #endif

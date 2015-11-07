@@ -21,7 +21,7 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
 bool isFIFO = true; //assumption: if -P option is not used we want FIFO
-queue<int> pageQueue;
+Queue pageQueue;
 
 int currentTLBEntry = 0;
 IPTEntry ipt[NumPhysPages];
@@ -231,3 +231,89 @@ Cleanup()
     Exit(0);
 }
 
+	// Constructor - set front and rear as -1.
+	// We are assuming that for an empty Queue, both front and rear will be -1.
+Queue::Queue()
+{
+	front = -1;
+	rear = -1;
+}
+
+// To check wheter Queue is empty or not
+bool Queue::isEmpty()
+{
+	return (front == -1 && rear == -1);
+}
+
+// To check whether Queue is full or not
+bool Queue::isFull()
+{
+	return (rear+1)%MAX_SIZE == front ? true : false;
+}
+
+// Inserts an element in queue at rear end
+void Queue::push(int x)
+{
+	cout<<"Enqueuing "<<x<<" \n";
+	if(isFull())
+	{
+		cout<<"Error: Queue is Full\n";
+		return;
+	}
+	if (isEmpty())
+	{
+		front = rear = 0;
+	}
+	else
+	{
+		rear = (rear+1)%MAX_SIZE;
+	}
+	A[rear] = x;
+}
+
+// Removes an element in Queue from front end.
+int Queue::pop()
+{
+	cout<<"Dequeuing \n";
+	if(isEmpty())
+	{
+		cout<<"Error: Queue is Empty\n";
+		return -1;
+	}
+	else if(front == rear )
+	{
+		rear = front = -1;
+	}
+	else
+	{
+		front = (front+1)%MAX_SIZE;
+	}
+	return A[front];
+}
+// Returns element at front of queue.
+int Queue::Front()
+{
+	if(front == -1)
+	{
+		cout<<"Error: cannot return front from empty queue\n";
+		return -1;
+	}
+	return A[front];
+}
+/*
+   Printing the elements in queue from front to rear.
+   This function is only to test the code.
+   This is not a standard function for Queue implementation.
+*/
+void Queue::Print()
+{
+	// Finding number of elements in queue
+	int count = (rear+MAX_SIZE-front)%MAX_SIZE + 1;
+	cout<<"Queue       : ";
+	for(int i = 0; i <count; i++)
+	{
+		int index = (front+i) % MAX_SIZE; // Index of element while travesing circularly from front
+		cout<<A[index]<<" ";
+	}
+	cout<<"\n\n";
+}

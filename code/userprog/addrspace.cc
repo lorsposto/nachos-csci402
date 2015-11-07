@@ -339,12 +339,13 @@ void AddrSpace::SaveState() {
 void AddrSpace::RestoreState() {
 //	machine->pageTable = pageTable;
 //	machine->pageTableSize = numPages;
+//	if(machine->tlb = null) return;
 	for (int i = 0; i < TLBSize; i++) {
 		machine->tlb[i].valid = false;
 	}
 }
 
-TranslationEntry* AddrSpace::getPageTable() {
+PageTableEntry* AddrSpace::getPageTable() {
 	return pageTable;
 }
 

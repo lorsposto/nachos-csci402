@@ -47,7 +47,7 @@ class AddrSpace {
     void RestoreState();		// info on a context switch
     Table fileTable;			// Table of openfiles
 
-    TranslationEntry* getPageTable();
+    PageTableEntry* getPageTable();
     void setPageTable(PageTableEntry * newtable);
 
     //my index in the process table

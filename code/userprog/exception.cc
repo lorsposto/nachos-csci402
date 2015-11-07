@@ -875,10 +875,10 @@ int handleMemoryFull() {
 	}
 	// if FIFO
 	else if (isFIFO) {
-		if (pageQueue.size() == 0) {
+		if (pageQueue.isEmpty()) {
 			// spmething
 		}
-		ASSERT(pageQueue.size() > 0)
+		ASSERT(!pageQueue.isEmpty())
 		// page to be evicted
 		int vpn = pageQueue.pop();
 		// find the PPN where the VP is loaded
@@ -906,17 +906,19 @@ int handleMemoryFull() {
 
 int handleIPTMiss(int vpn) {
 	int ppn = bitmap.Find();
+	cout << "\tPPN is " << ppn << endl;
 	if (ppn == -1) {
 		ppn = handleMemoryFull();
 		// swap file shit
 	}
 
 	// memory full
-	PageTableEntry * pte = currentThread->space->getPageTable()[vpn];
-	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
-		currentThread->space->executable->ReadAt(
+	PageTableEntry pte = currentThread->space->getPageTable()[vpn];
+	if (pte.diskLocation == PageTableEntry::EXECUTABLE) {
+		cout << "\tIn executable" << endl;
+		currentThread->space->myExecutable->ReadAt(
 				&(machine->mainMemory[PageSize * ppn]),
-				PageSize, pte->byteOffset);
+				PageSize, pte.byteOffset);
 
 		ipt[ppn].virtualPage = vpn;
 		ipt[ppn].physicalPage = ppn;
@@ -926,11 +928,13 @@ int handleIPTMiss(int vpn) {
 		ipt[ppn].readOnly = FALSE;
 		ipt[ppn].space = currentThread->space; // space pointers
 	}
+	return ppn;
 }
 
 void handlePageFault() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
+	cout << "\tMissed vpn " << vpn << endl;
 	int ppn = -1;
 	bool valid;
 	AddrSpace * space = NULL;
@@ -947,14 +951,17 @@ void handlePageFault() {
 		}
 	}
 	if (ppn < 0) {
+		cout << "\tIPT miss" << endl;
 		ppn = handleIPTMiss(vpn);
 	}
+	cout << "\tGot ppn " << ppn << endl;
 	if (ppn < 0 || !valid) {
 		DEBUG('a', "Virtual page number %i does not exist in IPT.\n", vpn);
 		DEBUG('a', "PPN %i, VALID %i, SPACE %x\n", ppn, valid, space);
 	}
 	else {
 		IPTEntry entry = ipt[ppn];
+		cout << "\tPutting at current tlb entry " << currentTLBEntry << endl;
 		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
 		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
 		machine->tlb[currentTLBEntry].valid = true;
@@ -1084,6 +1091,7 @@ void ExceptionHandler(ExceptionType which) {
 		return;
 	}
 	else if (which == PageFaultException) {
+		cout << "Page fault" << endl;
 		handlePageFault();
 	}
 	else {

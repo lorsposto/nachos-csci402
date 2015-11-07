@@ -17,9 +17,7 @@
 #include "stats.h"
 #include "timer.h"
 #include "machine.h"
-#include <queue>
-
-//using std::queue;
+//#include <queue>
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -36,11 +34,12 @@ extern Timer *timer;				// the hardware alarm clock
 
 class AddrSpace;
 class BitMap;
+class Queue;
 
 extern int currentTLBEntry;
 
 extern bool isFIFO; //if not FIFO, RAND
-extern queue<int> pageQueue;
+extern Queue pageQueue;
 
 extern OpenFile * swapFile;
 extern char * swapFileName;
@@ -115,5 +114,39 @@ extern SynchDisk   *synchDisk;
 #include "post.h"
 extern PostOffice* postOffice;
 #endif
+
+#define MAX_SIZE 101  //maximum size of the array that will store Queue.
+
+// Creating a class named Queue.
+class Queue
+{
+private:
+	int A[MAX_SIZE];
+	int front, rear;
+public:
+	// Constructor - set front and rear as -1.
+	// We are assuming that for an empty Queue, both front and rear will be -1.
+	Queue();
+
+	// To check wheter Queue is empty or not
+	bool isEmpty();
+
+	// To check whether Queue is full or not
+	bool isFull();
+
+	// Inserts an element in queue at rear end
+	void push(int x);
+
+	// Removes an element in Queue from front end.
+	int pop();
+	// Returns element at front of queue.
+	int Front();
+	/*
+	   Printing the elements in queue from front to rear.
+	   This function is only to test the code.
+	   This is not a standard function for Queue implementation.
+	*/
+	void Print();
+};
 
 #endif // SYSTEM_H

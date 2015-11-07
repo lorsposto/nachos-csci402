@@ -65,6 +65,7 @@ extern void MailTest(int networkID);
 extern void Part2(void), TestSuite(void), PassportOffice(void);
 #endif
 
+#ifdef NETWORK
 //maybe should not be in main.cc
 void beServer() {
 	/*while(true) {
@@ -109,7 +110,7 @@ void beServer() {
     	//"if client can continue, send reply else queue reply?"
 	}
 }
-
+#endif
 
 
 //----------------------------------------------------------------------

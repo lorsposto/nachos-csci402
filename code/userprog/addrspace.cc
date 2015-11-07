@@ -146,7 +146,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 	// to leave room for the stack
 	size = numPages * PageSize;
 
-	ASSERT(numPages <= NumPhysPages);		// check we're not trying
+//	ASSERT(numPages <= NumPhysPages);		// check we're not trying
 	// to run anything too big --
 	// at least until we have
 	// virtual memory
@@ -183,18 +183,27 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 
 //		executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
 //		PageSize, 40 + i * PageSize);
+	}
+
+	addStack();
+	for (i=0; i < numPages; ++i) {
 		pageTable[i].byteOffset = 40 + i * PageSize;
 		if(i < codeInitPages) {
 			pageTable[i].diskLocation = PageTableEntry::EXECUTABLE;
+			DEBUG('v', "VPN %i location set to executable\n", pageTable[i].virtualPage);
+		} else {
+			pageTable[i].diskLocation = PageTableEntry::NEITHER; // i guess?
+			DEBUG('v', "VPN %i location set to neither\n", pageTable[i].virtualPage);
 		}
 	}
+	DEBUG('v', "Executable requires %i pages\n", numPages);
 	bitmapLock.Release();
 }
 
 void AddrSpace::addStack() {
-	bitmapLock.Acquire();
+//	bitmapLock.Acquire();
 	// initialize new empty pages
-	ASSERT(numPages < NumPhysPages)
+//	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
 //		int ppn = bitmap.Find();
@@ -221,7 +230,7 @@ void AddrSpace::addStack() {
 //		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	numPages += 8;
-	bitmapLock.Release();
+//	bitmapLock.Release();
 }
 
 void AddrSpace::expandTable() {

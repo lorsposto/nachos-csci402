@@ -36,7 +36,7 @@ StartProcess(char *filename)
     processLock.Acquire();
     space = new AddrSpace(executable);
     space->processIndex = processIndex;
-    space->addStack();
+//    space->addStack();
 
 	process *p = new process;
 	p->threadStacks = new int[50]; // max number of threads is 50

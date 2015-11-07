@@ -25,10 +25,13 @@ Queue pageQueue;
 
 int currentTLBEntry = 0;
 IPTEntry ipt[NumPhysPages];
+Lock iptLock("IPT lock");
+Lock pageTableLock("Page table lock");
 
 OpenFile * swapFile = NULL;
 char * swapFileName = "../swapfile";
 BitMap swapFileBM(10000000);
+Lock swapLock("Swap file lock");
 
 #ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
 Machine *machine;	// user program memory and registers

@@ -857,18 +857,10 @@ void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
 }
 
 int handleMemoryFull() {
-	if (swapFile == NULL) {
-		swapFile = fileSystem->Open(swapFileName);
-	}
-//	if (swapFile == NULL) {
-//
-//	}
-	// change to some sort of handling
-	ASSERT(swapFile != NULL);
-
+	//--- Find PPN to evict --//
 	// if random
 	int evictPPN = -1;
-	int swapWritLoc = -1;
+	int swapWriteLoc = -1;
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
 		// if dirty write to swap file
@@ -882,92 +874,163 @@ int handleMemoryFull() {
 		// page to be evicted
 		int vpn = pageQueue.pop();
 		// find the PPN where the VP is loaded
-		for (int i=0; i < NumPhysPages; ++i) {
+		for (int i = 0; i < NumPhysPages; ++i) {
 			if (ipt[i].virtualPage == vpn) {
 				evictPPN = i;
 				break;
 			}
 		}
 	}
+	// update TLB
+	for (int i = 0; i < TLBSize; ++i) {
+		if (evictPPN == machine->tlb[i].physicalPage) {
+			ipt[evictPPN].dirty = machine->tlb[evictPPN].dirty;
+			machine->tlb[evictPPN].valid = FALSE;
+		}
+	}
+
+	//-- Write to Swap --//
+	swapLock.Acquire();
+	if (swapFile == NULL) {
+		swapFile = fileSystem->Open(swapFileName);
+	}
+	swapLock.Release();
+	// change to some sort of handling
+	ASSERT(swapFile != NULL);
+
 	// page replacement
+	iptLock.Acquire();
+	swapLock.Acquire();
 	if (ipt[evictPPN].dirty) {
 		// update page table
+		DEBUG('v', "\tDirty and writing to SWAP\n");
 		int vpn = ipt[evictPPN].virtualPage;
-		currentThread->space->getPageTable()[vpn].dirty = TRUE;
-		swapWritLoc = swapFileBM.Find();
+//		currentThread->space->getPageTable()[vpn].dirty = TRUE;
+		swapWriteLoc = swapFileBM.Find();
 		// handling
-		ASSERT(swapWritLoc != -1);
-		// WHAT ARE THE ARGS?
-		swapFile->WriteAt(machine->mainMemory, PageSize, swapWritLoc);
+		if (swapWriteLoc < 0) {
+			DEBUG('v', "\tSWAP OUT OF SPACE!!!\n");
+		}
+		else {
+			// WHAT ARE THE ARGS?
+			swapFile->WriteAt(&machine->mainMemory[evictPPN * PageSize],
+					PageSize, swapWriteLoc * PageSize);
+		}
+
+//		int vpn = ipt[evictPPN].virtualPage;
+		ASSERT(vpn == ipt[evictPPN].virtualPage);
+		currentThread->space->getPageTable()[vpn].physicalPage = -1;
+		currentThread->space->getPageTable()[vpn].diskLocation =
+				PageTableEntry::SWAP;
+		currentThread->space->getPageTable()[vpn].byteOffset = swapWriteLoc;
 	}
+	swapLock.Release();
+	iptLock.Release();
 	// return ppn for handleIPTMiss to populate IPT
 	return evictPPN;
 }
 
 int handleIPTMiss(int vpn) {
+	//-- We will check for location of the page --//
 	int ppn = bitmap.Find();
-	cout << "\tPPN is " << ppn << endl;
 	if (ppn == -1) {
+		DEBUG('v', "\tMemory is full\n");
 		ppn = handleMemoryFull();
 		// swap file shit
 	}
 
-	// memory full
-	PageTableEntry pte = currentThread->space->getPageTable()[vpn];
-	if (pte.diskLocation == PageTableEntry::EXECUTABLE) {
-		cout << "\tIn executable" << endl;
+	//--- Look in page table for VPN --//
+	pageTableLock.Acquire();
+	PageTableEntry * pte = &currentThread->space->getPageTable()[vpn];
+	//--- Find location of VP, swap or exe, load in memory, update page tables --//
+	//--- EXECUTABLE --//
+	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
+		DEBUG('v', "\tVP is in EXE\n");
+		// load into memory
 		currentThread->space->myExecutable->ReadAt(
 				&(machine->mainMemory[PageSize * ppn]),
-				PageSize, pte.byteOffset);
-
-		ipt[ppn].virtualPage = vpn;
-		ipt[ppn].physicalPage = ppn;
-		ipt[ppn].valid = TRUE;
-		ipt[ppn].use = FALSE;
-		ipt[ppn].dirty = FALSE;
-		ipt[ppn].readOnly = FALSE;
-		ipt[ppn].space = currentThread->space; // space pointers
+				PageSize, pte->byteOffset);
+		// not dirty because freshly loaded
+		currentThread->space->getPageTable()[vpn].dirty = FALSE;
 	}
+	//-- SWAP --//
+	else if (pte->diskLocation == PageTableEntry::SWAP) {
+		DEBUG('v', "\tVP is in SWAP\n");
+	}
+
+	pte->physicalPage = ppn;
+	pte->valid = TRUE;
+
+	//-- We got some ppn, now put into IPT --//
+	iptLock.Acquire();
+	ipt[ppn].virtualPage = vpn;
+	ipt[ppn].physicalPage = ppn;
+	ipt[ppn].valid = TRUE;
+	ipt[ppn].use = pte->use;
+	ipt[ppn].dirty = pte->dirty;
+	ipt[ppn].readOnly = pte->readOnly;
+	ipt[ppn].space = currentThread->space; // space pointers
+	ipt[ppn].byteOffset = pte->byteOffset;
+	ipt[ppn].diskLocation = pte->diskLocation;
+	iptLock.Release();
+	pageTableLock.Release();
+
 	return ppn;
 }
 
 void handlePageFault() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
-	cout << "\tMissed vpn " << vpn << endl;
+	DEBUG('v', "\tMissed vpn %i\n", vpn);
 	int ppn = -1;
-	bool valid;
-	AddrSpace * space = NULL;
+
+	//--- Look in IPT for needed VPN ---//
+	iptLock.Acquire();
 	for (int i = 0; i < NumPhysPages; ++i) {
-		if (vpn == ipt[i].virtualPage) {
+		if (vpn == ipt[i].virtualPage && ipt[i].valid && currentThread->space == ipt[i].space) {
 			ppn = i;
-			if (ipt[i].valid) {
-				valid = true;
-				if (currentThread->space == ipt[i].space) {
-					space = ipt[i].space;
-				}
-				break;
-			}
+			DEBUG('v', "\tFound VPN %i at PPN %i\n", ipt[i].virtualPage, ppn);
+			break;
 		}
 	}
-	if (ppn < 0) {
-		cout << "\tIPT miss" << endl;
+	iptLock.Release();
+
+	//--- Not found in IPT (IPT miss) --//
+	if (ppn < 0 || ppn >= NumPhysPages) {
+		DEBUG('v', "\tIPT miss\n");
 		ppn = handleIPTMiss(vpn);
 	}
-	cout << "\tGot ppn " << ppn << endl;
-	if (ppn < 0 || !valid) {
-		DEBUG('a', "Virtual page number %i does not exist in IPT.\n", vpn);
-		DEBUG('a', "PPN %i, VALID %i, SPACE %x\n", ppn, valid, space);
+	DEBUG('v', "\tTried IPT, PPN is %i\n", ppn);
+
+	if (ppn < 0) {
+		DEBUG('v', "\tVirtual page number %i does not exist in IPT.\n", vpn);
 	}
+	//--- Continue after IPT miss or not IPT miss --//
+	//--- Update TLB, compute PA --//
 	else {
+		// Must update IPT if tlb entry not dirty and is valid
+		if (machine->tlb[currentTLBEntry].dirty
+				&& machine->tlb[currentTLBEntry].valid) {
+			DEBUG('v', "\tUpdating IPT and PT because TLB is dirty and valid\n");
+//			int ppn = machine->tlb[currentTLBEntry].physicalPage;
+			ASSERT(ppn == machine->tlb[currentTLBEntry].physicalPage);
+			ipt[ppn].dirty = TRUE;
+//			ipt[ppn]
+			ASSERT(vpn == machine->tlb[currentTLBEntry].virtualPage);
+			currentThread->space->getPageTable()[vpn].dirty = TRUE;
+		}
+
+		iptLock.Acquire();
 		IPTEntry entry = ipt[ppn];
-		cout << "\tPutting at current tlb entry " << currentTLBEntry << endl;
+		DEBUG('v', "\tPPN is %i\n", ppn);
+		DEBUG('v', "\tPutting at currentTLBEntry %i\n", currentTLBEntry);
 		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
 		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
 		machine->tlb[currentTLBEntry].valid = true;
 		machine->tlb[currentTLBEntry].dirty = false;
 		machine->tlb[currentTLBEntry].use = false;
 		currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
+		iptLock.Release();
 	}
 	(void) interrupt->SetLevel(oldLevel);
 }
@@ -1091,8 +1154,9 @@ void ExceptionHandler(ExceptionType which) {
 		return;
 	}
 	else if (which == PageFaultException) {
-		cout << "Page fault" << endl;
+		DEBUG('v', "Page Fault Exception\n");
 		handlePageFault();
+//		interrupt->Halt();
 	}
 	else {
 		cout << "Unexpected user mode exception - which:" << which << "  type:"

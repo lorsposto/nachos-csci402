@@ -44,13 +44,16 @@ extern Queue pageQueue;
 extern OpenFile * swapFile;
 extern char * swapFileName;
 extern BitMap swapFileBM;
+extern Lock swapLock;
 
-class IPTEntry : public TranslationEntry {
+class IPTEntry : public PageTableEntry {
 public:
 	AddrSpace * space;
 };
 
 extern IPTEntry ipt[];
+extern Lock iptLock;
+extern Lock pageTableLock;
 #ifdef USER_PROGRAM
 #include "../userprog/bitmap.h"
 #include "machine.h"

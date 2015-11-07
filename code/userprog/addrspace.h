@@ -29,7 +29,7 @@ public:
 		EXECUTABLE,
 		MEMORY
 	};
-	int byteOffset;
+	unsigned int byteOffset;
 	DiskLocation diskLocation;
 };
 

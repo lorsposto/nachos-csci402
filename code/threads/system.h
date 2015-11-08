@@ -17,7 +17,6 @@
 #include "stats.h"
 #include "timer.h"
 #include "machine.h"
-//#include <queue>
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,

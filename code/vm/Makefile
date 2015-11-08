@@ -13,7 +13,7 @@
 # of liability and disclaimer of warranty provisions.
 
 DEFINES = -DUSER_PROGRAM  -DFILESYS_NEEDED -DFILESYS_STUB -DVM -DUSE_TLB
-INCPATH = -I../filesys -I../bin -I../vm -I../userprog -I../threads -I../machine
+INCPATH = -I../filesys -I../bin -I../vm -I../userprog -I../threads -I../machine -I../network
 HFILES = $(THREAD_H) $(USERPROG_H) $(VM_H)
 CFILES = $(THREAD_C) $(USERPROG_C) $(VM_C)
 C_OFILES = $(THREAD_O) $(USERPROG_O) $(VM_O)

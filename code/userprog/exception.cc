@@ -28,6 +28,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>  
+#include "post.h"
 
 using namespace std;
 
@@ -281,21 +282,38 @@ void Exit_Syscall(int status) {
 	 (3) Last executing thread in a process - not last process
 	 Reclaim all unreclaimed memory
 	 Locks/CVs (match AddrSpace* w/ Process Table)*/
-	currentThread->Finish();
+//	currentThread->Finish();
+	cout << "Exit result: " << status << endl;
 	processLock.Acquire();
 
 	//find the current thread we are in
 	process * myProcess = processTable[currentThread->space->processIndex];
-
+	int pp = 0;
 	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
 		//reclaim 8 pages of the stack
-
+		DEBUG('s', "I'm not the last thread, [%s], index %i\n", currentThread->getName(), currentThread->threadIndex);
 		bitmapLock.Acquire();
 
 		//find the beginning of this thread's stack
 		int pageTableIndex = myProcess->threadStacks[currentThread->threadIndex];
 		for (int i = pageTableIndex; i < pageTableIndex + 8; i++) {
-			bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
+			pp = currentThread->space->getPageTable()[i].physicalPage;
+			DEBUG('s', "Examining PPN %i\n", pp);
+
+			// must mark tlb and ipt as invalid
+			if (ipt[pp].space == currentThread->space) { // && ipt[pp].threadID == currentThread->threadIndex) {
+				ipt[pp].valid = FALSE;
+				currentThread->space->getPageTable()[i].valid = FALSE;
+				currentThread->space->getPageTable()[i].physicalPage = -1;
+				if(pp >= 0) bitmap.Clear(pp);
+				DEBUG('s', "\tMarking PPN %i, VPN %i as invalid and clearing memory.\n", pp, ipt[pp].virtualPage);
+			}
+			for (int j=0; j < TLBSize; ++j) {
+				if (machine->tlb[j].physicalPage == pp) {
+					machine->tlb[j].valid = FALSE;
+					DEBUG('s', "\tMarking TLB entry PPN %i, VPN %i as invalid.\n", pp, machine->tlb[j].virtualPage);
+				}
+			}
 		}
 
 		myProcess->numThreadsRunning -= 1;
@@ -305,8 +323,10 @@ void Exit_Syscall(int status) {
 		currentThread->Finish();
 	}
 	else {
+		DEBUG('s', "I [%s] am the last thread\n", currentThread->getName());
 		//we are the last thread in the process
 		if (activeProcesses == 1) { //we are the last process in nachos
+			DEBUG('s', "I'm also the last process\n");
 			processLock.Release();
 			activeProcesses--;
 			interrupt->Halt();
@@ -315,10 +335,19 @@ void Exit_Syscall(int status) {
 			bitmapLock.Acquire();
 			activeProcesses--;
 
+			DEBUG('s', "I'm not the last process\n");
 			//reclaim the entire page table of the process
 			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
-				bitmap.Clear(
-						currentThread->space->getPageTable()[i].physicalPage);
+				pp = currentThread->space->getPageTable()[i].physicalPage;
+				bitmap.Clear(pp);
+
+				// must mark tlb and ipt as invalid
+				ipt[pp].valid = FALSE;
+				for (int j=0; j < TLBSize; ++j) {
+					if (machine->tlb[j].physicalPage == pp) {
+						machine->tlb[j].valid = FALSE;
+					}
+				}
 			}
 
 			bitmapLock.Release();
@@ -326,8 +355,6 @@ void Exit_Syscall(int status) {
 			currentThread->Finish();
 		}
 	}
-
-	cout << "Exit result: " << status << endl;
 }
 
 /* Helper function for Exec */
@@ -424,7 +451,7 @@ void kernel_thread(int vaddr) {
 }
 
 void Fork_Syscall(int vaddr, int len) {
-	DEBUG('t', "Entering Fork_Syscall\n");
+	DEBUG('s', "Entering Fork_Syscall\n");
 
 	// Get the current process from the Process Table so we can use it for everything else
 	processLock.Acquire();
@@ -444,6 +471,7 @@ void Fork_Syscall(int vaddr, int len) {
 
 	// delete old page table?
 	p->threadStacks[t->threadIndex] = currentThread->space->numPages;
+	DEBUG('s', "Thread ID %i for thread %s\n", t->threadIndex, t->getName());
 //	printf("Thread stack %i set to %i\n",t->threadIndex, currentThread->space->numPages);
 	p->numThreadsTotal++;
 	p->numThreadsRunning++;
@@ -896,9 +924,6 @@ int handleMemoryFull() {
 
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
-//		iptLock.Acquire();
-//		ipt[evictPPN].use = TRUE;
-//		iptLock.Release();
 	}
 
 	// if FIFO
@@ -994,8 +1019,8 @@ int handleIPTMiss(int vpn) {
 	//-- SWAP --//
 	else if (pte->diskLocation == PageTableEntry::SWAP) {
 		swapLock.Acquire();
-		ASSERT(swapFile != NULL);
 		DEBUG('v', "\tVP is in SWAP, reading from %i\n", pte->swapOffset/PageSize);
+		ASSERT(swapFile != NULL);
 		swapFile->ReadAt(&machine->mainMemory[ppn * PageSize], PageSize, pte->swapOffset);
 		swapFileBM.Clear(pte->swapOffset/PageSize);
 
@@ -1006,7 +1031,7 @@ int handleIPTMiss(int vpn) {
 		swapLock.Release();
 	}
 	else {
-		DEBUG('v', "\t\tWTF HELLO?");
+		DEBUG('v', "\tIn neither, VPN %i.\n", vpn);
 	}
 
 	pte->physicalPage = ppn;
@@ -1024,6 +1049,8 @@ int handleIPTMiss(int vpn) {
 	ipt[ppn].byteOffset = pte->byteOffset;
 	ipt[ppn].swapOffset = pte->swapOffset;
 	ipt[ppn].diskLocation = pte->diskLocation;
+	ipt[ppn].space = currentThread->space;
+	ipt[ppn].threadID = currentThread->threadIndex;
 	iptLock.Release();
 	pageTableLock.Release();
 
@@ -1039,7 +1066,8 @@ int handlePageFault() {
 	//--- Look in IPT for needed VPN ---//
 	iptLock.Acquire();
 	for (int i = 0; i < NumPhysPages; ++i) {
-		if (vpn == ipt[i].virtualPage && ipt[i].valid && currentThread->space == ipt[i].space) {
+		if (vpn == ipt[i].virtualPage && ipt[i].valid
+				&& ipt[i].space == currentThread->space) {// && ipt[i].threadID == currentThread->threadIndex) {
 			ppn = i;
 			ipt[i].use = TRUE;
 			DEBUG('v', "\tFound VPN %i at PPN %i, %i\n", ipt[i].virtualPage, ppn, ipt[i].physicalPage);
@@ -1210,7 +1238,7 @@ void ExceptionHandler(ExceptionType which) {
 		return;
 	}
 	else if (which == PageFaultException) {
-		DEBUG('v', "Page Fault Exception\n");
+		DEBUG('v', "Page Fault Exception for thread id %i, process id %i\n", currentThread->threadIndex, currentThread->space->processIndex);
 		int ppn = handlePageFault();
 //		interrupt->Halt();
 	}

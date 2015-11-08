@@ -14,7 +14,7 @@
 #define SYSCALLS_H
 
 #include "copyright.h"
-#include "../network/post.h"
+/*#include "../network/post.h"*/
 
 /* system call codes -- used by the stubs to tell the kernel which system call
  * is being asked for
@@ -96,7 +96,7 @@ int Join(SpaceId id);
  */
  
 /* A unique identifier for an open Nachos file. */
-typedef int OpenFileId;	
+typedef int OpenFileId;
 
 /* when an address space starts up, it has two open files, representing 
  * keyboard input and display output (in UNIX terms, stdin and stdout).
@@ -174,14 +174,14 @@ int Rand();
 
 void PrintInt(char * name);
 
-void Send(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
-		// Send a message to a mailbox on a remote 
-			// machine.  The fromBox in the MailHeader is 
-			// the return box for ack's.
+/*void Send(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
+		 Send a message to a mailbox on a remote
+			 machine.  The fromBox in the MailHeader is
+			 the return box for ack's. */
 
-void Receive(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data);
-    	// Retrieve a message from "box".  Wait if
-			// there is no message in the box.
+/*void Receive(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data);
+    	 Retrieve a message from "box".  Wait if
+			 there is no message in the box.*/
 
 #endif /* IN_ASM */
 

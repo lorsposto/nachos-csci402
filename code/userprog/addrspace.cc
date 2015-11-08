@@ -164,11 +164,12 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 //			interrupt->Halt();
 //		}
 		pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-//		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		pageTable[i].physicalPage = -1; // set physical page to the one we found -L
 		pageTable[i].valid = FALSE;
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
 		pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+		pageTable[i].swapOffset = -1;
 		// a separate page, we could set its
 		// pages to be read-only
 
@@ -212,11 +213,12 @@ void AddrSpace::addStack() {
 //			interrupt->Halt();
 //		}
 		pageTable[i].virtualPage = i; // for now, virtual page # = phys page #
-//		pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		pageTable[i].physicalPage = -1; // set physical page to the one we found -L
 		pageTable[i].valid = TRUE;
 		pageTable[i].use = FALSE;
 		pageTable[i].dirty = FALSE;
 		pageTable[i].readOnly = FALSE; // if the code segment was entirely on
+		pageTable[i].swapOffset = -1;
 		// a separate page, we could set its
 		// pages to be read-only
 
@@ -244,6 +246,9 @@ void AddrSpace::expandTable() {
 		newPageTable[i].readOnly = pageTable[i].readOnly;
 		newPageTable[i].use = pageTable[i].use;
 		newPageTable[i].dirty = pageTable[i].dirty;
+		newPageTable[i].byteOffset = pageTable[i].byteOffset;
+		newPageTable[i].swapOffset = pageTable[i].swapOffset;
+		newPageTable[i].diskLocation = pageTable[i].diskLocation;
 	}
 
 	bitmapLock.Acquire();
@@ -256,11 +261,15 @@ void AddrSpace::expandTable() {
 //			interrupt->Halt();
 //		}
 		newPageTable[i].virtualPage = i; // for now, virtual page # = phys page #
-//		newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+		newPageTable[i].physicalPage = -1; // set physical page to the one we found -L
 		newPageTable[i].valid = FALSE;
 		newPageTable[i].use = FALSE;
 		newPageTable[i].dirty = FALSE;
 		newPageTable[i].readOnly = FALSE; // if the code segment was entirely on
+
+		newPageTable[i].byteOffset = 40 + i * PageSize;
+		newPageTable[i].diskLocation = PageTableEntry::MEMORY; // i guess?
+		DEBUG('v', "VPN %i location set to neither\n", newPageTable[i].virtualPage);
 		// a separate page, we could set its
 		// pages to be read-only
 

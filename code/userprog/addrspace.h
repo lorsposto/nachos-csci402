@@ -32,6 +32,7 @@ public:
 	int byteOffset;
 	int swapOffset;
 	DiskLocation diskLocation;
+	int threadID;
 };
 
 class AddrSpace {

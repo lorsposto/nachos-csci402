@@ -192,7 +192,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 			pageTable[i].diskLocation = PageTableEntry::EXECUTABLE;
 			DEBUG('v', "VPN %i location set to executable\n", pageTable[i].virtualPage);
 		} else {
-			pageTable[i].diskLocation = PageTableEntry::NEITHER; // i guess?
+			pageTable[i].diskLocation = PageTableEntry::MEMORY; // i guess?
 			DEBUG('v', "VPN %i location set to neither\n", pageTable[i].virtualPage);
 		}
 	}
@@ -236,7 +236,7 @@ void AddrSpace::addStack() {
 void AddrSpace::expandTable() {
 	PageTableEntry* newPageTable = new PageTableEntry[numPages + 8]; // is this math right?
 	// copy over old existing pages
-	ASSERT(numPages < NumPhysPages)
+//	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = 0; i < numPages; i++) {
 		newPageTable[i].virtualPage = pageTable[i].virtualPage; // deep copy
 		newPageTable[i].physicalPage = pageTable[i].physicalPage;

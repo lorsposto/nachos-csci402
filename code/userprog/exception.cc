@@ -891,11 +891,14 @@ void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
 int handleMemoryFull() {
 	//--- Find PPN to evict --//
 	// if random
-	int evictPPN = -1;
+	int evictPPN = 0;
 	int swapWriteLoc = -1;
 
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
+//		iptLock.Acquire();
+//		ipt[evictPPN].use = TRUE;
+//		iptLock.Release();
 	}
 
 	// if FIFO
@@ -914,11 +917,13 @@ int handleMemoryFull() {
 			}
 		}
 	}
+
+	//-- Got a PPN to evict now --//
 	// update TLB
 	for (int i = 0; i < TLBSize; ++i) {
 		if (evictPPN == machine->tlb[i].physicalPage) {
-			ipt[evictPPN].dirty = machine->tlb[evictPPN].dirty;
-			machine->tlb[evictPPN].valid = FALSE;
+			ipt[evictPPN].dirty = machine->tlb[i].dirty;
+			machine->tlb[i].valid = FALSE;
 		}
 	}
 
@@ -938,9 +943,8 @@ int handleMemoryFull() {
 	swapLock.Acquire();
 	if (ipt[evictPPN].dirty) {
 		// update page table
-		DEBUG('v', "\tDirty and writing to SWAP\n");
 		int evictVPN = ipt[evictPPN].virtualPage;
-//		currentThread->space->getPageTable()[vpn].dirty = TRUE;
+		currentThread->space->getPageTable()[evictVPN].dirty = TRUE;
 		swapWriteLoc = swapFileBM.Find();
 		// handling
 		if (swapWriteLoc < 0) {
@@ -948,6 +952,7 @@ int handleMemoryFull() {
 		}
 		else {
 			// WHAT ARE THE ARGS?
+			DEBUG('v', "\tDirty and writing to SWAP at %i\n", swapWriteLoc);
 			swapFile->WriteAt(&machine->mainMemory[evictPPN * PageSize],
 					PageSize, swapWriteLoc * PageSize);
 		}
@@ -955,7 +960,7 @@ int handleMemoryFull() {
 		currentThread->space->getPageTable()[evictVPN].physicalPage = -1;
 		currentThread->space->getPageTable()[evictVPN].diskLocation =
 				PageTableEntry::SWAP;
-		currentThread->space->getPageTable()[evictVPN].byteOffset = swapWriteLoc;
+		currentThread->space->getPageTable()[evictVPN].swapOffset = swapWriteLoc * PageSize;
 	}
 	swapLock.Release();
 	iptLock.Release();
@@ -964,10 +969,10 @@ int handleMemoryFull() {
 }
 
 int handleIPTMiss(int vpn) {
-	//-- We will check for location of the page --//
+	//-- Find a place to put the page --//
 	int ppn = bitmap.Find();
 	if (ppn == -1) {
-		DEBUG('v', "\tMemory is full\n");
+		DEBUG('v', "\tMemory is full!!!\n");
 		ppn = handleMemoryFull();
 		// swap file shit
 	}
@@ -978,27 +983,30 @@ int handleIPTMiss(int vpn) {
 	//--- Find location of VP, swap or exe, load in memory, update page tables --//
 	//--- EXECUTABLE --//
 	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
-		DEBUG('v', "\tVP is in EXE\n");
+		DEBUG('v', "\tVP is in EXE, reading from %i\n", pte->byteOffset/PageSize);
 		// load into memory
 		currentThread->space->myExecutable->ReadAt(
 				&(machine->mainMemory[PageSize * ppn]),
 				PageSize, pte->byteOffset);
 		// not dirty because freshly loaded
-		currentThread->space->getPageTable()[vpn].dirty = FALSE;
+		pte->dirty = FALSE;
 	}
 	//-- SWAP --//
 	else if (pte->diskLocation == PageTableEntry::SWAP) {
-		DEBUG('v', "\tVP is in SWAP\n");
 		swapLock.Acquire();
 		ASSERT(swapFile != NULL);
-		swapFile->ReadAt(&machine->mainMemory[ppn * PageSize], PageSize, pte->byteOffset * PageSize);
-		swapFileBM.Clear(pte->byteOffset);
+		DEBUG('v', "\tVP is in SWAP, reading from %i\n", pte->swapOffset/PageSize);
+		swapFile->ReadAt(&machine->mainMemory[ppn * PageSize], PageSize, pte->swapOffset);
+		swapFileBM.Clear(pte->swapOffset/PageSize);
 
-		pte->byteOffset = -1;
+		pte->swapOffset = -1;
 		pte->diskLocation = PageTableEntry::MEMORY;
 		pte->dirty = TRUE;
 
 		swapLock.Release();
+	}
+	else {
+		DEBUG('v', "\t\tWTF HELLO?");
 	}
 
 	pte->physicalPage = ppn;
@@ -1014,6 +1022,7 @@ int handleIPTMiss(int vpn) {
 	ipt[ppn].readOnly = pte->readOnly;
 	ipt[ppn].space = currentThread->space; // space pointers
 	ipt[ppn].byteOffset = pte->byteOffset;
+	ipt[ppn].swapOffset = pte->swapOffset;
 	ipt[ppn].diskLocation = pte->diskLocation;
 	iptLock.Release();
 	pageTableLock.Release();
@@ -1021,10 +1030,10 @@ int handleIPTMiss(int vpn) {
 	return ppn;
 }
 
-void handlePageFault() {
+int handlePageFault() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	int vpn = machine->ReadRegister(BadVAddrReg) / PageSize;
-	DEBUG('v', "\tMissed vpn %i\n", vpn);
+	DEBUG('v', "\tMissed VPN %i\n", vpn);
 	int ppn = -1;
 
 	//--- Look in IPT for needed VPN ---//
@@ -1032,7 +1041,8 @@ void handlePageFault() {
 	for (int i = 0; i < NumPhysPages; ++i) {
 		if (vpn == ipt[i].virtualPage && ipt[i].valid && currentThread->space == ipt[i].space) {
 			ppn = i;
-			DEBUG('v', "\tFound VPN %i at PPN %i\n", ipt[i].virtualPage, ppn);
+			ipt[i].use = TRUE;
+			DEBUG('v', "\tFound VPN %i at PPN %i, %i\n", ipt[i].virtualPage, ppn, ipt[i].physicalPage);
 			break;
 		}
 	}
@@ -1043,12 +1053,14 @@ void handlePageFault() {
 		DEBUG('v', "\tIPT miss\n");
 		ppn = handleIPTMiss(vpn);
 	}
-	DEBUG('v', "\tTried IPT, PPN is %i\n", ppn);
+	DEBUG('v', "\tTried PT, PPN is %i\n", ppn);
 
-	if (ppn < 0) {
+	if (ppn < 0 || ppn >= NumPhysPages) {
 		DEBUG('v', "\tVirtual page number %i does not exist in IPT.\n", vpn);
+		interrupt->Halt();
 	}
 	//--- Continue after IPT miss or not IPT miss --//
+	//-- VP is now in IPT by now --//
 	//--- Update TLB, compute PA --//
 	else {
 		// Must update IPT if tlb entry not dirty and is valid
@@ -1064,16 +1076,19 @@ void handlePageFault() {
 		iptLock.Acquire();
 		IPTEntry entry = ipt[ppn];
 		DEBUG('v', "\tPPN is %i\n", ppn);
-		DEBUG('v', "\tPutting at currentTLBEntry %i\n", currentTLBEntry);
+		DEBUG('v', "\tPutting in TLB at %i\n", currentTLBEntry);
 		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
 		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
-		machine->tlb[currentTLBEntry].valid = true;
-		machine->tlb[currentTLBEntry].dirty = false;
-		machine->tlb[currentTLBEntry].use = false;
+		machine->tlb[currentTLBEntry].valid = entry.valid;
+		machine->tlb[currentTLBEntry].dirty = entry.dirty;
+		machine->tlb[currentTLBEntry].use = entry.use;
+		machine->tlb[currentTLBEntry].readOnly = entry.readOnly;
 		currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
 		iptLock.Release();
 	}
+	if (isFIFO) pageQueue.push(vpn);
 	(void) interrupt->SetLevel(oldLevel);
+	return ppn;
 }
 
 void ExceptionHandler(ExceptionType which) {
@@ -1196,7 +1211,7 @@ void ExceptionHandler(ExceptionType which) {
 	}
 	else if (which == PageFaultException) {
 		DEBUG('v', "Page Fault Exception\n");
-		handlePageFault();
+		int ppn = handlePageFault();
 //		interrupt->Halt();
 	}
 	else {

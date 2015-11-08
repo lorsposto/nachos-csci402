@@ -27,10 +27,10 @@ public:
 	enum DiskLocation {
 		SWAP,
 		EXECUTABLE,
-		MEMORY,
-		NEITHER
+		MEMORY
 	};
 	int byteOffset;
+	int swapOffset;
 	DiskLocation diskLocation;
 };
 

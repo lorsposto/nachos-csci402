@@ -70,8 +70,6 @@ extern void Part2(void), TestSuite(void), PassportOffice(void);
 
 
 #ifdef NETWORK
-
-
 void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;

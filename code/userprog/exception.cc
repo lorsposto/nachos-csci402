@@ -26,6 +26,8 @@
 #include "syscall.h"
 #include <stdio.h>
 #include <iostream>
+#include <string>
+#include <sstream>  
 
 using namespace std;
 
@@ -707,6 +709,34 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 	buf[len] = '\0';
 
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		std::stringstream ss;
+		ss << buf;
+		std::string nameStr = ss.str();
+		std::string createLock = "1 ";
+
+		std::string message = createLock + nameStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("CREATE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//idk if 0 should be the first argument ugh
+    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+
+    	return *((int*)buffer);
+	#endif
+
 	// Create the new lock...
 	kernelLockLock.Acquire();
 	int createdLockIndex = kernelLockIndex;
@@ -866,23 +896,8 @@ int handleMemoryFull() {
 
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
-		// if dirty write to swap file
-
-		if (ipt[evictPPN].dirty) {
-			// update page table
-			int vpn = ipt[evictPPN].virtualPage;
-			currentThread->space->getPageTable()[vpn].dirty = TRUE;
-			readFrom = swapFileBM.Find();
-			// handling
-			ASSERT(readFrom != -1);
-			// WHAT ARE THE ARGS?
-			//char * from = machine->ReadAt
-			//swapFile->WriteAt(, PageSize, readFrom);
-		}
-		// return ppn for handleIPTMiss to populate IPT
-		return evictPPN;
 	}
-	
+
 	// if FIFO
 	else if (isFIFO) {
 		if (pageQueue.isEmpty()) {

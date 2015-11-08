@@ -1,142 +1,111 @@
- Title:  Writeup for Project 2, Fall 2015
- Date:  10/18/15
+ Title:  Writeup for Project 3, Fall 2015
+ Date:  11/07/15
  Group:	Erika Johnson	erikajoh@usc.edu	
 		Heather Persson	hpersson@usc.edu	
 		Lorraine Sposto	llsposto@usc.edu
 
 I. Requirements:
-- Expand the exception handler to handle new types of interrupts for new syscalls
-- Implement the following new system calls: Fork, Exec, Exit, Yield
-- Implement system calls for Locks (Acquire, Release) and Conditions (Wait, Signal, and Broadcast) that essentially wrap our implementation from Part 1.
-- Implement any other system calls required for use and testing, such as CreateLock, CreateCondition, DestroyLock, DestroyCondiiton and system calls required to upgrade our PassportOffice (such as a Print syscall)
-- Bulletproof the kernal from errors sent by user program calls.
-- Upgrade the method of memory allocation to a mapped relationship of physical to virtual to allow for multiple programs to run at once.
-- Provide way to copy data between the kernel and the user 
-- Support multi-threaded multi-programs
-- Update the passport office from a part of the Nachos kernal code to a userprogram that can run multiple instances of itself
-- Develop tests for all functionality added
+- Modify Nachos' memory mechanism to allow for virtual memory
+- Implement an inverse page table
+- Implement Demand Paged Virtual Memory, preloading nothing into memory
+- Implement the MMU process to handle page faults, IPT misses, and employ the TLB
+- Implement caching through a TLB to provide fast access to already-translated virtual pages
+- Implement caching through a swap file, to store in such a way that gives the illusion of infinite memory and avoid loading from disk
+- Implement Random and FIFO page replacement for when physical memory is full
+- Provide necessary tests to demonstrate the functionality of the IPT, TLB, eviction and swap file
+ //-- RPC ---//
 
-II. Assumptions:
+II. Assumptions: *** TODO
 	- A thread will explicitly exit out of itself
 	- Nachos has finished running when the last running process finishes.
 
 III. Design:
-- System calls are handled through the exception handler. The exception handler receives an exception and checks for the corresponding value before executing the correcting system call.
-- For the Fork system call, we must create a new thread, then resize the running process's page table to make room for 8 more pages for the new thread. After doing so, we update the appropriate values for the process (location of new thread stack, number of running threads, etc) and call the OS fork.
-- For the Exec system call, we must read in the process that is setting up to execute. We must then create a new address space and process, update the process table accordingly, then create a first thread for the process and fork it from the currently executing thread.
-- For the Exit system call, we must consider 3 cases. If the thread is not the last thread in the process, it simply frees up its own stack before finishing. If the thread is the last thread in a process, it must clean up the entire process's page table before finishing itself. If the thread is the last thread in the last process, it must halt all of Nachos.
-- For the Yeild system call, the machine simply yields.
-- For the Lock and Condition system calls, the system call itself simply checks for invalid values of the Lock/Condition before passing the handling off to our implemntation of Locks and Conditions from Project 1.
-- Page Table must keep track of the relationship between virtual and physical pages, and is unique to every process that is created
-- The Process Table keeps track of all processes. Processes are indexed on creation so that they may be kept track of in the process table.
-- A process contains and address space, an array to keep track of thread stacks, the and number of currently active threads.
-- A thread contains an index that indicates it is the nth thread created in the process. In this way, the location of the first page of their stack can be referenced in the process struct.
-- A thread interfaces with the process table by looking at the index of its address space, which is the same for all threads in a process. The process interfaces with threads by using their index to access their thread stack. 
++ Parts 1 & 2
+	- On a page fault, handlePageFault() begins the routine to load a page into memory.
+	- handlePageFault():
+		- searches IPT for physical page number that corresponds to the requested virtual page
+		- if the PPN is not found --> ppn = handleIPTMiss()
+		- with a valid PPN, updates the TLB with the page
+		- if the eviction policy is FIFO, the VPN is added to the queue
+	- handleIPTMiss()
+		- finds an empty PPN in memory to put the VP
+		- if no empty PPN --> ppn = handleMemoryFull()
+		- assesses the location of the needed VP from the processes page table
+		- if in EXECUTABLE, read a page from certain offset of the executable to memory
+		- if in SWAP, read from a certain offset of the swap file to memory
+		- updates physical page for the page table entry of the VPN
+		- updates the IPT entry for the PPN found
+		- returns PPN
+	- handleMemoryFull()
+		- selects a PPN to evict depending on policy: either random or FIFO
+		- for FIFO: a pageQueue holds the recently accessed VPNs
+		- after a page is selected for eviction, if it is in the TLB the TLB entry is invalidated
+		- if the page is dirty, it is written to the swap file
+		- returns PPN
+
+	*** TODO RPC
 
 IV. Implementation:
 	+ Files Modified
-		addrspace.cc - updated constructor to correclty map virtual memory to a physical page, changing variable scope (or using getters/setters) to be able to be accessed by threads
-		exception.cc - implementation of all new system calls
+		addrspace.cc - updated constructor to load nothing into memory, added PageTableEntry class
+		exception.cc - implementation of all new system calls; implementation of virtual memory management routines
 		progtest.cc - updating the process table with the very first process
 		start.s - added assembly for new system calls
 		syscall.h - added new #define values for new system calls, created function prototypes
 		system.h - new global variables delcarations
 		system.cc - new global varaible initialization
-		thread.h/cc - addition of counter
+
+		*** TODO?
 
 	+ Files added
-		passport_office.c - passport office user program
-		run_passport_office.c - program running two passport offices
-		helloworld.c - short program to test exec functionality
-		testcondition1.c - testing condition functionality
-		testcondition2.c - expanded test for locks and cvs
-		testfork.c - testing fork functionality
-		testlock.c - testing lock functionality	
-		testlockbad.c - testing bad calls to lock syscalls
-		testconditionbad1.c - testing bad input for conditions and locks
-		testconditionbad2.c - testing additional bad input for conditions and locks
-		testprint.c - testing print int syscall
-		testrand.c - testing rand syscall
-		testforkexec1.c - testing fork/exec combined functionality
-		testforkexec2.c - testing fork/exec combined functionality
-		testforkexecbad.c - testing bad input for fork/exec commands
+		swapfile - file to be opened as the swapfile
 
 	+ Data Structures added, and the file they were added to.
 		system.h/cc - 
-			struct kernelCondition {
-				Condition * condition;
-				AddrSpace * addrsp;
-				bool isToBeDeleted;
+			class PageTableEntry : public TranslationEntry {
+			public:
+				enum DiskLocation {
+					SWAP,
+					EXECUTABLE,
+					MEMORY
+				};
+				int byteOffset;
+				int swapOffset;
+				DiskLocation diskLocation;
 			};
-
-			struct kernelLock {
-				Lock * lock;
-				AddrSpace * addrsp;
-				bool isToBeDeleted;
+			class IPTEntry : public PageTableEntry {
+			public:
+				AddrSpace * space;
 			};
-
-			struct process {
-				int * threadStacks;
-				int numThreadsRunning; 
-				int numThreadsTotal;
-			};
-
-			kernelCondition kernelConditionList[]
-			kernelLock kernelLockList[] 
-			BitMap bitmap
-			Lock bitmapLock
-			process processTable[]
-			Lock processLock
+			IPTEntry ipt[];
+			Lock iptLock;
+			Lock pageTableLock;
+			int currentTLBEntry;
+			bool isFIFO; //if not FIFO, RAND
+			Queue pageQueue;
+			OpenFile * swapFile;
+			char * swapFileName;
+			BitMap swapFileBM;
+			Lock swapLock;
 
 	+ Data Structures modified, and the file they were added to.
 			
 		addrspace.h:
-			AddrSpace - addition of int for processIndex and numPages
-		thread.h 
-			Thread - addition of int for threadIndex
+			AddrSpace - page table modified to be of PageTableEntries
 
 	+ Functions added and in which file.
-			syscall.h (prototypes):
-				Yield() - interface for userprogram to call Yield 
-				Acquire(int index) - interface for userprogram to call Acquire
-				Release(int index) - interface for userprogram to call Releae
-				Wait(int conditionIndex, int lockIndex) - interface for userprogram to call Wait
-				Signal(int conditionIndex, int lockIndex) - interface for userprogram to call Signal
-				Broadcast(int conditionIndex, int lockIndex) - interface for userprogram to call Broadcast
-				CreateLock(char* name, int len) - interface for userprogram to create a Lock to use
-				DestroyLock(int index) - interface for userprogram to destroy a Lock no longer in use
-				CreateCondition(char* name, int len) -  interface for userprogram to create a Condition to use
-				DestroyCondition(int index) - interface for userprogram to destroy a Lock no longer in use
-				Rand() - generate a random number
-				PrintInt(char * name) - print an integer value to the console
-
 			exception.h/cc
-				Exit_Syscall(int status) - terminates the execution of the currently running thread
-				Exec_Syscall(int vaddr, int len) - begins a new process
-				exec_thread(int vaddr) - helper funciton to kick off new process
-				kernel_thread(int vaddr) - helper function to kick off new thread
-				Fork_Syscall(int vaddr) - creates a new thread within a process
-				Yield_Syscall(int vaddr) - relinquishes control of the CPU
-				Acquire_Syscall(int index) - acquires the lock with the given index
-				Release_Syscall(int index) - releases lock with the given index
-				Wait_Syscall(int conditionIndex, int lockIndex) - has the condition at the given index wait to be signaled
-				Signal_Syscall(int conditionIndex, int lockIndex) - signals the first waiting thread on the condition at the given index
-				Broadcast_Syscall(int conditionIndex, int lockIndex) - signals all waiting threads on the condition at the given index
-				CreateLock_Syscall(int vaddr, int len) - creates a lock with given name
-				DestroyLock_Syscall(int index) - destroys lock contained at index
-				CreateCondition_Syscall(int vaddr, int len) - creates a condition with given name
-				DestroyCondition_Syscall(int index) - destroys condition contained at index
-				Rand_Syscall() - generates a random number for a user program
-				PrintInt_Syscall() - prints an int for a user program
-
+				handlePageFault() -- begins page fault handling routine to find PPN and update TLB
+				handleIPTMiss() -- handles an IPT from handlePageFault and returns PPN
+				handleMemoryFull() -- handles page eviction and returns PPN for handleIPTMiss
+				beServer() -- *** TODO RPC
 
 	+ Functions modified and in which file.
 			addrspace.cc:
-				AddrSpace(OpenFile *executable) - change from supporting uniprogram to multiprogram by splitting out physical/virtual to a non-direct mapping
+				AddrSpace(OpenFile *executable) - change to not load anything into memory
+				SaveState/RestoreState - invalidates TLB on context switch
 			exception.cc:
-				ExceptionHandler(ExceptionType which) - expand for new syscall cases
-			progtest.cc:
-				StartProcess(char *filename) - add very first process to the process table
+				ExceptionHandler(ExceptionType which) - expand for new syscall cases, add page fault handling
 
 V. Testing:  (For each test case, you must show)
 

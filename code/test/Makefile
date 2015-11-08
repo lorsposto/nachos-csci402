@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult
+all: halt matmult matmult2 sort testfiles testlock testlockbad testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -168,7 +168,13 @@ fork_matmult.o: fork_matmult.c
 	$(CC) $(CFLAGS) -c fork_matmult.c
 fork_matmult: fork_matmult.o start.o
 	$(LD) $(LDFLAGS) start.o fork_matmult.o -o fork_matmult.coff
-	../bin/coff2noff fork_matmult.coff fork_matmult	
+	../bin/coff2noff fork_matmult.coff fork_matmult
+	
+exec_matmult.o: exec_matmult.c
+	$(CC) $(CFLAGS) -c exec_matmult.c
+exec_matmult: exec_matmult.o start.o
+	$(LD) $(LDFLAGS) start.o exec_matmult.o -o exec_matmult.coff
+	../bin/coff2noff exec_matmult.coff exec_matmult	
 
 clean:
 	rm -f *.o *.coff

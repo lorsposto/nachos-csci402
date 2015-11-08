@@ -75,6 +75,12 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
 	//this currently does not prevent locks with the same name
 	kernelLockLock.Acquire();
 	int createdLockIndex = kernelLockIndex;

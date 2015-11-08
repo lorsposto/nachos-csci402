@@ -21,6 +21,7 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
 bool isFIFO = true; //assumption: if -P option is not used we want FIFO
+int machineNum = -1; //until formally set in Initialize
 Queue pageQueue;
 
 int currentTLBEntry = 0;
@@ -163,6 +164,7 @@ Initialize(int argc, char **argv)
 	} else if (!strcmp(*argv, "-m")) {
 	    ASSERT(argc > 1);
 	    netname = atoi(*(argv + 1));
+        machineNum = netname;
 	    argCount = 2;
 	}
 #endif

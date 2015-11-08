@@ -741,6 +741,12 @@ int CreateLock_Syscall(int vaddr, int len) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
 		std::stringstream ss;
 		ss << buf;
 		std::string nameStr = ss.str();

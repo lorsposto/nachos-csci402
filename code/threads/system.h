@@ -69,6 +69,10 @@ struct process {
 	int numThreadsTotal; // to know the index in the stack counter, i.e. the current address to add to
 };
 
+#ifdef NETWORK
+extern int machineNum;
+#endif
+
 extern process * processTable[];
 extern int processIndex;
 extern int activeProcesses;

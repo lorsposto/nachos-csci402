@@ -9,7 +9,11 @@ int A[Dim][Dim];
 int B[Dim][Dim];
 int C[Dim][Dim];
 
-void matmult() {
+int D[Dim][Dim];
+int E[Dim][Dim];
+int F[Dim][Dim];
+
+void matmult1() {
     int i, j, k, result;
     result = 0;
 
@@ -29,9 +33,30 @@ void matmult() {
     Exit(result);
 }
 
+
+void matmult2() {
+    int i, j, k, result;
+    result = 0;
+
+    for (i = 0; i < Dim; i++)		/* first initialize the matrices */
+	for (j = 0; j < Dim; j++) {
+	     D[i][j] = i;
+	     E[i][j] = j;
+	     F[i][j] = 0;
+	}
+
+    for (i = 0; i < Dim; i++)		/* then multiply them together */
+	for (j = 0; j < Dim; j++)
+            for (k = 0; k < Dim; k++)
+		 F[i][j] += D[i][k] * E[k][j];
+
+    result = F[Dim-1][Dim-1];
+    Exit(result);
+}
+
 int
 main()
 {
-    Fork(matmult);
-    Fork(matmult);
+    Fork(matmult1);
+    Fork(matmult2);
 }

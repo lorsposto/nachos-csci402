@@ -950,7 +950,7 @@ int handleMemoryFull() {
 	// update TLB
 
 	for (int i = 0; i < TLBSize; ++i) {
-		if (evictPPN == machine->tlb[i].physicalPage){// && ipt[evictPPN].space == currentThread->space) {
+		if (evictPPN == machine->tlb[i].physicalPage && machine->tlb[i].valid){
 			ipt[evictPPN].dirty = machine->tlb[i].dirty;
 			machine->tlb[i].valid = FALSE;
 		}

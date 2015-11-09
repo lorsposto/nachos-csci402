@@ -1104,34 +1104,34 @@ int handlePageFault() {
 	//-- VP is now in IPT by now --//
 	//--- Update TLB, compute PA --//
 	else {
-		// Must update IPT if tlb entry dirty and is valid
-//		for (int i=0; i < TLBSize; ++i) {
-		int i = currentTLBEntry;
-			if (machine->tlb[i].valid) {
-				DEBUG('v', "\tTLB entry %i is valid. Updating IPT and PT because TLB dirty bit.\n", i);
-				int dirtyppn = machine->tlb[i].physicalPage;
-				ipt[dirtyppn].dirty = machine->tlb[i].dirty;
-				int dirtyvpn = machine->tlb[i].virtualPage;
-				ipt[dirtyppn].space->getPageTable()[dirtyvpn].dirty = machine->tlb[i].dirty;
-			}
-//		}
 
-		iptLock.Acquire();
-		IPTEntry entry = ipt[ppn];
-		DEBUG('v', "\tPutting [PPN %i ==> VPN %i] in TLB at %i\n", ppn, ipt[ppn].virtualPage, currentTLBEntry);
-		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
-		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
-		machine->tlb[currentTLBEntry].valid = entry.valid;
-		machine->tlb[currentTLBEntry].dirty = entry.dirty;
-		machine->tlb[currentTLBEntry].use = entry.use;
-		machine->tlb[currentTLBEntry].readOnly = entry.readOnly;
-		currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
-		iptLock.Release();
+		if(machine->tlb) {
+			// Must update IPT if tlb entry not dirty and is valid
+			if (machine->tlb[currentTLBEntry].dirty
+					&& machine->tlb[currentTLBEntry].valid) {
+				DEBUG('v', "\tUpdating IPT and PT because TLB is dirty and valid\n");
+				int dirtyppn = machine->tlb[currentTLBEntry].physicalPage;
+				ipt[dirtyppn].dirty = TRUE;
+				int dirtyvpn = machine->tlb[currentTLBEntry].virtualPage;
+				currentThread->space->getPageTable()[dirtyvpn].dirty = TRUE;
+			}
+
+			iptLock.Acquire();
+			IPTEntry entry = ipt[ppn];
+			DEBUG('v', "\tPPN is %i\n", ppn);
+			DEBUG('v', "\tPutting in TLB at %i\n", currentTLBEntry);
+			machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
+			machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
+			machine->tlb[currentTLBEntry].valid = entry.valid;
+			machine->tlb[currentTLBEntry].dirty = entry.dirty;
+			machine->tlb[currentTLBEntry].use = entry.use;
+			machine->tlb[currentTLBEntry].readOnly = entry.readOnly;
+			currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
+			iptLock.Release();
+		}
+		if (isFIFO) pageQueue.push(vpn);
 	}
-	if (isFIFO) {
-//		DEBUG('v', "\tPushing on VPN %i\n", vpn);
-		pageQueue.push(ppn);
-	}
+
 	(void) interrupt->SetLevel(oldLevel);
 	return ppn;
 }

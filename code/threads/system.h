@@ -121,7 +121,7 @@ extern SynchDisk   *synchDisk;
 extern PostOffice* postOffice;
 #endif
 
-#define MAX_SIZE 101  //maximum size of the array that will store Queue.
+#define MAX_SIZE 10  //maximum size of the array that will store Queue.
 
 // Creating a class named Queue.
 class Queue

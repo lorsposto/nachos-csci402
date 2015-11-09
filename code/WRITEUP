@@ -113,59 +113,60 @@ IV. Implementation:
 V. Testing:  
 + NOTE: Make sure a file named 'swapfile' exists in the code directory
 
-+ helloworld: 
-	- helper user program that prints "Hello World".
-+ matmult2: 
-	- helper user program that is a copy of matmult, but prints the output to console.
+	+ Part 1 and Part 2 Tests:
+- Part 1 Assumption: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
+- Part 2 Assumption: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
 
+	+ test/fork_matmult
+		- forks two instances of matmult, which has been converted into a fork-able function within fork_matmult.c
+		- Expected output:
+			$: nachos -P RAND -x ../test/fork_matmult
+			Exit result: 0
+			Exit result: 7220
+			Exit result: 7220
+			Machine halting!
+
+			Ticks: total 2675684, idle 0, system 1269700, user 1405984
+			Disk I/O: reads 0, writes 0
+			Console I/O: reads 0, writes 0
+			Paging: faults 0
+			Network I/O: packets received 0, sent 0
+
+	+ test/exec_matmult:
+		- execs two instances of the matmult user program
+		- Expected output:
+			$: nachos -P RAND -x ../test/exec_matmult
+			Exit result: 0
+			Exit result: 7220
+			Exit result: 7220
+			Machine halting!
+
+			Ticks: total 2675403, idle 0, system 1269450, user 1405953
+			Disk I/O: reads 0, writes 0
+			Console I/O: reads 0, writes 0
+			Paging: faults 0
+			Network I/O: packets received 0, sent 0
 
 VI. Discussion:
 	+ Experiment expectation.  (What is supposed to happen.)
-		passport_office: Runs a full simulation of 10 customers going through the passport office
-		run_passport_office: Executes two full simulations of two different passport offices going through their customers
-		testexec: "Hello World" is printed 5 times to the console.
-		testfork: "Hello World" is printed 5 times to the console.
-		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
-		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
-		testforkexecbad: Prints errors, otherwise executes.
-		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
-		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
-		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
-		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
-		testconditionbad1 - prints error statement for trying to use condition with invalid lock
-		testconditionbad2 - prints error statement for trying to call broadcase without acquiring the lock
-		testprint - print 5.
-		testrand - prints random number.
+		fork_matmult:
+			- Part 1 (NumPhysPages large): matmult should successfully execute two times by being forked as a function. The output each time is printed on exit. 
+			- Part 2 (NumPhysPages small): matmult should successfully execute two times by being forked as a function. The output each time is printed on exit. 
+		exec_matmult:
+			- Part 1 (NumPhysPages large): matmult should successfully execute two times by being forked as a user program. The output each time is printed on exit.
+			- Part 2 (NumPhysPages small): matmult should successfully execute two times by being forked as a user program. The output each time is printed on exit.
+
 	+ Experiment result.  (What actually happened.)
-		pasport_office: Successfully runs full simulation of 10 customers going through passport office
-		run_pasport_office: Successfully runs two full simulations of customers going through the passport office
-		testexec: "Hello World" is printed 5 times to the console.
-		testfork: "Hello World" is printed 5 times to the console.
-		testforkexec1:  Output is "Hello world" 4 times and the results of matmult twice.
-		testforkexec2: 	Output is the result of matmult2 once, and "Hello world" 7 times total.
-		testforkexecbad: Prints errors, otherwise executs.
-		testlock - testing lock functionality by successfully creating/acquiring/releasing a lock.
-		testlockbad - testing bad calls to lock syscalls, such as incorrect indices. The program does not break but prints warnings and runs to completion.
-		testcondition1 - calls acquire, broadcast, and release in the correct order and runs to completion
-		testcondition2 - calls acquire, signal, and release in the correct order and runs to completion
-		testconditionbad1 - prints error statement for trying to use condition with invalid lock
-		testconditionbad2 - prints error statement for trying to call broadcast without acquiring the lock
-		testprint - print 5.
-		testrand - prints random number.
+		fork_matmult: matmult runs twice successfully and the return value is printed on exit.
+		exec_matmult: matmult runs twice successfully and the return value is printed on exit.
+		
 	+ Explanation
-		testexec: Because the helloworld program is being launched using the Exec syscall, we know that Exec correctly creates a new process. Using Exec multiple times shows that our program is correctly handling the allocation of memory.
-		testfork: Because we are creating additional threads with the Fork syscall, we know that we are successfully adding threads to the process that are launching and completing. Using Fork multiple times shows that our program is correctly handling allocation of memory within a singular process.
-		testforkexec1: This program proves that we support not only multiple single-threaded programs and multithreaded uniprograms, but multithreaded multiprogram execution. Because the print statements execute correctly, we know that we can handle both multiple programs and multiple threads.
-		testforkexec2: This programs proves that we can fork from within a program created using Exec. This shows that we can not only use fork from our original process but from new created processes, further proving our memory allocation robustness and correctness.
-		testforkexecbad: Because the user program could send any data to the OS for the system call, this proves the OS will not be compromised by bad input.
-		testlock - Works because it correctly follows the order of creating, acquiring, then releasing the lock. This proves the intended functionality of our Lock still works evn with the new syscall wrapper.
-		testlockbad - Because a User can call the syscall with any input, this test ensures that the OS does not break with the user program gives invalid input.
-		testcondition1 - Works because it correctly uses a singular lock and condition and calls broadcast, proving the functionality of conditions works.
-		testcondition2 - Works because it correctly uses a singular lock and condition and calls signal, proving the functionality of conditions works.
-		testconditionbad1 - Because a user program could botch the creation of a Condition, ensures that the OS is not affected by such an occasion.
-		testconditionbad2 - You must have acquired the Lock to interact with a condition. This ensures that the conditions of Condition are met before Condition functionality can be used.
-		testprint - Very simple utility syscall, so unsurpisingly works as intended.
-		testrand - Very simple utility syscall, so unsurpisingly works as intended.
+		fork_matmult:
+			- Part 1 (NumPhysPages large): Because NumPhysPages is large, memory management only needs to utilize the PTs, IPT, and TLB.
+			- Part 2 (NumPhysPages small): Because NumPhysPages is small, VM utilizes PTs, IPT, and TLB, as well as a swapfile and page eviction when memory is full.
+		exec_matmult: 
+			- Part 1 (NumPhysPages large): Because NumPhysPages is large, memory management only needs to utilize the PTs, IPT, and TLB. Because nothing is preloaded into memory initially, we know our implementation of handling page faults is successful as the program is dynamically loaded into memory.
+			- Part 2 (NumPhysPages small): Because NumPhysPages is small, VM utilizes PTs, IPT, and TLB, as well as a swapfile and page eviction when memory is full. Since matmult is larger than the small physical memory size (NumPhysPages == 32), we know that at some point physical memory will run out and page eviction and swap file use will have to take place.
 
 
 VIII. Miscellaneous:

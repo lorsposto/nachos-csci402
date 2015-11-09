@@ -133,7 +133,7 @@ void Lock::Acquire() {
 	state = BUSY;
 	ownerThread = currentThread;
 
-	DEBUG('t', "\t%s acquired lock %s.\n", ownerThread->getName(), name);
+//	DEBUG('t', "\t%s acquired lock %s.\n", ownerThread->getName(), name);
 	(void) interrupt->SetLevel(oldLevel);
 }
 void Lock::Release() {
@@ -152,7 +152,7 @@ void Lock::Release() {
 	}
 	else {
 		state = AVAILABLE;
-		DEBUG('t', "\t%s released lock %s.\n", ownerThread->getName(), name);
+//		DEBUG('t', "\t%s released lock %s.\n", ownerThread->getName(), name);
 		ownerThread = NULL;
 	}
 //			printf("%s released lock %s.\n", currentThread->getName(), name);

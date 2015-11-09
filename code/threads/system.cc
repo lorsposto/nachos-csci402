@@ -8,7 +8,6 @@
 #include "copyright.h"
 #include "system.h"
 
-
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
 
@@ -18,7 +17,7 @@ Scheduler *scheduler;			// the ready list
 Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
-					// for invoking context switches
+// for invoking context switches
 
 bool isFIFO = true; //assumption: if -P option is not used we want FIFO
 int machineNum = -1; //until formally set in Initialize
@@ -64,21 +63,19 @@ Lock kernelConditionLock("Kernel Conditions Lock");
 #endif
 
 #ifdef FILESYS_NEEDED
-FileSystem  *fileSystem;
+FileSystem *fileSystem;
 #endif
 
 #ifdef FILESYS
-SynchDisk   *synchDisk;
+SynchDisk *synchDisk;
 #endif
 
 #ifdef NETWORK
 PostOffice *postOffice;
 #endif
 
-
 // External definition, to allow us to take a pointer to this function
 extern void Cleanup();
-
 
 //----------------------------------------------------------------------
 // TimerInterruptHandler
@@ -97,11 +94,9 @@ extern void Cleanup();
 //	"dummy" is because every interrupt handler takes one argument,
 //		whether it needs it or not.
 //----------------------------------------------------------------------
-static void
-TimerInterruptHandler(int dummy)
-{
-    if (interrupt->getStatus() != IdleMode)
-	interrupt->YieldOnReturn();
+static void TimerInterruptHandler(int dummy) {
+	if (interrupt->getStatus() != IdleMode)
+		interrupt->YieldOnReturn();
 }
 
 //----------------------------------------------------------------------
@@ -114,47 +109,46 @@ TimerInterruptHandler(int dummy)
 //	"argv" is an array of strings, one for each command line argument
 //		ex: "nachos -d +" -> argv = {"nachos", "-d", "+"}
 //----------------------------------------------------------------------
-void
-Initialize(int argc, char **argv)
-{
-    int argCount;
-    char* debugArgs = "";
-    bool randomYield = FALSE;
+void Initialize(int argc, char **argv) {
+	int argCount;
+	char* debugArgs = "";
+	bool randomYield = FALSE;
 
 #ifdef USER_PROGRAM
-    bool debugUserProg = FALSE;	// single step user program
+	bool debugUserProg = FALSE;	// single step user program
 #endif
 #ifdef FILESYS_NEEDED
-    bool format = FALSE;	// format disk
+	bool format = FALSE;	// format disk
 #endif
 #ifdef NETWORK
-    double rely = 1;		// network reliability
-    int netname = 0;		// UNIX socket name
+	double rely = 1;		// network reliability
+	int netname = 0;// UNIX socket name
 #endif
-    
-    for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
-	argCount = 1;
-	if (!strcmp(*argv, "-d")) {
-	    if (argc == 1)
-		debugArgs = "+";	// turn on all debug flags
-	    else {
-	    	debugArgs = *(argv + 1);
-	    	argCount = 2;
-	    }
-	} else if (!strcmp(*argv, "-rs")) {
-	    ASSERT(argc > 1);
-	    RandomInit(atoi(*(argv + 1)));	// initialize pseudo-random
-						// number generator
-	    randomYield = TRUE;
-	    argCount = 2;
-	}
+
+	for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
+		argCount = 1;
+		if (!strcmp(*argv, "-d")) {
+			if (argc == 1)
+				debugArgs = "+";	// turn on all debug flags
+			else {
+				debugArgs = *(argv + 1);
+				argCount = 2;
+			}
+		}
+		else if (!strcmp(*argv, "-rs")) {
+			ASSERT(argc > 1);
+			RandomInit(atoi(*(argv + 1)));	// initialize pseudo-random
+			// number generator
+			randomYield = TRUE;
+			argCount = 2;
+		}
 #ifdef USER_PROGRAM
-	if (!strcmp(*argv, "-s"))
-	    debugUserProg = TRUE;
+		if (!strcmp(*argv, "-s"))
+		debugUserProg = TRUE;
 #endif
 #ifdef FILESYS_NEEDED
-	if (!strcmp(*argv, "-f"))
-	    format = TRUE;
+		if (!strcmp(*argv, "-f"))
+		format = TRUE;
 #endif
 #ifdef NETWORK
 	if (!strcmp(*argv, "-l")) {
@@ -168,40 +162,40 @@ Initialize(int argc, char **argv)
 	    argCount = 2;
 	}
 #endif
-    }
+	}
 
-    DebugInit(debugArgs);			// initialize DEBUG messages
-    stats = new Statistics();			// collect statistics
-    interrupt = new Interrupt;			// start up interrupt handling
-    scheduler = new Scheduler();		// initialize the ready queue
-    if (randomYield)				// start the timer (if needed)
-	timer = new Timer(TimerInterruptHandler, 0, randomYield);
+	DebugInit(debugArgs);			// initialize DEBUG messages
+	stats = new Statistics();			// collect statistics
+	interrupt = new Interrupt;			// start up interrupt handling
+	scheduler = new Scheduler();		// initialize the ready queue
+	if (randomYield)				// start the timer (if needed)
+		timer = new Timer(TimerInterruptHandler, 0, randomYield);
 
-    threadToBeDestroyed = NULL;
+	threadToBeDestroyed = NULL;
 
-    // We didn't explicitly allocate the current thread we are running in.
-    // But if it ever tries to give up the CPU, we better have a Thread
-    // object to save its state. 
-    currentThread = new Thread("main", -1); //giving this -1 because it should never be used as an index for a process		
-    currentThread->setStatus(RUNNING);
+	// We didn't explicitly allocate the current thread we are running in.
+	// But if it ever tries to give up the CPU, we better have a Thread
+	// object to save its state.
+	currentThread = new Thread("main", -1); //giving this -1 because it should never be used as an index for a process
+	currentThread->setStatus(RUNNING);
 
-    interrupt->Enable();
-    CallOnUserAbort(Cleanup);			// if user hits ctl-C
-    
+	interrupt->Enable();
+	CallOnUserAbort(Cleanup);			// if user hits ctl-C
+
 #ifdef USER_PROGRAM
-    machine = new Machine(debugUserProg);	// this must come first
+	machine = new Machine(debugUserProg);	// this must come first
 #endif
 
 #ifdef FILESYS
-    synchDisk = new SynchDisk("DISK");
+	synchDisk = new SynchDisk("DISK");
 #endif
 
 #ifdef FILESYS_NEEDED
-    fileSystem = new FileSystem(format);
+	fileSystem = new FileSystem(format);
 #endif
 
 #ifdef NETWORK
-    postOffice = new PostOffice(netname, rely, 10);
+	postOffice = new PostOffice(netname, rely, 10);
 #endif
 }
 
@@ -209,116 +203,110 @@ Initialize(int argc, char **argv)
 // Cleanup
 // 	Nachos is halting.  De-allocate global data structures.
 //----------------------------------------------------------------------
-void
-Cleanup()
-{
-    printf("\nCleaning up...\n");
+void Cleanup() {
+	printf("\nCleaning up...\n");
 #ifdef NETWORK
-    delete postOffice;
+	delete postOffice;
 #endif
-    
+
 #ifdef USER_PROGRAM
-    delete machine;
+	delete machine;
 #endif
 
 #ifdef FILESYS_NEEDED
-    delete fileSystem;
+	delete fileSystem;
 #endif
 
 #ifdef FILESYS
-    delete synchDisk;
+	delete synchDisk;
 #endif
-    
-    delete timer;
-    delete scheduler;
-    delete interrupt;
-    
-    Exit(0);
+
+	delete timer;
+	delete scheduler;
+	delete interrupt;
+
+	Exit(0);
 }
 
-	// Constructor - set front and rear as -1.
-	// We are assuming that for an empty Queue, both front and rear will be -1.
-Queue::Queue()
-{
+// Constructor - set front and rear as -1.
+// We are assuming that for an empty Queue, both front and rear will be -1.
+Queue::Queue() {
 	front = -1;
 	rear = -1;
 }
 
 // To check wheter Queue is empty or not
-bool Queue::isEmpty()
-{
+bool Queue::isEmpty() {
 	return (front == -1 && rear == -1);
 }
 
 // To check whether Queue is full or not
-bool Queue::isFull()
-{
-	return (rear+1)%MAX_SIZE == front ? true : false;
+bool Queue::isFull() {
+	return (rear + 1) % MAX_SIZE == front ? true : false;
 }
 
 // Inserts an element in queue at rear end
-void Queue::push(int x)
-{
-	cout<<"Enqueuing "<<x<<" \n";
-	if(isFull())
-	{
-		cout<<"Error: Queue is Full\n";
-		return;
+void Queue::push(int x) {
+	if (isFull()) {
+		pop();
 	}
-	if (isEmpty())
-	{
+	if (isEmpty()) {
 		front = rear = 0;
 	}
-	else
-	{
-		rear = (rear+1)%MAX_SIZE;
+	else {
+		rear = (rear + 1) % MAX_SIZE;
 	}
 	A[rear] = x;
+//	cout << "Queue: ";
+//	for (int i=0; i < rear+1; ++i) {
+//		cout << A[i] << " ";
+//	}
+//	cout << endl;
 }
 
 // Removes an element in Queue from front end.
-int Queue::pop()
-{
-	cout<<"Dequeuing \n";
-	if(isEmpty())
-	{
-		cout<<"Error: Queue is Empty\n";
-		return -1;
+int Queue::pop() {
+	int ret = A[front];
+	if (isEmpty()) {
+		cout << "Error: Queue is Empty\n";
+		return 0;
 	}
-	else if(front == rear )
-	{
+	else if (front == rear) {
 		rear = front = -1;
 	}
-	else
-	{
-		front = (front+1)%MAX_SIZE;
+	else {
+		rear--;
+		for (int i = 0; i < MAX_SIZE - 1; ++i) {
+			A[i] = A[i + 1];
+		}
 	}
-	return A[front];
+//	cout << "Queue: ";
+//	for (int i=0; i < rear+1; ++i) {
+//		cout << A[i] << " ";
+//	}
+//	cout << endl;
+	return ret;
 }
 // Returns element at front of queue.
-int Queue::Front()
-{
-	if(front == -1)
-	{
-		cout<<"Error: cannot return front from empty queue\n";
+int Queue::Front() {
+	if (front == -1) {
+		cout << "Error: cannot return front from empty queue\n";
 		return -1;
 	}
 	return A[front];
 }
 /*
-   Printing the elements in queue from front to rear.
-   This function is only to test the code.
-   This is not a standard function for Queue implementation.
-*/
-void Queue::Print()
-{
+ Printing the elements in queue from front to rear.
+ This function is only to test the code.
+ This is not a standard function for Queue implementation.
+ */
+void Queue::Print() {
 	// Finding number of elements in queue
-	int count = (rear+MAX_SIZE-front)%MAX_SIZE + 1;
-	cout<<"Queue       : ";
-	for(int i = 0; i <count; i++)
-	{
-		int index = (front+i) % MAX_SIZE; // Index of element while travesing circularly from front
-		cout<<A[index]<<" ";
+	int count = (rear + MAX_SIZE - front) % MAX_SIZE + 1;
+	cout << "Queue       : ";
+	for (int i = 0; i < count; i++) {
+		int index = (front + i) % MAX_SIZE; // Index of element while travesing circularly from front
+		cout << A[index] << " ";
 	}
-	cout<<"\n\n";
+	cout << "\n\n";
 }

@@ -341,9 +341,11 @@ void AddrSpace::InitRegisters() {
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	for (int i = 0; i < TLBSize; i++) {
-		machine->tlb[i].valid = false;
+		machine->tlb[i].valid = FALSE;
 	}
+	(void) interrupt->SetLevel(oldLevel);
 }
 
 //----------------------------------------------------------------------
@@ -355,12 +357,11 @@ void AddrSpace::SaveState() {
 //----------------------------------------------------------------------
 
 void AddrSpace::RestoreState() {
-//	machine->pageTable = pageTable;
-//	machine->pageTableSize = numPages;
-//	if(machine->tlb = null) return;
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	for (int i = 0; i < TLBSize; i++) {
-		machine->tlb[i].valid = false;
+		machine->tlb[i].valid = FALSE;
 	}
+	(void) interrupt->SetLevel(oldLevel);
 }
 
 PageTableEntry* AddrSpace::getPageTable() {

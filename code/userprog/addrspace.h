@@ -22,6 +22,8 @@
 #define MaxOpenFiles 256
 #define MaxChildSpaces 256
 
+class Thread;
+
 class PageTableEntry : public TranslationEntry {
 public:
 	enum DiskLocation {
@@ -32,7 +34,6 @@ public:
 	int byteOffset;
 	int swapOffset;
 	DiskLocation diskLocation;
-	int threadID;
 };
 
 class AddrSpace {

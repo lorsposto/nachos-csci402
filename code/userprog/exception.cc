@@ -301,7 +301,7 @@ void Exit_Syscall(int status) {
 			DEBUG('s', "Examining PPN %i\n", pp);
 
 			// must mark tlb and ipt as invalid
-			if (ipt[pp].space == currentThread->space) { // && ipt[pp].threadID == currentThread->threadIndex) {
+			if (ipt[pp].space == currentThread->space) {
 				ipt[pp].valid = FALSE;
 				currentThread->space->getPageTable()[i].valid = FALSE;
 				currentThread->space->getPageTable()[i].physicalPage = -1;
@@ -339,13 +339,20 @@ void Exit_Syscall(int status) {
 			//reclaim the entire page table of the process
 			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
 				pp = currentThread->space->getPageTable()[i].physicalPage;
-				bitmap.Clear(pp);
+				DEBUG('s', "Examining PPN %i\n", pp);
 
 				// must mark tlb and ipt as invalid
-				ipt[pp].valid = FALSE;
+				if (ipt[pp].space == currentThread->space) {
+					ipt[pp].valid = FALSE;
+					currentThread->space->getPageTable()[i].valid = FALSE;
+					currentThread->space->getPageTable()[i].physicalPage = -1;
+					if(pp >= 0) bitmap.Clear(pp);
+					DEBUG('s', "\tMarking PPN %i, VPN %i as invalid and clearing memory.\n", pp, ipt[pp].virtualPage);
+				}
 				for (int j=0; j < TLBSize; ++j) {
 					if (machine->tlb[j].physicalPage == pp) {
 						machine->tlb[j].valid = FALSE;
+						DEBUG('s', "\tMarking TLB entry PPN %i, VPN %i as invalid.\n", pp, machine->tlb[j].virtualPage);
 					}
 				}
 			}
@@ -362,7 +369,7 @@ void exec_thread(int vaddr) {
 	// Initialize the register by using currentThread->space
 	currentThread->space->InitRegisters();
 	// Call Restore State through currentThread->space
-//	currentThread->space->RestoreState();
+	currentThread->space->RestoreState();
 	// Call machine->Run()
 	machine->Run();
 }
@@ -406,7 +413,6 @@ void Exec_Syscall(int vaddr, int len) {
 	AddrSpace* a = new AddrSpace(f);
 	a->processIndex = processIndex;
 //	a->addStack();
-	delete f;
 
 	process *p = new process;
 	p->threadStacks = new int[50]; // max number of threads is 50
@@ -927,71 +933,64 @@ int handleMemoryFull() {
 	// if random
 	int evictPPN = 0;
 	int swapWriteLoc = -1;
+	bool valid = false;
 
+	iptLock.Acquire();
 	if (!isFIFO) {
 		evictPPN = rand() % NumPhysPages;
 	}
 
 	// if FIFO
 	else if (isFIFO) {
-		if (pageQueue.isEmpty()) {
-			// spmething
-		}
-		ASSERT(!pageQueue.isEmpty())
-		// page to be evicted
-		int vpn = pageQueue.pop();
-		// find the PPN where the VP is loaded
-		for (int i = 0; i < NumPhysPages; ++i) {
-			if (ipt[i].virtualPage == vpn) {
-				evictPPN = i;
-				break;
-			}
-		}
+		evictPPN = pageQueue.pop();
+//		DEBUG('v', "\tPopped VPN %i to evict\n", vpn);
 	}
 
 	//-- Got a PPN to evict now --//
 	// update TLB
+
 	for (int i = 0; i < TLBSize; ++i) {
-		if (evictPPN == machine->tlb[i].physicalPage) {
+		if (evictPPN == machine->tlb[i].physicalPage){// && ipt[evictPPN].space == currentThread->space) {
 			ipt[evictPPN].dirty = machine->tlb[i].dirty;
 			machine->tlb[i].valid = FALSE;
 		}
 	}
 
-	DEBUG('v', "\tSelected PPN %i to evict\n", evictPPN);
+	DEBUG('v', "\tSelected [PPN %i ==> VPN %i] to evict\n", evictPPN, ipt[evictPPN].virtualPage);
 
 	//-- Write to Swap --//
 	swapLock.Acquire();
 	if (swapFile == NULL) {
 		swapFile = fileSystem->Open(swapFileName);
 	}
-	swapLock.Release();
 	// change to some sort of handling
 	ASSERT(swapFile != NULL);
 
 	// page replacement
-	iptLock.Acquire();
-	swapLock.Acquire();
 	if (ipt[evictPPN].dirty) {
 		// update page table
-		int evictVPN = ipt[evictPPN].virtualPage;
-		currentThread->space->getPageTable()[evictVPN].dirty = TRUE;
 		swapWriteLoc = swapFileBM.Find();
+		int evictVPN = ipt[evictPPN].virtualPage;
+
 		// handling
 		if (swapWriteLoc < 0) {
 			DEBUG('v', "\tSWAP OUT OF SPACE!!!\n");
 		}
 		else {
-			// WHAT ARE THE ARGS?
-			DEBUG('v', "\tDirty and writing to SWAP at %i\n", swapWriteLoc);
+			DEBUG('v', "\tWriting dirty page [PPN %i][VPN %i] to swap: from main memory %i, size %i, write loc %i,  byte offset %i\n",
+					evictPPN, ipt[evictPPN].virtualPage, evictPPN*PageSize, PageSize, swapWriteLoc, swapWriteLoc * PageSize);
 			swapFile->WriteAt(&machine->mainMemory[evictPPN * PageSize],
 					PageSize, swapWriteLoc * PageSize);
-		}
 
-		currentThread->space->getPageTable()[evictVPN].physicalPage = -1;
-		currentThread->space->getPageTable()[evictVPN].diskLocation =
-				PageTableEntry::SWAP;
-		currentThread->space->getPageTable()[evictVPN].swapOffset = swapWriteLoc * PageSize;
+			pageTableLock.Acquire();
+			ipt[evictPPN].space->getPageTable()[evictVPN].physicalPage = -1;
+			ipt[evictPPN].space->getPageTable()[evictVPN].diskLocation =
+					PageTableEntry::SWAP;
+			DEBUG('v', "\t\t[VPN %i] disk location set to %d == %d\n", evictVPN, ipt[evictPPN].space->getPageTable()[evictVPN].diskLocation, PageTableEntry::SWAP);
+			DEBUG('v', "\t\t[VPN %i] disk location addr is %#x\n",evictVPN, &ipt[evictPPN].space->getPageTable()[evictVPN].diskLocation);
+			ipt[evictPPN].space->getPageTable()[evictVPN].swapOffset = swapWriteLoc * PageSize;
+			pageTableLock.Release();
+		}
 	}
 	swapLock.Release();
 	iptLock.Release();
@@ -1011,11 +1010,15 @@ int handleIPTMiss(int vpn) {
 	//--- Look in page table for VPN --//
 	pageTableLock.Acquire();
 	PageTableEntry * pte = &currentThread->space->getPageTable()[vpn];
+	DEBUG('v', "\t\t[VPN %i] disk location is currently to %d\n", vpn, currentThread->space->getPageTable()[vpn].diskLocation);
+	DEBUG('v', "\t\t[VPN %i] disk location addr is %#x\n", vpn, &currentThread->space->getPageTable()[vpn].diskLocation);
 	//--- Find location of VP, swap or exe, load in memory, update page tables --//
 	//--- EXECUTABLE --//
 	if (pte->diskLocation == PageTableEntry::EXECUTABLE) {
-		DEBUG('v', "\tVP is in EXE, reading from %i\n", pte->byteOffset/PageSize);
+		DEBUG('v', "\t[VPN %i] is in EXE, reading to [main memory PPN %i, addr %i] from EXE %#x at [byte offset %i]\n",
+				vpn, ppn, PageSize * ppn, currentThread->space->myExecutable, pte->byteOffset);
 		// load into memory
+		ASSERT(pte->byteOffset/PageSize >= 0);
 		currentThread->space->myExecutable->ReadAt(
 				&(machine->mainMemory[PageSize * ppn]),
 				PageSize, pte->byteOffset);
@@ -1025,10 +1028,13 @@ int handleIPTMiss(int vpn) {
 	//-- SWAP --//
 	else if (pte->diskLocation == PageTableEntry::SWAP) {
 		swapLock.Acquire();
-		DEBUG('v', "\tVP is in SWAP, reading from %i\n", pte->swapOffset/PageSize);
+		DEBUG('v', "\t[VPN %i] is in SWAP, reading to [main memory PPN %i, addr %i] from SWAP %#x at [byte offset %i]\n",
+						vpn, ppn, PageSize * ppn, swapFile, pte->swapOffset);
 		ASSERT(swapFile != NULL);
+		ASSERT(pte->swapOffset/PageSize >= 0);
 		swapFile->ReadAt(&machine->mainMemory[ppn * PageSize], PageSize, pte->swapOffset);
 		swapFileBM.Clear(pte->swapOffset/PageSize);
+		DEBUG('v', "\tClearing swap page %i\n", pte->swapOffset/PageSize);
 
 		pte->swapOffset = -1;
 		pte->diskLocation = PageTableEntry::MEMORY;
@@ -1036,8 +1042,11 @@ int handleIPTMiss(int vpn) {
 
 		swapLock.Release();
 	}
+	else if (pte->diskLocation == PageTableEntry::MEMORY) {
+		DEBUG('v', "\t[VPN %i] is in MEMORY.\n", vpn);
+	}
 	else {
-		DEBUG('v', "\tIn neither, VPN %i.\n", vpn);
+		DEBUG('v', "\t[VPN %i] is in WRONG.\n", vpn);
 	}
 
 	pte->physicalPage = ppn;
@@ -1055,8 +1064,6 @@ int handleIPTMiss(int vpn) {
 	ipt[ppn].byteOffset = pte->byteOffset;
 	ipt[ppn].swapOffset = pte->swapOffset;
 	ipt[ppn].diskLocation = pte->diskLocation;
-	ipt[ppn].space = currentThread->space;
-	ipt[ppn].threadID = currentThread->threadIndex;
 	iptLock.Release();
 	pageTableLock.Release();
 
@@ -1073,10 +1080,10 @@ int handlePageFault() {
 	iptLock.Acquire();
 	for (int i = 0; i < NumPhysPages; ++i) {
 		if (vpn == ipt[i].virtualPage && ipt[i].valid
-				&& ipt[i].space == currentThread->space) {// && ipt[i].threadID == currentThread->threadIndex) {
+				&& ipt[i].space == currentThread->space) {
 			ppn = i;
 			ipt[i].use = TRUE;
-			DEBUG('v', "\tFound VPN %i at PPN %i, %i\n", ipt[i].virtualPage, ppn, ipt[i].physicalPage);
+			DEBUG('v', "\tFound [VPN %i] in IPT at [PPN %i == %i]\n", ipt[i].virtualPage, ppn, ipt[i].physicalPage);
 			break;
 		}
 	}
@@ -1090,27 +1097,28 @@ int handlePageFault() {
 	DEBUG('v', "\tTried PT, PPN is %i\n", ppn);
 
 	if (ppn < 0 || ppn >= NumPhysPages) {
-		DEBUG('v', "\tVirtual page number %i does not exist in IPT.\n", vpn);
+		DEBUG('v', "\tVPN %i does not exist...\n", vpn);
 		interrupt->Halt();
 	}
 	//--- Continue after IPT miss or not IPT miss --//
 	//-- VP is now in IPT by now --//
 	//--- Update TLB, compute PA --//
 	else {
-		// Must update IPT if tlb entry not dirty and is valid
-		if (machine->tlb[currentTLBEntry].dirty
-				&& machine->tlb[currentTLBEntry].valid) {
-			DEBUG('v', "\tUpdating IPT and PT because TLB is dirty and valid\n");
-			int dirtyppn = machine->tlb[currentTLBEntry].physicalPage;
-			ipt[dirtyppn].dirty = TRUE;
-			int dirtyvpn = machine->tlb[currentTLBEntry].virtualPage;
-			currentThread->space->getPageTable()[dirtyvpn].dirty = TRUE;
-		}
+		// Must update IPT if tlb entry dirty and is valid
+//		for (int i=0; i < TLBSize; ++i) {
+		int i = currentTLBEntry;
+			if (machine->tlb[i].valid) {
+				DEBUG('v', "\tTLB entry %i is valid. Updating IPT and PT because TLB dirty bit.\n", i);
+				int dirtyppn = machine->tlb[i].physicalPage;
+				ipt[dirtyppn].dirty = machine->tlb[i].dirty;
+				int dirtyvpn = machine->tlb[i].virtualPage;
+				ipt[dirtyppn].space->getPageTable()[dirtyvpn].dirty = machine->tlb[i].dirty;
+			}
+//		}
 
 		iptLock.Acquire();
 		IPTEntry entry = ipt[ppn];
-		DEBUG('v', "\tPPN is %i\n", ppn);
-		DEBUG('v', "\tPutting in TLB at %i\n", currentTLBEntry);
+		DEBUG('v', "\tPutting [PPN %i ==> VPN %i] in TLB at %i\n", ppn, ipt[ppn].virtualPage, currentTLBEntry);
 		machine->tlb[currentTLBEntry].physicalPage = entry.physicalPage;
 		machine->tlb[currentTLBEntry].virtualPage = entry.virtualPage;
 		machine->tlb[currentTLBEntry].valid = entry.valid;
@@ -1120,7 +1128,10 @@ int handlePageFault() {
 		currentTLBEntry = (currentTLBEntry + 1) % TLBSize;
 		iptLock.Release();
 	}
-	if (isFIFO) pageQueue.push(vpn);
+	if (isFIFO) {
+//		DEBUG('v', "\tPushing on VPN %i\n", vpn);
+		pageQueue.push(ppn);
+	}
 	(void) interrupt->SetLevel(oldLevel);
 	return ppn;
 }

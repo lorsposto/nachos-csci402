@@ -41,13 +41,6 @@
 #define SC_DestroyCondition		19
 #define SC_Rand					20
 #define SC_PrintInt				21
-#define SC_Send					22
-#define SC_Receive				23
-
-#define RPC_CreateLock			24
-#define RPC_DestroyLock			25
-#define RPC_CreateCondition		26
-#define RPC_DestroyCondition	27
 
 #define MAXFILENAME 256
 
@@ -173,15 +166,6 @@ void DestroyCondition(int index);
 int Rand();
 
 void PrintInt(char * name);
-
-/*void Send(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
-		 Send a message to a mailbox on a remote
-			 machine.  The fromBox in the MailHeader is
-			 the return box for ack's. */
-
-/*void Receive(int box, PacketHeader *pktHdr, PacketHeader *mailHdr, char *data);
-    	 Retrieve a message from "box".  Wait if
-			 there is no message in the box.*/
 
 #endif /* IN_ASM */
 

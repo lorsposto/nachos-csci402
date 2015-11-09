@@ -54,9 +54,6 @@ int CreateCondition_Syscall(int vaddr, int len);
 void DestroyCondition_Syscall(int index);
 int Rand_Syscall();
 void PrintInt_Syscall(int num);
-void Send_Syscall(PacketHeader pktHdr, PacketHeader mailHdr, char *data);
-void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
-		char *data);
 
 int copyin(unsigned int vaddr, int len, char *buf) {
 	// Copy len bytes from the current thread's virtual address vaddr.
@@ -896,38 +893,6 @@ void PrintInt_Syscall(int num) {
 	printf("%i", num);
 }
 
-void Send_Syscall(PacketHeader pktHdr, PacketHeader mailHdr, char *data) {
-
-}
-
-void Receive_Syscall(int box, PacketHeader *pktHdr, PacketHeader *mailHdr,
-		char *data) {
-
-	int type = 0; // TODO: use stringstream to get this from data
-
-	switch (type) {
-	default:
-		DEBUG('a', "Unknown remote procedure call!\n");
-	case RPC_CreateLock:
-		DEBUG('a', "CreateLock remote procedure call.\n");
-		// TODO: networking stuff
-		break;
-	case RPC_DestroyLock:
-		DEBUG('a', "DestroyLock remote procedure call.\n");
-		// TODO: networking stuff
-		break;
-	case RPC_CreateCondition:
-		DEBUG('a', "CreateCondition remote procedure call.\n");
-		// TODO: networking stuff
-		break;
-	case RPC_DestroyCondition:
-		DEBUG('a', "DestroyCondition remote procedure call.\n");
-		// TODO: networking stuff
-		break;
-		// TODO: monitor variable RPCs
-	}
-}
-
 int handleMemoryFull() {
 	//--- Find PPN to evict --//
 	// if random
@@ -1202,23 +1167,19 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateLock:
 			DEBUG('a', "CreateLock syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
-			// rv = CreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = CreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_DestroyLock:
 			DEBUG('a', "DestroyLock syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
-			// DestroyLock_Syscall(machine->ReadRegister(4));
+			DestroyLock_Syscall(machine->ReadRegister(4));
 			break;
 		case SC_CreateCondition:
 			DEBUG('a', "CreateCondition syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
-			// rv = CreateCondition_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = CreateCondition_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_DestroyCondition:
 			DEBUG('a', "DestroyCondition syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
-			// DestroyCondition_Syscall(machine->ReadRegister(4));
+			DestroyCondition_Syscall(machine->ReadRegister(4));
 			break;
 		case SC_Exec:
 			DEBUG('a', "Exec syscall.\n");
@@ -1235,14 +1196,6 @@ void ExceptionHandler(ExceptionType which) {
 		case SC_PrintInt:
 			DEBUG('a', "PrintInt syscall.\n");
 			PrintInt_Syscall(machine->ReadRegister(4));
-			break;
-		case SC_Send:
-			DEBUG('a', "Send syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
-			break;
-		case SC_Receive:
-			DEBUG('a', "Receive syscall.\n");
-			// Receive_Syscall(/* TODO: fill this in */);
 			break;
 
 		}

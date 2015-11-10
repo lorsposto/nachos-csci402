@@ -893,6 +893,7 @@ void PrintInt_Syscall(int num) {
 	printf("%i", num);
 }
 
+#ifndef NETWORK
 int handleMemoryFull() {
 	//--- Find PPN to evict --//
 	// if random
@@ -1100,6 +1101,7 @@ int handlePageFault() {
 	(void) interrupt->SetLevel(oldLevel);
 	return ppn;
 }
+#endif
 
 void ExceptionHandler(ExceptionType which) {
 	int type = machine->ReadRegister(2); // Which syscall?
@@ -1209,9 +1211,13 @@ void ExceptionHandler(ExceptionType which) {
 		return;
 	}
 	else if (which == PageFaultException) {
+#ifdef NETWORK
 		DEBUG('v', "Page Fault Exception for thread id %i, process id %i\n", currentThread->threadIndex, currentThread->space->processIndex);
+				interrupt->Halt();
+#else
+			DEBUG('v', "Page Fault Exception for thread id %i, process id %i\n", currentThread->threadIndex, currentThread->space->processIndex);
 		int ppn = handlePageFault();
-//		interrupt->Halt();
+#endif
 	}
 	else {
 		cout << "Unexpected user mode exception - which:" << which << "  type:"

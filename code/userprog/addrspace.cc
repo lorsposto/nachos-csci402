@@ -122,6 +122,61 @@ static void SwapHeader(NoffHeader *noffH) {
 
 AddrSpace::AddrSpace(OpenFile *executable) :
 		fileTable(MaxOpenFiles) {
+
+	#ifdef NETWORK
+		NoffHeader noffH;
+		unsigned int i, size;
+		int ppn;
+
+		// Don't allocate the input or output to disk files
+		fileTable.Put(0);
+		fileTable.Put(0);
+
+		executable->ReadAt((char *) &noffH, sizeof(noffH), 0);
+		if ((noffH.noffMagic != NOFFMAGIC)
+				&& (WordToHost(noffH.noffMagic) == NOFFMAGIC))
+			SwapHeader(&noffH);
+		ASSERT(noffH.noffMagic == NOFFMAGIC);
+
+		size = noffH.code.size + noffH.initData.size + noffH.uninitData.size;
+		numPages = divRoundUp(size, PageSize);// + divRoundUp(UserStackSize,PageSize);
+		// we need to increase the size
+		// to leave room for the stack
+		size = numPages * PageSize;
+
+		ASSERT(numPages <= NumPhysPages);		// check we're not trying
+		// to run anything too big --
+		// at least until we have
+		// virtual memory
+
+		DEBUG('a', "Initializing address space, num pages %d, size %d\n", numPages,
+				size);
+	// first, set up the translation 
+		pageTable = new TranslationEntry[numPages + 8];
+		bitmapLock.Acquire(); // maybe within the loop?
+		for (i = 0; i < numPages; i++) {
+			// find a physical page number -L
+			ppn = bitmap.Find();
+			if (ppn == -1) {
+				printf("Nachos is out of memory.\n");
+				interrupt->Halt();
+			}
+			pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
+			pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+			pageTable[i].valid = TRUE;
+			pageTable[i].use = FALSE;
+			pageTable[i].dirty = FALSE;
+			pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
+			// a separate page, we could set its
+			// pages to be read-only
+
+			executable->ReadAt(&(machine->mainMemory[PageSize * ppn]),
+			PageSize, 40 + i * PageSize);
+		}
+		bitmapLock.Release();
+		return;
+	#endif
+
 	NoffHeader noffH;
 	unsigned int i, size, codeInitPages;
 	int ppn;
@@ -367,7 +422,7 @@ void AddrSpace::RestoreState() {
 		machine->pageTable = pageTable;
 		machine->pageTableSize = numPages;
 	}
-	
+
 	(void) interrupt->SetLevel(oldLevel);
 }
 

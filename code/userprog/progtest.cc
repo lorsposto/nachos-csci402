@@ -25,6 +25,7 @@
 void
 StartProcess(char *filename)
 {
+	printf("HERE");
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
 

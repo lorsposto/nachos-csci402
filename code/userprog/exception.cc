@@ -1201,9 +1201,9 @@ void ExceptionHandler(ExceptionType which) {
 					machine->ReadRegister(5));
 			break;
 		case SC_CreateLock:
-			DEBUG('a', "CreateLock syscall.\n");
+			printf("CreateLock syscall.\n");
 			// Send_Syscall(/* TODO: fill this in */);
-			// rv = CreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			rv = CreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_DestroyLock:
 			DEBUG('a', "DestroyLock syscall.\n");

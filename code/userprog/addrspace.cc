@@ -123,10 +123,11 @@ static void SwapHeader(NoffHeader *noffH) {
 AddrSpace::AddrSpace(OpenFile *executable) :
 		fileTable(MaxOpenFiles) {
 
+	NoffHeader noffH;
+	unsigned int i, size;
+	int ppn;
+
 	#ifdef NETWORK
-		NoffHeader noffH;
-		unsigned int i, size;
-		int ppn;
 
 		// Don't allocate the input or output to disk files
 		fileTable.Put(0);
@@ -152,7 +153,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		DEBUG('a', "Initializing address space, num pages %d, size %d\n", numPages,
 				size);
 	// first, set up the translation 
-		pageTable = new TranslationEntry[numPages + 8];
+		pageTable = new PageTableEntry[numPages + 8];
 		bitmapLock.Acquire(); // maybe within the loop?
 		for (i = 0; i < numPages; i++) {
 			// find a physical page number -L
@@ -177,9 +178,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		return;
 	#endif
 
-	NoffHeader noffH;
-	unsigned int i, size, codeInitPages;
-	int ppn;
+	unsigned int codeInitPages;
 
 	this->myExecutable = executable;
 	// Don't allocate the input or output to disk files

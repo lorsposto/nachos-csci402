@@ -14,8 +14,11 @@ I. Requirements:
 - Implement Random and FIFO page replacement for when physical memory is full
 - Provide necessary tests to demonstrate the functionality of the IPT, TLB, eviction and swap file
  //-- RPC ---//
+- Implement remote procedure calls for Lock and Condition variables
+- Implement new system calls for monitor variables
+- Be able to run user program test suite (Locks, Condition, MVs) as a server and clients
 
-II. Assumptions: *** TODO
+II. Assumptions: *** TODO ???
 	- A thread will explicitly exit out of itself
 	- Nachos has finished running when the last running process finishes.
 
@@ -48,20 +51,20 @@ III. Design:
 IV. Implementation:
 	+ Files Modified
 		addrspace.cc - updated constructor to load nothing into memory, added PageTableEntry class
-		exception.cc - implementation of all new system calls; implementation of virtual memory management routines
+		exception.cc - implementation of all network system call functionality; implementation of virtual memory management routines
 		progtest.cc - updating the process table with the very first process
 		start.s - added assembly for new system calls
 		syscall.h - added new #define values for new system calls, created function prototypes
 		system.h - new global variables delcarations
 		system.cc - new global varaible initialization
+		main.cc - implementation of server, client message function
 		test/Makefile - to include new user programs
 		vm/Makefile - include network directory
-
-		*** TODO?
 
 	+ Files added
 		swapfile - file to be opened as the swapfile
 		test/fork_matmult - test to fork 2 instances of matmult
+		test/exec_matmult - test to exec 2 instances of matmult
 
 	+ Data Structures added, and the file they were added to.
 		system.h/cc - 

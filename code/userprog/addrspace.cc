@@ -257,6 +257,31 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 }
 
 void AddrSpace::addStack() {
+#ifdef NETWORK
+	bitmapLock.Acquire();
+		// initialize new empty pages
+		ASSERT(numPages < NumPhysPages)
+		for (unsigned int i = numPages; i < numPages + 8; i++) {
+			// find a physical page number -L
+			int ppn = bitmap.Find();
+			if (ppn == -1) {
+				DEBUG('v', "Nachos is out of memory.\n");
+				interrupt->Halt();
+			}
+			pageTable[i].virtualPage = i; // for now, virtual page # = phys page #
+			pageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+			pageTable[i].valid = TRUE;
+			pageTable[i].use = FALSE;
+			pageTable[i].dirty = FALSE;
+			pageTable[i].readOnly = FALSE; // if the code segment was entirely on
+			// a separate page, we could set its
+			// pages to be read-only
+		}
+		numPages += 8;
+		bitmapLock.Release();
+	//	bitmapLock.Release();
+		return;
+#endif
 //	bitmapLock.Acquire();
 	// initialize new empty pages
 //	ASSERT(numPages < NumPhysPages)
@@ -287,7 +312,6 @@ void AddrSpace::addStack() {
 //		ipt[ppn].space = currentThread->space; // space pointers
 	}
 	numPages += 8;
-//	bitmapLock.Release();
 }
 
 void AddrSpace::expandTable() {
@@ -464,12 +488,12 @@ void AddrSpace::SaveState() {
 
 void AddrSpace::RestoreState() {
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
-	
 	if(machine->tlb) {
 		for (int i = 0; i < TLBSize; i++) {
 			machine->tlb[i].valid = false;
 		}
 	} else {
+		cout << "setting page table" << endl;
 		machine->pageTable = pageTable;
 		machine->pageTableSize = numPages;
 	}

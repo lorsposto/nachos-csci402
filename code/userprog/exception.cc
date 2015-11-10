@@ -770,7 +770,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 		char buffer[MaxMailSize];
 
 		//idk if 0 should be the first argument ugh
-    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 
     	return *((int*)buffer);
 	#endif

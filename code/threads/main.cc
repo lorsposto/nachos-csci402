@@ -99,7 +99,8 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
     outMailHdr.to = inMailHdr.from;
 
     outMailHdr.length = strlen(intStr) + 1;
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr)); 
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Create Lock Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
      if ( !success ) {
       printf("CREATE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");

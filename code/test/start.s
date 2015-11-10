@@ -1,7 +1,7 @@
 /* Start.s 
  *	Assembly language assist for user programs running on top of Nachos.
  *
- *	Since we do not want to pull in the entire C library, we define
+ *	Since we don't want to pull in the entire C library, we define
  *	what we need for a user program here, namely Start and the system
  *	calls.
  */
@@ -129,9 +129,9 @@ Yield:
 	syscall
 	j	$31
 	.end Yield
-	
+
 	.globl Acquire
-	.ent	Acquire
+	.ent Acquire
 Acquire:
 	addiu $2,$0,SC_Acquire
 	syscall
@@ -139,7 +139,7 @@ Acquire:
 	.end Acquire
 
 	.globl Release
-	.ent	Release
+	.ent Release
 Release:
 	addiu $2,$0,SC_Release
 	syscall
@@ -147,15 +147,15 @@ Release:
 	.end Release
 
 	.globl Wait
-	.ent	Wait
+	.ent Wait
 Wait:
 	addiu $2,$0,SC_Wait
 	syscall
 	j	$31
 	.end Wait
-	
+
 	.globl Signal
-	.ent	Signal
+	.ent Signal
 Signal:
 	addiu $2,$0,SC_Signal
 	syscall
@@ -163,7 +163,7 @@ Signal:
 	.end Signal
 
 	.globl Broadcast
-	.ent	Broadcast
+	.ent Broadcast
 Broadcast:
 	addiu $2,$0,SC_Broadcast
 	syscall
@@ -171,7 +171,7 @@ Broadcast:
 	.end Broadcast
 
 	.globl CreateLock
-	.ent	CreateLock
+	.ent CreateLock
 CreateLock:
 	addiu $2,$0,SC_CreateLock
 	syscall
@@ -179,7 +179,7 @@ CreateLock:
 	.end CreateLock
 
 	.globl DestroyLock
-	.ent	DestroyLock
+	.ent DestroyLock
 DestroyLock:
 	addiu $2,$0,SC_DestroyLock
 	syscall
@@ -187,7 +187,7 @@ DestroyLock:
 	.end DestroyLock
 
 	.globl CreateCondition
-	.ent	CreateCondition
+	.ent CreateCondition
 CreateCondition:
 	addiu $2,$0,SC_CreateCondition
 	syscall
@@ -195,7 +195,7 @@ CreateCondition:
 	.end CreateCondition
 
 	.globl DestroyCondition
-	.ent	DestroyCondition
+	.ent DestroyCondition
 DestroyCondition:
 	addiu $2,$0,SC_DestroyCondition
 	syscall
@@ -203,7 +203,7 @@ DestroyCondition:
 	.end DestroyCondition
 
 	.globl Rand
-	.ent	Rand
+	.ent Rand
 Rand:
 	addiu $2,$0,SC_Rand
 	syscall
@@ -211,29 +211,12 @@ Rand:
 	.end Rand
 
 	.globl PrintInt
-	.ent	PrintInt
+	.ent PrintInt
 PrintInt:
 	addiu $2,$0,SC_PrintInt
 	syscall
 	j	$31
 	.end PrintInt
-
-	.globl Send
-	.ent	Send
-Send:
-	addiu $2,$0,SC_Send
-	syscall
-	j	$31
-	.end Send
-
-	.globl Receive
-	.ent	Receive
-Receive:
-	addiu $2,$0,SC_Receive
-	syscall
-	j	$31
-	.end Receive
-
 
 /* dummy function to keep gcc happy */
         .globl  __main

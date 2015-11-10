@@ -283,10 +283,6 @@ void AddrSpace::addStack() {
 		// pages to be read-only
 	}
 	numPages += 8;
-	for (int i=0; i < numPages; ++i) {
-		cout << "Page table entry " << i << " valid is set to " << pageTable[i].valid << endl;
-	}
-	cout << "Page table address " << pageTable << endl;
 	bitmapLock.Release();
 	//	bitmapLock.Release();
 	return;
@@ -482,11 +478,13 @@ void AddrSpace::InitRegisters() {
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState() {
+#ifndef NETWORK
 	IntStatus oldLevel = interrupt->SetLevel(IntOff);
 	for (int i = 0; i < TLBSize; i++) {
 		machine->tlb[i].valid = FALSE;
 	}
 	(void) interrupt->SetLevel(oldLevel);
+#endif
 }
 
 //----------------------------------------------------------------------

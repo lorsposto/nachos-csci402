@@ -25,7 +25,7 @@
 void
 StartProcess(char *filename)
 {
-	printf("HERE");
+	cout << "Prog test" << endl;
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
 

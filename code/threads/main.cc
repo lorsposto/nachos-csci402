@@ -131,7 +131,7 @@ void beServer() {
     	split = strtok(temp, " ");
 
     	//first number
-    	int requestNumber = *((int*)split);
+    	int requestNumber = atoi(split);
     	printf("REQUEST NUMBER: %d\n", requestNumber);
 
 

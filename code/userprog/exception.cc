@@ -757,6 +757,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 		std::string message = createLock + nameStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Create Lock: Sending message: " << message << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
 
 		 if ( !success ) {

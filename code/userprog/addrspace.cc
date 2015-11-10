@@ -291,7 +291,58 @@ void AddrSpace::addStack() {
 }
 
 void AddrSpace::expandTable() {
+
 	PageTableEntry* newPageTable = new PageTableEntry[numPages + 8]; // is this math right?
+	
+	#ifdef NETWORK
+		// copy over old existing pages
+		ASSERT(numPages < NumPhysPages)
+		for (unsigned int i = 0; i < numPages; i++) {
+			newPageTable[i].virtualPage = pageTable[i].virtualPage; // deep copy
+			newPageTable[i].physicalPage = pageTable[i].physicalPage;
+			newPageTable[i].valid = pageTable[i].valid;
+			newPageTable[i].readOnly = pageTable[i].readOnly;
+			newPageTable[i].use = pageTable[i].use;
+			newPageTable[i].dirty = pageTable[i].dirty;
+		}
+
+		bitmapLock.Acquire();
+		// initialize new empty pages
+		for (unsigned int i = numPages; i < numPages + 8; i++) {
+			// find a physical page number -L
+			int ppn = bitmap.Find();
+			if (ppn == -1) {
+				printf("Nachos is out of memory.\n");
+				interrupt->Halt();
+			}
+			newPageTable[i].virtualPage = i; // for now, virtual page # = phys page #
+			newPageTable[i].physicalPage = ppn; // set physical page to the one we found -L
+			newPageTable[i].valid = TRUE;
+			newPageTable[i].use = FALSE;
+			newPageTable[i].dirty = FALSE;
+			newPageTable[i].readOnly = FALSE; // if the code segment was entirely on
+			// a separate page, we could set its
+			// pages to be read-only
+
+			// ITP population
+			ipt[ppn].virtualPage = i;
+			ipt[ppn].physicalPage = ppn;
+			ipt[ppn].valid = TRUE;
+			ipt[ppn].use = FALSE;
+			ipt[ppn].dirty = FALSE;
+			ipt[ppn].readOnly = FALSE;
+			ipt[ppn].space = currentThread->space; // space pointers
+		}
+		bitmapLock.Release();
+		numPages += 8;
+		// replace old page table (by reference)
+		//	oldPageTable = newPageTable;
+		delete[] pageTable;
+		pageTable = newPageTable;
+		RestoreState();
+		return;
+	#endif
+
 	// copy over old existing pages
 //	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = 0; i < numPages; i++) {

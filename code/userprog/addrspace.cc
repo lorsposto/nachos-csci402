@@ -263,7 +263,7 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 
 void AddrSpace::addStack() {
 #ifdef NETWORK
-	bitmapLock.Acquire();
+	//bitmapLock.Acquire();
 	// initialize new empty pages
 	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
@@ -283,7 +283,7 @@ void AddrSpace::addStack() {
 		// pages to be read-only
 	}
 	numPages += 8;
-	bitmapLock.Release();
+	//bitmapLock.Release();
 	//	bitmapLock.Release();
 	return;
 #else

@@ -496,6 +496,42 @@ void Yield_Syscall() {
 }
 
 void Acquire_Syscall(int index) {
+
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
+		std::stringstream ss;
+		ss << index;
+		std::string indexStr = ss.str();
+		std::string acquireLock = "3 ";
+
+		std::string message = acquireLock + indexStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Acquire Lock: Sending message: " << message << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("ACQUIRE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+    	return;
+	#endif
+
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
 		// bad index
@@ -522,6 +558,42 @@ void Acquire_Syscall(int index) {
 }
 
 void Release_Syscall(int index) {
+
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
+		std::stringstream ss;
+		ss << index;
+		std::string indexStr = ss.str();
+		std::string releaseLock = "4 ";
+
+		std::string message = releaseLock + indexStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Release Lock: Sending message: " << message << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("RELEASE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+    	return;
+	#endif
+
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
 		// bad index
@@ -772,7 +844,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 		//idk if 0 should be the first argument ugh
     	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 
-    	return *((int*)buffer);
+    	return atoi(buffer);
 	#endif
 
 	// Create the new lock...
@@ -792,6 +864,45 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 void DestroyLock_Syscall(int index) {
 	kernelLockLock.Acquire();
+
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
+		std::stringstream ss;
+		ss << index;
+		std::string indexStr = ss.str();
+		std::string destroyLock = "2 ";
+
+		std::string message = destroyLock + indexStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Destroy Lock: Sending message: " << message << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("DESTROY LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+    	return;
+	#endif
+
+
+
+
 	if (index < 0 || index >= kernelLockIndex) {
 		// bad index
 		printf("Bad lock index to destroy.\n");

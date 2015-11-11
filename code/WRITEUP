@@ -13,15 +13,15 @@ I. Requirements:
 - Implement caching through a swap file, to store in such a way that gives the illusion of infinite memory and avoid loading from disk
 - Implement Random and FIFO page replacement for when physical memory is full
 - Provide necessary tests to demonstrate the functionality of the IPT, TLB, eviction and swap file
- //-- RPC ---//
-- Implement remote procedure calls for Lock and Condition variables
+- Implement remote procedure calls for Lock, Condition, Monitor variables
 - Implement new system calls for monitor variables
 - Be able to run user program test suite (Locks, Condition, MVs) as a server and clients
 
 II. Assumptions: *** TODO ???
 	- Part 1 test: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
 	- Part 2 test: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
-	- Lock, Condition, MV names do not include spaces
+	- Monitors monitor for a certain target value. When GET is calld on a Monitor, it waits until its value reaches the target defined when the monitor was created. When SET is called, it waits until the value is not the target value.
+	- There are no checks for Locks or Conditions with duplicate names
 
 III. Design:
 + Parts 1 & 2
@@ -48,6 +48,18 @@ III. Design:
 		- returns PPN
 
 	*** TODO RPC
++ Part 3
+	- The server run continuously, receiving, parsing, and fulfilling resource request messages from client user programs
+	- When a user program requires a resource, the corresponding syscall communicates with the server to retrieve the resource
+	- Upon reception of a request message from a client, the server launches a routine that is the original functionality of the syscall i.e. validating the resource request and performing the desired action for the OS resource
+
+	- beServer()
+		- The server run infinitely
+		- It continuously waits for client messages
+		- Parses client messages on reception
+		- Fulfills request for resource based on message content
+
+
 
 IV. Implementation:
 	+ Files Modified
@@ -68,7 +80,7 @@ IV. Implementation:
 		test/exec_matmult - test to exec 2 instances of matmult
 
 	+ Data Structures added, and the file they were added to.
-		system.h/cc - 
+		- system.h/cc - 
 			class PageTableEntry : public TranslationEntry {
 			public:
 				enum DiskLocation {
@@ -94,6 +106,22 @@ IV. Implementation:
 			char * swapFileName;
 			BitMap swapFileBM;
 			Lock swapLock;
+			struct kernelMonitor {
+				Monitor * monitor;
+				AddrSpace * addrsp;
+				bool isToBeDeleted;
+			};
+			kernelMonitor kernelMonitorList[];
+			int kernelMonitorIndex;
+			const int NUM_KERNEL_MONITORS;
+			Lock kernelMonitorLock;
+		- synch.h:
+			struct Monitor {
+				int condition; // index of condition in kernel table
+				int lock;	// index of lock in kernel table
+				int number;
+				int target;
+			};
 
 	+ Data Structures modified, and the file they were added to.
 			
@@ -105,7 +133,25 @@ IV. Implementation:
 				handlePageFault() -- begins page fault handling routine to find PPN and update TLB
 				handleIPTMiss() -- handles an IPT from handlePageFault and returns PPN
 				handleMemoryFull() -- handles page eviction and returns PPN for handleIPTMiss
-				beServer() -- *** TODO RPC
+				CreateMonitor_Syscall() -- syscall to handle create monitor functionality in user program
+				DestroyMonitor_Syscall() -- syscall to handle destroy monitor functionality in user program
+				GetMonitor_Syscall() -- syscall to handle get monitor functionality in user program
+				SetMonitor_Syscall() -- syscall to handle set monitor functionality in user program
+			main.cc
+				beServer() - continuous server function to retrieve and handle resource requests
+				CreateLock() - this and the following are routines called by beServer to fulfill each specific resource request
+				DestroyLock()
+				AcquireLock()
+				ReleaseLock()
+				CreateCondition()
+				DestroyCondition()
+				WaitCondition()
+				SignalCondition()
+				BroadcastCondition()
+				CreateMonitor()
+				DestroyMonitor()
+				GetMonitor()
+				SetMonitor()
 
 	+ Functions modified and in which file.
 			addrspace.cc:
@@ -117,7 +163,7 @@ IV. Implementation:
 V. Testing:  
 + NOTE: Make sure a file named 'swapfile' exists in the code directory
 
-	+ Part 1 and Part 2 Tests:
++ Part 1 and Part 2 Tests:
 	+ test/fork_matmult
 		- forks two instances of matmult, which has been converted into a fork-able function within fork_matmult.c
 		- Expected output:

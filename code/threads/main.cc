@@ -715,7 +715,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[lockIndex].condition->getName());
-	// kernelConditionList[index].condition->Wait();
+	kernelConditionList[index].condition->Wait(kernelLockList[lockIndex].lock);
 
 	reply = 1;
 
@@ -884,7 +884,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Signaling condition %s.\n", kernelConditionList[index].condition->getName());
-	// kernelConditionList[index].condition->Signal();
+	kernelConditionList[index].condition->Signal(kernelLockList[lockIndex].lock);
 
 	reply = 1;
 
@@ -1052,7 +1052,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[index].condition->getName());
-	// kernelConditionList[index].condition->Broadcast();
+	kernelConditionList[index].condition->Broadcast(kernelLockList[lockIndex].lock);
 
 	reply = 1;
 
@@ -1067,6 +1067,235 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 
      if ( !success ) {
       printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+
+}
+
+void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
+	int reply = -1;
+	int lockIndex;
+	int conditionIndex;
+
+	kernelMonitorLock.Acquire();
+	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
+		cout << "Invalid monitor index" << endl;
+		kernelMonitorLock.Release();
+		return 0;
+	}
+	if (kernelMonitorList[monitorIndex].monitor == NULL) {
+		printf("No monitor at index %i.\n", monitorIndex);
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelMonitorList[monitorIndex].condition->getName());
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	kernelConditionLock.Acquire();
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	lockIndex = kernelMonitorLock[monitorIndex].lock;
+	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+
+	// Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to broadcast.\n");
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+	kernelLockLock.Release();
+	kernelConditionLock.Release();
+	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
+	
+	// --- FUNCTIONALITY
+	kernelLockLock[lockIndex].lock->Acquire();
+	while (kernelMonitorList[monitorIndex].number != kernelMonitorList[monitorIndex].number) {
+		kernelConditionList[conditionIndex].condition->Wait(kernelLockLock[lockIndex].lock);
+	}
+
+	reply = kernelMonitorList[monitorIndex].number;
+	kernelConditionList[conditionIndex].condition->Signal(kernelLockLock[lockIndex].lock);
+
+	kernelLockLock[lockIndex].lock->Release();
+	// ---
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Get Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+
+}
+
+void SetMonitor(int index, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
+	int reply = -1;
+	int lockIndex;
+	int conditionIndex;
+
+	kernelMonitorLock.Acquire();
+	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
+		cout << "Invalid monitor index" << endl;
+		kernelMonitorLock.Release();
+		return 0;
+	}
+	if (kernelMonitorList[monitorIndex].monitor == NULL) {
+		printf("No monitor at index %i.\n", monitorIndex);
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelMonitorList[monitorIndex].condition->getName());
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	kernelConditionLock.Acquire();
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	lockIndex = kernelMonitorLock[monitorIndex].lock;
+	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+
+	// Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to broadcast.\n");
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+	kernelLockLock.Release();
+	kernelConditionLock.Release();
+	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
+	
+	// --- FUNCTIONALITY wtf is this doing
+	kernelLockLock[lockIndex].lock->Acquire();
+	while (kernelMonitorList[monitorIndex].number == kernelMonitorList[monitorIndex].number) {
+		kernelConditionList[conditionIndex].condition->Wait(kernelLockLock[lockIndex].lock);
+	}
+
+	kernelMonitorList[monitorIndex].number = value;
+	kernelConditionList[conditionIndex].condition->Signal(kernelLockLock[lockIndex].lock);
+
+	kernelLockLock[lockIndex].lock->Release();
+	// ---
+
+	reply = 1;
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Set Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
 
@@ -1160,14 +1389,27 @@ void beServer() {
     			break;
     		case 8:
     			printf("Request to Signal Condition\n");
+    			printf("CONDITION SIGNAL INDEX: %i\n", primaryIndex);
     			printf("LOCK SIGNAL INDEX: %i\n", secondaryIndex);
     			SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case 9:
     			printf("Request to Broadcast Condition\n");
+    			printf("CONDITION BROADCAST INDEX: %i\n", primaryIndex);
     			printf("LOCK BROADCAST INDEX: %i\n", secondaryIndex);
     			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
+    		case 12:
+    			printf("Request to Get Monitor\n");
+    			printf("GET MONITOR INDEX: %i\n", primaryIndex);
+    			BroadcastCondition(primaryIndex, inPktHdr, inMailHdr);
+    			break;
+			case 13:
+				printf("Request to Broadcast Condition\n");
+				printf("SET MONITOR INDEX: %i\n", primaryIndex);
+    			printf("SET MONITOR VALUE: %i\n", secondaryIndex);
+    			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+				break;
     	}
 
     	//"if client can continue, send reply else queue reply?"

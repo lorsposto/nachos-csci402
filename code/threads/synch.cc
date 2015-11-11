@@ -258,3 +258,7 @@ void Condition::Broadcast(Lock* conditionLock) {
 		Signal(conditionLock);
 	}
 }
+
+int Monitor::Get() {
+
+}

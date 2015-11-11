@@ -104,6 +104,16 @@ extern kernelCondition kernelConditionList[];
 extern int kernelConditionIndex;
 extern const int NUM_KERNEL_CONDITIONS;
 extern Lock kernelConditionLock;
+
+struct kernelMonitor {
+	Monitor * monitor;
+	AddrSpace * addrsp;
+	bool isToBeDeleted;
+};
+extern kernelMonitor kernelMonitorList[];
+extern int kernelMonitorIndex;
+extern const int NUM_KERNEL_MONITORS;
+extern Lock kernelMonitorLock;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

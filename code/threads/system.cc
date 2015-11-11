@@ -60,6 +60,11 @@ const int NUM_KERNAL_CONDITIONS = 1000;
 kernelCondition kernelConditionList[NUM_KERNAL_CONDITIONS];
 int kernelConditionIndex = 0;
 Lock kernelConditionLock("Kernel Conditions Lock");
+
+const int NUM_KERNEL_MONITORS = 1000;
+kernelMonitor kernelMonitorList[NUM_KERNEL_MONITORS];
+int kernelMonitorIndex = 0;
+Lock kernelMonitorLock("Kernel Monitors Lock")
 #endif
 
 #ifdef FILESYS_NEEDED

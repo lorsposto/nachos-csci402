@@ -1176,6 +1176,234 @@ void PrintInt_Syscall(int num) {
 	printf("%i", num);
 }
 
+int GetMonitor_Syscall(int monitorIndex) {
+	int conditionIndex = -1;
+	int lockIndex = -1;
+	int retVal = 0;
+
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << monitorIndex;
+	std::string indexStr = ss.str();
+	std::string getMonitor = "12 ";
+
+	std::string message = getMonitor + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Get Monitor: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("GET MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return atoi(buffer);
+#endif
+
+	kernelMonitorLock.Acquire();
+	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
+		cout << "Invalid monitor index" << endl;
+		kernelMonitorLock.Release();
+		return 0;
+	}
+	if (kernelMonitorList[monitorIndex].monitor == NULL) {
+		printf("No monitor at index %i.\n", monitorIndex);
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
+		printf("Monitor %i does not belong to the process.\n",
+				monitorIndex);
+		kernelMonitorLock.Release();
+		return 0;
+	}
+
+	kernelConditionLock.Acquire();
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	lockIndex = kernelMonitorLock[monitorIndex].lock;
+	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+
+	// Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to broadcast.\n");
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return 0;
+	}
+
+	DEBUG('t', "Getting Monitor [%i].\n", monitorIndex);
+	retVal = kernelMonitorList[monitorIndex].number;
+	kernelLockLock.Release();
+	kernelConditionLock.Release();
+	kernelMonitorLock.Release();
+	return retVal;
+}
+
+void SetMonitor_Syscall(int monitorIndex, int value) {
+	int conditionIndex = -1;
+	int lockIndex = -1;
+
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << monitorIndex;
+	std::string indexStr = ss.str();
+	std::string getMonitor = "13 ";
+
+	std::string message = getMonitor + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Set Monitor: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("SET MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return atoi(buffer);
+#endif
+
+	kernelMonitorLock.Acquire();
+	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
+		cout << "Invalid monitor index" << endl;
+		kernelMonitorLock.Release();
+		return;
+	}
+	if (kernelMonitorList[monitorIndex].condition == NULL) {
+		printf("No condition at index %i.\n", monitorIndex);
+		kernelMonitorLock.Release();
+		return;
+	}
+
+	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelMonitorList[monitorIndex].condition->getName());
+		kernelMonitorLock.Release();
+		return;
+	}
+
+	kernelConditionLock.Acquire();
+	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
+		printf("Invalid condition index.\n");
+		kernelConditionLock.Release();
+		return;
+	}
+
+	if (kernelConditionList[conditionIndex].condition == NULL) {
+		printf("No condition at index %i.\n", conditionIndex);
+		kernelConditionLock.Release();
+		return;
+	}
+
+	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to the process.\n",
+				kernelConditionList[conditionIndex].condition->getName());
+		kernelConditionLock.Release();
+		return;
+	}
+
+	lockIndex = kernelMonitorLock[monitorIndex].lock;
+	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+
+	// Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to broadcast.\n");
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread.\n",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+		kernelConditionLock.Release();
+		return;
+	}
+
+	DEBUG('t', "Setting Monitor [%i].\n", monitorIndex);
+	kernelMonitorList[monitorIndex].number = value;
+	kernelLockLock.Release();
+	kernelConditionLock.Release();
+	kernelMonitorLock.Release();
+}
+
 #ifndef NETWORK
 int handleMemoryFull() {
 	//--- Find PPN to evict --//

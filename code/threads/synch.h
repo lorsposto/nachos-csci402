@@ -143,15 +143,10 @@ class Condition {
 };
 
 
-class Monitor {
-public:
-	Monitor();
-	~Monitor();
-	int Get();
-	void Set(int n);
-private:
-	Condition * condition;
-	Lock * lock;
+struct Monitor {
+	int condition;
+	int lock;
 	int number;
+	int target;
 };
 #endif // SYNCH_H

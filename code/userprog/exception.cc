@@ -504,7 +504,7 @@ void Acquire_Syscall(int index) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -566,7 +566,7 @@ void Release_Syscall(int index) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -632,7 +632,7 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -721,7 +721,7 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -814,7 +814,7 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -922,7 +922,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -975,7 +975,7 @@ void DestroyLock_Syscall(int index) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -1060,7 +1060,7 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -1110,7 +1110,7 @@ void DestroyCondition_Syscall(int index) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -1185,7 +1185,7 @@ int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -1240,7 +1240,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 1;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -1285,7 +1285,7 @@ int GetMonitor_Syscall(int monitorIndex) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -1399,7 +1399,7 @@ int SetMonitor_Syscall(int monitorIndex, int value) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = 0;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 1;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;

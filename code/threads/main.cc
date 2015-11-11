@@ -1072,6 +1072,131 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 
 }
 
+void CreateMonitor(int lockNum, int conditionNum, int maxNum, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//this currently does not prevent locks with the same name
+	kernelMonitorLock.Acquire();
+	int createdMonitorIndex = kernelMonitorIndex;
+	Monitor newMonitor;
+	newMonitor.lock = lockNum;
+	newMonitor.condition = conditionNum;
+	newMonitor.target = maxNum;
+	newMonitor.number = 0;
+	kernelMonitorList[kernelMonitorIndex].monitor = &newMonitor;
+	kernelMonitorList[kernelMonitorIndex].addrsp = currentThread->space; // #userprog
+	kernelMonitorList[kernelMonitorIndex].isToBeDeleted = false;
+	// the next new lock's index
+	kernelMonitorIndex++;
+	kernelMonitorLock.Release();
+
+	std::stringstream ss;
+	ss << createdMonitorIndex;
+	const char* intStr = ss.str().c_str();
+
+	outPktHdr.to = inPktHdr.from;
+    outMailHdr.to = inMailHdr.from;
+
+    outMailHdr.length = strlen(intStr) + 1;
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Create Monitor Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("CREATE MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+
+}
+
+void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, DESTROY LOCK FAILED IN SOME WAY. 
+	int reply = -1;
+
+	kernelMonitorLock.Acquire();
+	if (index < 0 || index >= kernelMonitorIndex) {
+		// bad index
+		printf("Bad monitor index to destroy.\n");
+		kernelMonitorLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Destroy Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("DESTROY MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelMonitorList[index].monitor == NULL) {
+		printf("No monitor at index %i.\n", index);
+		kernelMonitorLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Destroy Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("DESTROY MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelMonitorList[kernelMonitorIndex].isToBeDeleted) {
+		DEBUG('t', "Monitor will be destroyed.\n");
+		kernelMonitorList[kernelMonitorIndex].isToBeDeleted = true;
+		kernelMonitorList[kernelMonitorIndex].monitor = NULL;
+	}
+	kernelMonitorLock.Release();
+	reply = 1;
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Destroy Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("DESTROY MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+}
+
 void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
@@ -1320,19 +1445,21 @@ void beServer() {
       	int requestNumber = -1;
 		int primaryIndex = -1;
 		int secondaryIndex = -1;
+		int tertiaryIndex = -1;
 		char name[256];
 		std::stringstream ss;
 		ss << buffer;
 		ss.flush();
 		ss >> requestNumber;
 
-		if(requestNumber == 1 || requestNumber == 5) { //creates
+		if(requestNumber == 1 || requestNumber == 5 || requestNumber == 10) { //creates
 			// get name
 			ss.getline(name, 256);
 		}
 		else {
 			ss >> primaryIndex;
 			ss >> secondaryIndex;
+			ss >> tertiaryIndex;
 		}
     	char* temp = buffer;
     	char* split;
@@ -1397,6 +1524,14 @@ void beServer() {
     			printf("LOCK BROADCAST INDEX: %i\n", secondaryIndex);
     			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
+    		case 10:
+    			printf("Request to Create Monitor\n");
+    			printf("CREATE MONITOR NAME: %s\n", name);
+    			CreateMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+    		case 11:
+    			printf("Request to Destroy Monitor\n");
+    			printf("DESTROY MONITOR INDEX: %d\n", primaryIndex);
+    			DestroyMonitor(primaryIndex, inPktHdr, inMailHdr);
     		case 12:
     			printf("Request to Get Monitor\n");
     			printf("GET MONITOR INDEX: %i\n", primaryIndex);

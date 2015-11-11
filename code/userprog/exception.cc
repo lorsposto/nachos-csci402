@@ -1176,6 +1176,103 @@ void PrintInt_Syscall(int num) {
 	printf("%i", num);
 }
 
+int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
+	kernelMonitorLock.Acquire();
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
+		std::stringstream ss;
+		ss << lockIndex;
+		std::string lockStr = ss.str();
+
+		ss.clear();
+		ss.str("");
+
+		ss << conditionIndex;
+		std::string conditionStr = ss.str();
+
+		ss.clear();
+		ss.str("");
+
+		ss << maxIndex;
+		std::string maxStr = ss.str();
+
+		std::string createMonitor = "10 ";
+
+		std::string message = createMonitor + lockStr + conditionStr + maxStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Create Monitor: Sending message: " << message << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("CREATE MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//idk if 0 should be the first argument ugh
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	kernelMonitorLock.Release();
+    	return atoi(buffer);
+	#endif
+	kernelMonitorLock.Release();
+	//should only be for part 3 stuff
+	return -1;
+}
+
+void DestroyMonitor_Syscall(int monitorIndex) {
+	kernelLockLock.Acquire();
+
+	#ifdef NETWORK
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = 0;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = 0;
+
+		std::stringstream ss;
+		ss << monitorIndex;
+		std::string indexStr = ss.str();
+		std::string destroyMonitor = "11 ";
+
+		std::string message = destroyMonitor + indexStr;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		cout << "Destroy Monitor: Sending message: " << message << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		 if ( !success ) {
+      		printf("DESTROY MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      		interrupt->Halt();
+    	} 
+
+    	PacketHeader inPktHdr;
+		MailHeader inMailHdr;
+		char buffer[MaxMailSize];
+
+		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	kernelMonitorLock.Release();
+    	return;
+	#endif
+
+    kernelMonitorLock.Release();
+
+}
+
+
 int GetMonitor_Syscall(int monitorIndex) {
 	int conditionIndex = -1;
 	int lockIndex = -1;
@@ -1711,7 +1808,22 @@ void ExceptionHandler(ExceptionType which) {
 			DEBUG('a', "PrintInt syscall.\n");
 			PrintInt_Syscall(machine->ReadRegister(4));
 			break;
-
+		case SC_CreateMonitor:
+			DEBUG('a', "CreateMonitor syscall.\n");
+			CreateMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
+			break;
+		case SC_DestroyMonitor:
+			DEBUG('a', "DestroyMonitor syscall.\n");
+			DestroyMonitor_Syscall(machine->ReadRegister(4));
+			break;
+		case SC_SetMonitor:
+			DEBUG('a', "SetMonitor syscall.\n");
+			SetMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			break;
+		case SC_GetMonitor:
+			DEBUG('a', "GetMonitor syscall.\n");
+			GetMonitor_Syscall(machine->ReadRegister(4));
+			break;
 		}
 
 		// Put in the return value and increment the PC

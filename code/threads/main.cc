@@ -1100,12 +1100,12 @@ void CreateMonitor(int lockNum, int conditionNum, int maxNum, PacketHeader inPkt
 	//this currently does not prevent locks with the same name
 	kernelMonitorLock.Acquire();
 	int createdMonitorIndex = kernelMonitorIndex;
-	Monitor newMonitor;
-	newMonitor.lock = lockNum;
-	newMonitor.condition = conditionNum;
-	newMonitor.target = maxNum;
-	newMonitor.number = 0;
-	kernelMonitorList[kernelMonitorIndex].monitor = &newMonitor;
+	Monitor * newMonitor = new Monitor;
+	newMonitor->lock = lockNum;
+	newMonitor->condition = conditionNum;
+	newMonitor->target = maxNum;
+	newMonitor->number = 0;
+	kernelMonitorList[kernelMonitorIndex].monitor = newMonitor;
 	kernelMonitorList[kernelMonitorIndex].addrsp = currentThread->space; // #userprog
 	kernelMonitorList[kernelMonitorIndex].isToBeDeleted = false;
 	// the next new lock's index

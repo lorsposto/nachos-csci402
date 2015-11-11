@@ -51,13 +51,13 @@ class AddrSpace {
     Table fileTable;			// Table of openfiles
 
 
-#ifdef NETWORK
-    TranslationEntry* getPageTable();
-    void setPageTable(TranslationEntry * newtable);
-#else
+//#ifdef NETWORK
+//    TranslationEntry* getPageTable();
+//    void setPageTable(TranslationEntry * newtable);
+//#else
     PageTableEntry* getPageTable();
     void setPageTable(PageTableEntry * newtable);
-#endif
+//#endif
 
     //my index in the process table
     int processIndex;
@@ -70,12 +70,12 @@ class AddrSpace {
     OpenFile * myExecutable;
 
  private:
-#ifdef NETWORK
-    TranslationEntry *pageTable;
-#else
+//#ifdef NETWORK
+//    TranslationEntry *pageTable;
+//#else
     PageTableEntry *pageTable;	// Assume linear page table translation
 					// for now!
-#endif
+//#endif
 
 };
 

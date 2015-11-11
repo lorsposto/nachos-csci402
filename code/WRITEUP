@@ -17,7 +17,7 @@ I. Requirements:
 - Implement new system calls for monitor variables
 - Be able to run user program test suite (Locks, Condition, MVs) as a server and clients
 
-II. Assumptions: *** TODO ???
+II. Assumptions:
 	- Part 1 test: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
 	- Part 2 test: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
 	- Monitors monitor for a certain target value. When GET is calld on a Monitor, it waits until its value reaches the target defined when the monitor was created. When SET is called, it waits until the value is not the target value.
@@ -47,19 +47,12 @@ III. Design:
 		- if the page is dirty, it is written to the swap file
 		- returns PPN
 
-	*** TODO RPC
 + Part 3
 	- The server run continuously, receiving, parsing, and fulfilling resource request messages from client user programs
 	- When a user program requires a resource, the corresponding syscall communicates with the server to retrieve the resource
+	- On the client side, when a user program calls a syscall, instead of handling the request itself it sends a request to the server
 	- Upon reception of a request message from a client, the server launches a routine that is the original functionality of the syscall i.e. validating the resource request and performing the desired action for the OS resource
-
-	- beServer()
-		- The server run infinitely
-		- It continuously waits for client messages
-		- Parses client messages on reception
-		- Fulfills request for resource based on message content
-
-
+	- In the case where the user program performs an illegal action through the RPC, the server sends a failure reply. However, the folly is on the user program for the illegal action -- it is the responsibility of the user program to handle errors.
 
 IV. Implementation:
 	+ Files Modified

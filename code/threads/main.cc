@@ -1072,7 +1072,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 
 }
 
-void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1092,43 +1092,42 @@ void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
 		cout << "Invalid monitor index" << endl;
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelMonitorList[monitorIndex].condition->getName());
+		printf("Monitor %i does not belong to the process.\n", monitorIndex);
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 
 	kernelConditionLock.Acquire();
 	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelConditionList[conditionIndex].condition == NULL) {
 		printf("No condition at index %i.\n", conditionIndex);
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
 		printf("Condition %s does not belong to the process.\n",
 				kernelConditionList[conditionIndex].condition->getName());
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
-	lockIndex = kernelMonitorLock[monitorIndex].lock;
-	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+	lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
+	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
 
 	// Check lock
 	kernelLockLock.Acquire();
@@ -1137,14 +1136,14 @@ void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 		printf("Bad lock index to broadcast.\n");
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
 		printf("No lock at index %i.\n", lockIndex);
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
@@ -1152,22 +1151,22 @@ void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 				kernelLockList[lockIndex].lock->getName());
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	
 	// --- FUNCTIONALITY
-	kernelLockLock[lockIndex].lock->Acquire();
-	while (kernelMonitorList[monitorIndex].number != kernelMonitorList[monitorIndex].number) {
-		kernelConditionList[conditionIndex].condition->Wait(kernelLockLock[lockIndex].lock);
+	kernelLockList[lockIndex].lock->Acquire();
+	while (kernelMonitorList[monitorIndex].monitor->number != kernelMonitorList[monitorIndex].monitor->number) {
+		kernelConditionList[conditionIndex].condition->Wait(kernelLockList[lockIndex].lock);
 	}
 
-	reply = kernelMonitorList[monitorIndex].number;
-	kernelConditionList[conditionIndex].condition->Signal(kernelLockLock[lockIndex].lock);
+	reply = kernelMonitorList[monitorIndex].monitor->number;
+	kernelConditionList[conditionIndex].condition->Signal(kernelLockList[lockIndex].lock);
 
-	kernelLockLock[lockIndex].lock->Release();
+	kernelLockList[lockIndex].lock->Release();
 	// ---
 
 	std::stringstream ss;
@@ -1186,7 +1185,7 @@ void GetMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 }
 
-void SetMonitor(int index, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
+void SetMonitor(int monitorIndex, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1206,43 +1205,42 @@ void SetMonitor(int index, int value, PacketHeader inPktHdr, MailHeader inMailHd
 	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
 		cout << "Invalid monitor index" << endl;
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelMonitorList[monitorIndex].condition->getName());
+		printf("Monitor %i does not belong to the process.\n", monitorIndex);
 		kernelMonitorLock.Release();
-		return 0;
+		return;
 	}
 
 	kernelConditionLock.Acquire();
 	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelConditionList[conditionIndex].condition == NULL) {
 		printf("No condition at index %i.\n", conditionIndex);
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
 		printf("Condition %s does not belong to the process.\n",
 				kernelConditionList[conditionIndex].condition->getName());
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
-	lockIndex = kernelMonitorLock[monitorIndex].lock;
-	conditionIndex = kernelMonitorLock[monitorIndex].condition;
+	lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
+	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
 
 	// Check lock
 	kernelLockLock.Acquire();
@@ -1251,14 +1249,14 @@ void SetMonitor(int index, int value, PacketHeader inPktHdr, MailHeader inMailHd
 		printf("Bad lock index to broadcast.\n");
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
 		printf("No lock at index %i.\n", lockIndex);
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
@@ -1266,22 +1264,22 @@ void SetMonitor(int index, int value, PacketHeader inPktHdr, MailHeader inMailHd
 				kernelLockList[lockIndex].lock->getName());
 		kernelLockLock.Release();
 		kernelConditionLock.Release();
-		return 0;
+		return;
 	}
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	
 	// --- FUNCTIONALITY wtf is this doing
-	kernelLockLock[lockIndex].lock->Acquire();
-	while (kernelMonitorList[monitorIndex].number == kernelMonitorList[monitorIndex].number) {
-		kernelConditionList[conditionIndex].condition->Wait(kernelLockLock[lockIndex].lock);
+	kernelLockList[lockIndex].lock->Acquire();
+	while (kernelMonitorList[monitorIndex].monitor->number == kernelMonitorList[monitorIndex].monitor->number) {
+		kernelConditionList[conditionIndex].condition->Wait(kernelLockList[lockIndex].lock);
 	}
 
-	kernelMonitorList[monitorIndex].number = value;
-	kernelConditionList[conditionIndex].condition->Signal(kernelLockLock[lockIndex].lock);
+	kernelMonitorList[monitorIndex].monitor->number = value;
+	kernelConditionList[conditionIndex].condition->Signal(kernelLockList[lockIndex].lock);
 
-	kernelLockLock[lockIndex].lock->Release();
+	kernelLockList[lockIndex].lock->Release();
 	// ---
 
 	reply = 1;
@@ -1402,13 +1400,13 @@ void beServer() {
     		case 12:
     			printf("Request to Get Monitor\n");
     			printf("GET MONITOR INDEX: %i\n", primaryIndex);
-    			BroadcastCondition(primaryIndex, inPktHdr, inMailHdr);
+    			GetMonitor(primaryIndex, inPktHdr, inMailHdr);
     			break;
 			case 13:
 				printf("Request to Broadcast Condition\n");
 				printf("SET MONITOR INDEX: %i\n", primaryIndex);
     			printf("SET MONITOR VALUE: %i\n", secondaryIndex);
-    			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			SetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 				break;
     	}
 

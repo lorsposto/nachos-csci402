@@ -420,6 +420,453 @@ void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
     }
 }
 
+// -- CONDITIONS -- //
+void CreateCondition(char* conditionName, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//this currently does not prevent locks with the same name
+	kernelConditionLock.Acquire();
+	int createdConditionIndex = kernelConditionIndex;
+	kernelConditionList[kernelConditionIndex].condition = new Condition(conditionName);
+	kernelConditionList[kernelConditionIndex].addrsp = currentThread->space; // #userprog
+	kernelConditionList[kernelConditionIndex].isToBeDeleted = false;
+	// the next new lock's index
+	kernelConditionIndex++;
+	kernelConditionLock.Release();
+
+	std::stringstream ss;
+	ss << createdConditionIndex;
+	const char* intStr = ss.str().c_str();
+
+	outPktHdr.to = inPktHdr.from;
+    outMailHdr.to = inMailHdr.from;
+
+    outMailHdr.length = strlen(intStr) + 1;
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Create Condition Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("CREATE CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+}
+
+void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, DESTROY LOCK FAILED IN SOME WAY.
+	int reply = -1;
+
+	kernelConditionLock.Acquire();
+	if (index < 0 || index >= kernelConditionIndex) {
+		// bad index
+		printf("Bad condition index to destroy.\n");
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("DESTROY CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].condition == NULL) {
+		printf("No condition at index %i.\n", index);
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("DESTROY CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	// busy if someone in wait queue
+	if (!kernelConditionList[index].condition->isQueueEmpty()) {
+		DEBUG('t', "Condition %s is still busy. Won't destroy.\n",
+				kernelConditionList[index].condition->getName());
+		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("DESTROY CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].condition->isQueueEmpty()
+			|| kernelConditionList[kernelConditionIndex].isToBeDeleted) {
+		DEBUG('t', "Condition %s will be destroyed.\n",
+				kernelConditionList[index].condition->getName());
+		kernelConditionList[kernelConditionIndex].isToBeDeleted = true;
+		kernelConditionList[kernelConditionIndex].condition = NULL;
+	}
+	kernelConditionLock.Release();
+	reply = 1;
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Destroy Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("DESTROY Condition: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+}
+
+void WaitCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
+	int reply = -1;
+
+	kernelConditionLock.Acquire();
+	if (index < 0 || index >= kernelConditionIndex) {
+		// bad index
+		printf("Bad condition index to wait on.\n");
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("WAIT CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].condition == NULL) {
+		printf("No condition at index %i.\n", index);
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("WAIT CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to current thread\n.",
+				kernelConditionList[index].condition->getName());
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("WAIT CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelConditionLock.Release();
+	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[index].condition->getName());
+	// kernelConditionList[index].condition->Wait();
+
+	reply = 1;
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Wait Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("WAIT CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+
+}
+
+void SignalCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
+	int reply = -1;
+
+	kernelConditionLock.Acquire();
+	if (index < 0 || index >= kernelConditionIndex) {
+		// bad index
+		printf("Bad condition index to signal.\n");
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("SIGNAL CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].condition == NULL) {
+		printf("No condition at index %i.\n", index);
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("SIGNAL CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to current thread\n.",
+				kernelConditionList[index].condition->getName());
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("SIGNAL CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelConditionLock.Release();
+	DEBUG('t', "Signaling condition %s.\n", kernelConditionList[index].condition->getName());
+	// kernelConditionList[index].condition->Signal();
+
+	reply = 1;
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Signal Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("SIGNAL CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+}
+
+void BroadcastCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+{
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = 0;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = 0;
+	outPktHdr.to = inPktHdr.from;
+
+	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
+	int reply = -1;
+
+	kernelConditionLock.Acquire();
+	if (index < 0 || index >= kernelConditionIndex) {
+		// bad index
+		printf("Bad condition index to broadcast.\n");
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].condition == NULL) {
+		printf("No condition at index %i.\n", index);
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelConditionList[index].addrsp != currentThread->space) {
+		printf("Condition %s does not belong to current thread\n.",
+				kernelConditionList[index].condition->getName());
+		kernelConditionLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelConditionLock.Release();
+	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[index].condition->getName());
+	// kernelConditionList[index].condition->Broadcast();
+
+	reply = 1;
+
+	std::stringstream ss;
+	ss << reply;
+	const char* intStr = ss.str().c_str();
+
+	outMailHdr.length = strlen(intStr) + 1;
+
+    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    cout << "Broadcast Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+     if ( !success ) {
+      printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+      interrupt->Halt();
+    }
+
+}
 
 //maybe should not be in main.cc
 void beServer() {
@@ -439,13 +886,33 @@ void beServer() {
     	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
     	printf("Got \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 
+      	int requestNumber = -1;
+		int primaryIndex = -1;
+		int secondaryIndex = -1;
+		char name[256];
+		std::stringstream ss;
+		ss << buffer;
+		ss.flush();
+		ss >> requestNumber;
+
+		if(requestNumber == 1 || requestNumber == 5) { //creates
+			// get name
+			ss.getline(name, 256);
+			cout << name << endl;
+		}
+		else {
+			cout << ss.str() << endl;
+			ss >> primaryIndex;
+			ss >> secondaryIndex;
+			cout << "P " << primaryIndex << " S " << secondaryIndex << endl;
+		}
     	char* temp = buffer;
     	char* split;
 
     	split = strtok(temp, " ");
 
     	//first number
-    	int requestNumber = atoi(split);
+//    	int requestNumber = atoi(split);
     	printf("REQUEST NUMBER: %d\n", requestNumber);
 
 
@@ -456,27 +923,48 @@ void beServer() {
     			break;
     		case 1:
     			printf("Request to Create Lock\n");
-    			char* lockName = strtok(NULL, " ");
-    			printf("LOCK NAME: %s\n", lockName);
-    			CreateLock(lockName, inPktHdr, inMailHdr);
+    			printf("LOCK NAME: %s\n", name);
+    			CreateLock(name, inPktHdr, inMailHdr);
     			break;
     		case 2:
     			printf("Request to Destroy Lock\n");
-    			char* lockIndex = strtok(NULL, " ");
-    			printf("LOCK DESTROY INDEX: %s\n", lockIndex);
-    			DestroyLock(atoi(lockIndex), inPktHdr, inMailHdr);
+    			printf("LOCK DESTROY INDEX: %i\n", primaryIndex);
+    			DestroyLock(primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case 3:
     			printf("Request to Acquire Lock\n");
-    			char* lockAcqIndex = strtok(NULL, " ");
-    			printf("LOCK ACQUIRE INDEX: %s\n", lockIndex);
-    			AcquireLock(atoi(lockAcqIndex), inPktHdr, inMailHdr);
+    			printf("LOCK ACQUIRE INDEX: %i\n", primaryIndex);
+    			AcquireLock(primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case 4:
     			printf("Request to Release Lock\n");
-    			char* lockRelIndex = strtok(NULL, " ");
-    			printf("LOCK RELEASE INDEX: %s\n", lockIndex);
-    			ReleaseLock(atoi(lockRelIndex), inPktHdr, inMailHdr);
+    			printf("LOCK RELEASE INDEX: %i\n", primaryIndex);
+    			ReleaseLock(primaryIndex, inPktHdr, inMailHdr);
+    			break;
+    		case 5:
+    			printf("Request to Create Condition\n");
+    			printf("CREATE CONDITION NAME: %s\n", name);
+    			CreateCondition(name, inPktHdr, inMailHdr);
+    			break;
+    		case 6:
+    			printf("Request to Destroy Condition\n");
+    			printf("DESTROY CONDITION INDEX: %i\n", primaryIndex);
+    			DestroyCondition(primaryIndex, inPktHdr, inMailHdr);
+    			break;
+    		case 7:
+    			printf("Request to Wait on Condition\n");
+    			printf("CONDITION WAIT INDEX: %i\n", primaryIndex);
+    			WaitCondition(primaryIndex, inPktHdr, inMailHdr);
+    			break;
+    		case 8:
+    			printf("Request to Signal Condition\n");
+    			printf("CONDITION SIGNAL INDEX: %i\n", primaryIndex);
+    			SignalCondition(primaryIndex, inPktHdr, inMailHdr);
+    			break;
+    		case 9:
+    			printf("Request to Broadcast Condition\n");
+    			printf("CONDITION BROADCST INDEX: %i\n", primaryIndex);
+    			BroadcastCondition(primaryIndex, inPktHdr, inMailHdr);
     			break;
     	}
 

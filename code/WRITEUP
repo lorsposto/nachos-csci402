@@ -19,8 +19,9 @@ I. Requirements:
 - Be able to run user program test suite (Locks, Condition, MVs) as a server and clients
 
 II. Assumptions: *** TODO ???
-	- A thread will explicitly exit out of itself
-	- Nachos has finished running when the last running process finishes.
+	- Part 1 test: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
+	- Part 2 test: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
+	- Lock, Condition, MV names do not include spaces
 
 III. Design:
 + Parts 1 & 2
@@ -117,9 +118,6 @@ V. Testing:
 + NOTE: Make sure a file named 'swapfile' exists in the code directory
 
 	+ Part 1 and Part 2 Tests:
-- Part 1 Assumption: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
-- Part 2 Assumption: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
-
 	+ test/fork_matmult
 		- forks two instances of matmult, which has been converted into a fork-able function within fork_matmult.c
 		- Expected output:

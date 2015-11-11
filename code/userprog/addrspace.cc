@@ -211,7 +211,6 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 			size);
 // first, set up the translation 
 	pageTable = new PageTableEntry[numPages + 8];
-	bitmapLock.Acquire(); // maybe within the loop?
 	for (i = 0; i < numPages; i++) {
 		// find a physical page number -L
 //		ppn = bitmap.Find();
@@ -257,13 +256,11 @@ AddrSpace::AddrSpace(OpenFile *executable) :
 		}
 	}
 	DEBUG('v', "Executable requires %i pages\n", numPages);
-	bitmapLock.Release();
 #endif
 }
 
 void AddrSpace::addStack() {
 #ifdef NETWORK
-	//bitmapLock.Acquire();
 	// initialize new empty pages
 	ASSERT(numPages < NumPhysPages)
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
@@ -283,8 +280,6 @@ void AddrSpace::addStack() {
 		// pages to be read-only
 	}
 	numPages += 8;
-	//bitmapLock.Release();
-	//	bitmapLock.Release();
 	return;
 #else
 //	bitmapLock.Acquire();
@@ -386,7 +381,6 @@ void AddrSpace::expandTable() {
 		newPageTable[i].diskLocation = pageTable[i].diskLocation;
 	}
 
-	bitmapLock.Acquire();
 	// initialize new empty pages
 	for (unsigned int i = numPages; i < numPages + 8; i++) {
 		// find a physical page number -L
@@ -418,7 +412,6 @@ void AddrSpace::expandTable() {
 //		ipt[ppn].readOnly = FALSE;
 //		ipt[ppn].space = currentThread->space; // space pointers
 	}
-	bitmapLock.Release();
 	numPages += 8;
 	// replace old page table (by reference)
 	//	oldPageTable = newPageTable;

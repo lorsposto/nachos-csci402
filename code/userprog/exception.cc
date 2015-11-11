@@ -624,6 +624,41 @@ void Release_Syscall(int index) {
 }
 
 void Wait_Syscall(int conditionIndex, int lockIndex) {
+
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << conditionIndex << " " << lockIndex;
+	std::string indexStr = ss.str();
+	std::string waitCondition = "7 ";
+
+	std::string message = waitCondition + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Wait Condition: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("WAIT CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return;
+#endif
 	kernelConditionLock.Acquire();
 	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");
@@ -679,6 +714,40 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 }
 
 void Signal_Syscall(int conditionIndex, int lockIndex) {
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << conditionIndex << " " << lockIndex;
+	std::string indexStr = ss.str();
+	std::string signalCondition = "8 ";
+
+	std::string message = signalCondition + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Signal Conditon: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("SIGNAL CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return;
+#endif
 	kernelConditionLock.Acquire();
 	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");
@@ -738,6 +807,40 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 }
 
 void Broadcast_Syscall(int conditionIndex, int lockIndex) {
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << conditionIndex << " " << lockIndex;
+	std::string indexStr = ss.str();
+	std::string broadcastCondition = "9 ";
+
+	std::string message = broadcastCondition + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Broadcast Condition: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("BROADCAST CONDTION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return;
+#endif
 	kernelConditionLock.Acquire();
 	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");
@@ -950,6 +1053,40 @@ int CreateCondition_Syscall(int vaddr, int len) {
 
 	buf[len] = '\0';
 
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << buf;
+	std::string indexStr = ss.str();
+	std::string createCondition = "5 ";
+
+	std::string message = createCondition + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Create Condition: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("CREATE CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return atoi(buffer);
+#endif
 	// Create the new condition variable...
 	kernelConditionLock.Acquire();
 	int createdConditionIndex = kernelConditionIndex;
@@ -966,6 +1103,40 @@ int CreateCondition_Syscall(int vaddr, int len) {
 }
 
 void DestroyCondition_Syscall(int index) {
+#ifdef NETWORK
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = 0;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = 0;
+
+	std::stringstream ss;
+	ss << index;
+	std::string indexStr = ss.str();
+	std::string destroyCondition = "6 ";
+
+	std::string message = destroyCondition + indexStr;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	cout << "Destroy Condition: Sending message: " << message << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	 if ( !success ) {
+  		printf("DESTROY CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+  		interrupt->Halt();
+	}
+
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+	return;
+#endif
 	kernelConditionLock.Acquire();
 	if (index < 0 || index >= kernelConditionIndex) {
 		printf("Invalid condition index.\n");

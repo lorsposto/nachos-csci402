@@ -1777,7 +1777,6 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateLock:
 			printf("CreateLock syscall.\n");
-			// Send_Syscall(/* TODO: fill this in */);
 			rv = CreateLock_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		case SC_DestroyLock:

@@ -81,14 +81,28 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 	outPktHdr.from = 0;
 	outPktHdr.to = inPktHdr.from;
 
-	//this currently does not prevent locks with the same name
 	kernelLockLock.Acquire();
-	int createdLockIndex = kernelLockIndex;
-	kernelLockList[kernelLockIndex].lock = new Lock(lockName);
-	kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
-	kernelLockList[kernelLockIndex].isToBeDeleted = false;
-	// the next new lock's index
-	kernelLockIndex++;
+
+	int createdLockIndex = -1;
+
+	// check if lock with given name already exists
+	for (int i=0; i<kernelLockIndex; i++) {
+		if (strcmp(kernelLockList[i].lock->getName(), lockName) == 0) {
+			createdLockIndex = i;
+			break;
+		}
+	}
+
+	// no lock with given name already exists
+	if (createdLockIndex == -1) {
+		createdLockIndex = kernelLockIndex;
+		kernelLockList[kernelLockIndex].lock = new Lock(lockName);
+		kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
+		kernelLockList[kernelLockIndex].isToBeDeleted = false;
+		// the next new lock's index
+		kernelLockIndex++;
+	}
+
 	kernelLockLock.Release();
 
 	std::stringstream ss;

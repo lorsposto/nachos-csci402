@@ -78,6 +78,7 @@ IV. Implementation:
 		swapfile - file to be opened as the swapfile
 		test/fork_matmult - test to fork 2 instances of matmult
 		test/exec_matmult - test to exec 2 instances of matmult
+		test/testlockname - test to create lock with already existing name
 
 	+ Data Structures added, and the file they were added to.
 		- system.h/cc - 
@@ -193,6 +194,47 @@ V. Testing:
 			Console I/O: reads 0, writes 0
 			Paging: faults 0
 			Network I/O: packets received 0, sent 0
+
+	+ test/testlockname:
+		- tries to create three locks, first is created as usual, second is created as usual, and third has same name as first so the first lock index is returned instead of creating a new lock
+		- Expected output:
+			$: nachos -m 0 -server
+			Got "1 Lock 1" from 1, box 1
+			REQUEST NUMBER: 1
+			Request to Create Lock
+			LOCK NAME:  Lock 1
+			Create Lock Server: Sending message: 0 to 1, box 1
+			Got "1 Lock 2" from 1, box 1
+			REQUEST NUMBER: 1
+			Request to Create Lock
+			LOCK NAME:  Lock 2
+			Create Lock Server: Sending message: 1 to 1, box 1
+			Got "1 Lock 1" from 1, box 1
+			REQUEST NUMBER: 1
+			Request to Create Lock
+			LOCK NAME:  Lock 1
+			Create Lock Server: Sending message: 0 to 1, box 
+
+			$: nachos -m 1 -x ../test/testlockname
+			Prog test
+			testlockname: this test creates three locks to show multiple locks can be created, and two locks with the same name to show that names must be unique.
+			CreateLock syscall.
+			Create Lock: Sending message: 1 Lock 1
+			CreateLock syscall.
+			Create Lock: Sending message: 1 Lock 2
+			CreateLock syscall.
+			Create Lock: Sending message: 1 Lock 1
+			l1 (Lock 1) has index 0
+			l2 (Lock 2) has index 1
+			l3 (Lock 1) has index 0
+			Exit result: 0
+			Machine halting!
+
+			Ticks: total 17890, idle 17323, system 440, user 127
+			Disk I/O: reads 0, writes 0
+			Console I/O: reads 0, writes 0
+			Paging: faults 0
+			Network I/O: packets received 3, sent 3
 
 VI. Discussion:
 	+ Experiment expectation.  (What is supposed to happen.)

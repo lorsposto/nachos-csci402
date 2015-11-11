@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor
+all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -186,7 +186,13 @@ testmonitor.o: testmonitor.c
 	$(CC) $(CFLAGS) -c testmonitor.c
 testmonitor: testmonitor.o start.o
 	$(LD) $(LDFLAGS) start.o testmonitor.o -o testmonitor.coff
-	../bin/coff2noff testmonitor.coff testmonitor	
+	../bin/coff2noff testmonitor.coff testmonitor
+	
+testmonitorbad.o: testmonitorbad.c
+	$(CC) $(CFLAGS) -c testmonitorbad.c
+testmonitorbad: testmonitorbad.o start.o
+	$(LD) $(LDFLAGS) start.o testmonitorbad.o -o testmonitorbad.coff
+	../bin/coff2noff testmonitorbad.coff testmonitorbad	
 
 clean:
 	rm -f *.o *.coff

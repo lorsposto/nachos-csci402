@@ -319,7 +319,7 @@ V. Testing:
 				Request to Destroy Lock
 				Destroying Lock: 0
 				Destroy Lock Server: Sending success message: 1 to 1, box 1
-	+ testconditionbad2
+	+ testconditionbad1
 		- Creates a condition and broadcasts without a valid lock number.
 		- Expected output:
 			- Client
@@ -368,7 +368,7 @@ V. Testing:
 				Destroying Lock: 0
 				Destroy Lock Server: Sending success message: 1 to 1, box 1
 
-	+ test/testlockname:
+	+ testlockname:
 		- tries to create three locks, first is created as usual, second is created as usual, and third has same name as first so the first lock index is returned instead of creating a new lock
 		- Expected output:
 			$: nachos -m 0 -server
@@ -408,8 +408,21 @@ V. Testing:
 			Console I/O: reads 0, writes 0
 			Paging: faults 0
 			Network I/O: packets received 3, sent 3
+	
+	+ testmonitor
+		- Creates a lock, a condition, and a monitor from the previous two, and then forks to get and set the monitor
+		- Expected Output:
+			- Client
+			- Server
+	
+	+ testmonitorbad
+		- Tries to create a monitor with bogus lock and condition values; tries to get on an invalid monitor
+		- Expected Output:
+			- Client
+			- Server
 
 VI. Discussion:
++ Part 1-2
 	+ Experiment expectation.  (What is supposed to happen.)
 		fork_matmult:
 			- Part 1 (NumPhysPages large): matmult should successfully execute two times by being forked as a function. The output each time is printed on exit. 
@@ -429,6 +442,66 @@ VI. Discussion:
 		exec_matmult: 
 			- Part 1 (NumPhysPages large): Because NumPhysPages is large, memory management only needs to utilize the PTs, IPT, and TLB. Because nothing is preloaded into memory initially, we know our implementation of handling page faults is successful as the program is dynamically loaded into memory.
 			- Part 2 (NumPhysPages small): Because NumPhysPages is small, VM utilizes PTs, IPT, and TLB, as well as a swapfile and page eviction when memory is full. Since matmult is larger than the small physical memory size (NumPhysPages == 32), we know that at some point physical memory will run out and page eviction and swap file use will have to take place.
++ Part 3
+	+ Experiment expectation
+		- testlock
+			- The user program Creates, Acquires, Releases, and Destroys a lock
+			- It is expected that the client sends requests for each of these actions and that the server sends successful responses to each because they happen in the right order
+		= testlockbad
+			- Because the user Releases and Acquires a lock in the wrong order, the server should send error reply messages
+		= testcondition1
+			- Because Create, Broadcast, and Acquire on the lock, and Destroy are all called in the correct order, the server should only send success messages.
+		= testcondition2
+			- Because acquire, signal and release are called in the right order, the server should only send success messages
+		= testconditionbad1
+			- When broadcast is called, because the lock number is invalid the server should respond with a failure
+		= testconditionbad2
+			- When the broadcast is called, because the lock was not acquire beforehand, the server should respond with a failure.
+		= testlockname
+			- The last lock creation should return the same index as the first because they have the same name.
+		= testmonitor
+			- 
+		= testmonitorbad
+			-
+	+ Experiment Result
+		- testlock
+			- The server sends successful responses to each resource request.
+		= testlockbad
+			- The server should sends error reply messages for Release and Acquire.
+		= testcondition1
+			- The server sends success messages for each resource request.
+		= testcondition2
+			- The server sends success messages for each resource request.
+		= testconditionbad1
+			- The server sends a failure message when broadcast is called.
+		= testconditionbad2
+			- The server sends a failure message when broadcast is calld.
+		= testlockname
+			- The last lock creation returns the same index as the first because they have the same name.
+		= testmonitor
+			- 
+		= testmonitorbad
+			-
+	+ Explanation
+		- testlock
+			- The server sends successful responses to each resource request because they happen in the right order
+		= testlockbad
+			- The server should sends error reply messages for Release and Acquire because the program tries the Release the lock it has not yet acquired, which is incorrect.
+		= testcondition1
+			- The server sends success messages for each resource request because the program creates, acquires lock, broadcasts, destroys in the correct order.
+		= testcondition2
+			- The server sends success messages for each resource request because the program creates, acquires lock, broadcasts, destroys in the correct order.
+		= testconditionbad1
+			- The server sends a failure message when broadcast is called because the lock index is invalid.
+		= testconditionbad2
+			- The server sends a failure message when broadcast is called because the program must first acquire the lock.
+		= testlockname
+			- The last lock creation returns the same index as the first because they have the same name.
+		= testmonitor
+			- 
+		= testmonitorbad
+			-
+
 
 
 VIII. Miscellaneous:

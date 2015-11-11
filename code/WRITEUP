@@ -194,6 +194,179 @@ V. Testing:
 			Console I/O: reads 0, writes 0
 			Paging: faults 0
 			Network I/O: packets received 0, sent 0
++ Part 3 Tests
+	+ testlock
+		- tests Create, Acquire, Release, Destroy lock
+		- Expected output:
+			- Client:
+				$: nachos -m 1 -x ../test/testlock
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Acquire Lock: Sending message: 3 0
+				Release Lock: Sending message: 4 0
+				Destroy Lock: Sending message: 2 0
+				Exit result: 0
+				Machine halting!
+			- Server
+				$: nachos -m 0 -server
+				Request to Create Lock
+				Creating Lock:  Lock 1
+				Create Lock Server: Sending message: 0 to 1, box 1
+				Request to Acquire Lock
+				Acquiring Lock: 0
+				Acquire Lock Server: Sending success message: 1 to 1, box 1
+				Request to Release Lock
+				Releasing lock: 0
+				Release Lock Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Lock
+				Destroying Lock: 0
+				Destroy Lock Server: Sending success message: 1 to 1, box 1
+	+ testlockbad
+		- tests Creating, then Releasing, then Acquiring a lock (bad order)
+		- Expected output:
+			- Client:
+				testlockbad: this test creates a lock and calls acquire and release in the wrong order.
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Release Lock: Sending message: 4 0
+				Acquire Lock: Sending message: 3 0
+				Destroy Lock: Sending message: 2 0
+				Exit result: 0
+				Machine halting!
+			- Server:
+				Request to Create Lock
+				Creating Lock:  Lock 1
+				Create Lock Server: Sending message: 0 to 1, box 1
+				Request to Release Lock
+				Releasing lock: 0
+				        Non-owner thread main cannot release lock  Lock 1!
+				Release Lock Server: Sending success message: 1 to 1, box 1
+				Request to Acquire Lock
+				Acquiring Lock: 0
+				Acquire Lock Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Lock
+				Destroying Lock: 0
+				Destroy Lock Server: Sending failure message: -1 to 1, box 1
+	+ testcondition1:
+		- testcondition1: this test creates a lock and condition and calls acquire, broadcast, and release in the right order
+		- Expected output:
+			- Client:
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Acquire Lock: Sending message: 3 0
+				Create Condition: Sending message: 5 Condition 1
+				Broadcast Condition: Sending message: 9 0 0
+				Release Lock: Sending message: 4 0
+				Destroy Condition: Sending message: 6 0
+				Destroy Lock: Sending message: 2 0
+				Exit result: 0
+				Machine halting!
+			- Server:
+			Request to Create Lock
+			Creating Lock:  Lock 1
+			Create Lock Server: Sending message: 0 to 1, box 1
+			Request to Acquire Lock
+			Acquiring Lock: 0
+			Acquire Lock Server: Sending success message: 1 to 1, box 1
+			Request to Create Condition
+			Creating condition:  Condition 1
+			Create Condition Server: Sending message: 0 to 1, box 1
+			Request to Broadcast Condition
+			Broadcasting on condition: 0; with lock: 0
+			Broadcast Condition Server: Sending success message: 1 to 1, box 1
+			Request to Release Lock
+			Releasing lock: 0
+			Release Lock Server: Sending success message: 1 to 1, box 1
+			Request to Destroy Condition
+			Destroying condition: 0
+			Destroy Condition Server: Sending success message: 1 to 1, box 1
+			Request to Destroy Lock
+			Destroying Lock: 0
+			Destroy Lock Server: Sending success message: 1 to 1, box 1
+	+ testcondition2:
+		- Creates a lock and condition and calls acquire, signal, and release in the right order.
+		- Expected output:
+			- Client
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Acquire Lock: Sending message: 3 0
+				Create Condition: Sending message: 5 Condition 1
+				Signal Conditon: Sending message: 8 0 0
+				Release Lock: Sending message: 4 0
+				Destroy Condition: Sending message: 6 0
+				Destroy Lock: Sending message: 2 0
+				Exit result: 0
+				Machine halting!
+			- Server
+				Request to Create Lock
+				Creating Lock:  Lock 1
+				Create Lock Server: Sending message: 0 to 1, box 1
+				Request to Acquire Lock
+				Acquiring Lock: 0
+				Acquire Lock Server: Sending success message: 1 to 1, box 1
+				Request to Create Condition
+				Creating condition:  Condition 1
+				Create Condition Server: Sending message: 0 to 1, box 1
+				Request to Signal Condition
+				Signaling on condition: 0; with lock: 0
+				Signal Condition Server: Sending success message: 1 to 1, box 1
+				Request to Release Lock
+				Releasing lock: 0
+				Release Lock Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Condition
+				Destroying condition: 0
+				Destroy Condition Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Lock
+				Destroying Lock: 0
+				Destroy Lock Server: Sending success message: 1 to 1, box 1
+	+ testconditionbad2
+		- Creates a condition and broadcasts without a valid lock number.
+		- Expected output:
+			- Client
+				Create Condition: Sending message: 5 Condition 1
+				Broadcast Condition: Sending message: 9 0 -1
+				Destroy Condition: Sending message: 6 0
+				Exit result: 0
+				Machine halting!
+			- Server
+				Request to Create Condition
+				Creating condition:  Condition 1
+				Create Condition Server: Sending message: 0 to 1, box 1
+				Request to Broadcast Condition
+				Broadcasting on condition: 0; with lock: -1
+				Bad lock index to acquire.
+				Acquire Lock Server: Sending failure message: -1 to 1, box 1
+				Request to Destroy Condition
+				Destroying condition: 0
+				Destroy Condition Server: Sending success message: 1 to 1, box 1
+	+ testconditionbad2
+		- Creates a lock and condition and calls broadcast without acquiring the lock.
+		- Expected output:
+			- Client
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Create Condition: Sending message: 5 Condition 1
+				Broadcast Condition: Sending message: 9 0 0
+				Destroy Condition: Sending message: 6 0
+				Destroy Lock: Sending message: 2 0
+				Exit result: 0
+				Machine halting!
+			- Server
+				Request to Create Lock
+				Creating Lock:  Lock 1
+				Create Lock Server: Sending message: 0 to 1, box 1
+				Request to Create Condition
+				Creating condition:  Condition 1
+				Create Condition Server: Sending message: 0 to 1, box 1
+				Request to Broadcast Condition
+				Broadcasting on condition: 0; with lock: 0
+				Trying to call Broadcast on Lock not owned by mainBroadcast Condition Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Condition
+				Destroying condition: 0
+				Destroy Condition Server: Sending success message: 1 to 1, box 1
+				Request to Destroy Lock
+				Destroying Lock: 0
+				Destroy Lock Server: Sending success message: 1 to 1, box 1
 
 	+ test/testlockname:
 		- tries to create three locks, first is created as usual, second is created as usual, and third has same name as first so the first lock index is returned instead of creating a new lock

@@ -25,7 +25,6 @@
 void
 StartProcess(char *filename)
 {
-	cout << "Prog test" << endl;
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
 

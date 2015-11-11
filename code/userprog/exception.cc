@@ -280,11 +280,54 @@ void Exit_Syscall(int status) {
 	 Reclaim all unreclaimed memory
 	 Locks/CVs (match AddrSpace* w/ Process Table)*/
 //	currentThread->Finish();
+	process * myProcess = processTable[currentThread->space->processIndex];
+#ifdef NETWORK
+	cout << "Exit result: " << status << endl;
+	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
+		//reclaim 8 pages of the stack
+
+		bitmapLock.Acquire();
+
+		//find the beginning of this thread's stack
+		int pageTableIndex = myProcess->threadStacks[currentThread->threadIndex];
+		for (int i = pageTableIndex; i < pageTableIndex + 8; i++) {
+			bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
+		}
+
+		myProcess->numThreadsRunning -= 1;
+
+		bitmapLock.Release();
+		processLock.Release();
+		currentThread->Finish();
+	}
+	else {
+		//we are the last thread in the process
+		if (activeProcesses == 1) { //we are the last process in nachos
+			processLock.Release();
+			activeProcesses--;
+			interrupt->Halt();
+		}
+		else {
+			bitmapLock.Acquire();
+			activeProcesses--;
+
+			//reclaim the entire page table of the process
+			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
+				bitmap.Clear(
+						currentThread->space->getPageTable()[i].physicalPage);
+			}
+
+			bitmapLock.Release();
+			processLock.Release();
+			currentThread->Finish();
+		}
+	}
+	return;
+#endif
 	cout << "Exit result: " << status << endl;
 	processLock.Acquire();
 
 	//find the current thread we are in
-	process * myProcess = processTable[currentThread->space->processIndex];
 	int pp = 0;
 	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
 		//reclaim 8 pages of the stack
@@ -1189,13 +1232,13 @@ int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
-		ss << lockIndex;
+		ss << lockIndex << " ";
 		std::string lockStr = ss.str();
 
 		ss.clear();
 		ss.str("");
 
-		ss << conditionIndex;
+		ss << conditionIndex << " ";
 		std::string conditionStr = ss.str();
 
 		ss.clear();
@@ -1809,7 +1852,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_CreateMonitor:
 			DEBUG('a', "CreateMonitor syscall.\n");
-			CreateMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
+			rv = CreateMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 			break;
 		case SC_DestroyMonitor:
 			DEBUG('a', "DestroyMonitor syscall.\n");
@@ -1821,7 +1864,7 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_GetMonitor:
 			DEBUG('a', "GetMonitor syscall.\n");
-			GetMonitor_Syscall(machine->ReadRegister(4));
+			rv = GetMonitor_Syscall(machine->ReadRegister(4));
 			break;
 		}
 

@@ -281,49 +281,49 @@ void Exit_Syscall(int status) {
 	 Locks/CVs (match AddrSpace* w/ Process Table)*/
 //	currentThread->Finish();
 	process * myProcess = processTable[currentThread->space->processIndex];
-#ifdef NETWORK
-	cout << "Exit result: " << status << endl;
-	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
-		//reclaim 8 pages of the stack
-
-		bitmapLock.Acquire();
-
-		//find the beginning of this thread's stack
-		int pageTableIndex = myProcess->threadStacks[currentThread->threadIndex];
-		for (int i = pageTableIndex; i < pageTableIndex + 8; i++) {
-			bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
-		}
-
-		myProcess->numThreadsRunning -= 1;
-
-		bitmapLock.Release();
-		processLock.Release();
-		currentThread->Finish();
-	}
-	else {
-		//we are the last thread in the process
-		if (activeProcesses == 1) { //we are the last process in nachos
-			processLock.Release();
-			activeProcesses--;
-			interrupt->Halt();
-		}
-		else {
-			bitmapLock.Acquire();
-			activeProcesses--;
-
-			//reclaim the entire page table of the process
-			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
-				bitmap.Clear(
-						currentThread->space->getPageTable()[i].physicalPage);
-			}
-
-			bitmapLock.Release();
-			processLock.Release();
-			currentThread->Finish();
-		}
-	}
-	return;
-#endif
+//#ifdef NETWORK
+//	cout << "Exit result: " << status << endl;
+//	if (myProcess->numThreadsRunning > 1) { //we not the last thread in the process
+//		//reclaim 8 pages of the stack
+//
+//		bitmapLock.Acquire();
+//
+//		//find the beginning of this thread's stack
+//		int pageTableIndex = myProcess->threadStacks[currentThread->threadIndex];
+//		for (int i = pageTableIndex; i < pageTableIndex + 8; i++) {
+//			bitmap.Clear(currentThread->space->getPageTable()[i].physicalPage);
+//		}
+//
+//		myProcess->numThreadsRunning -= 1;
+//
+//		bitmapLock.Release();
+//		processLock.Release();
+//		currentThread->Finish();
+//	}
+//	else {
+//		//we are the last thread in the process
+//		if (activeProcesses == 1) { //we are the last process in nachos
+//			processLock.Release();
+//			activeProcesses--;
+//			interrupt->Halt();
+//		}
+//		else {
+//			bitmapLock.Acquire();
+//			activeProcesses--;
+//
+//			//reclaim the entire page table of the process
+//			for (unsigned int i = 0; i < currentThread->space->numPages; i++) {
+//				bitmap.Clear(
+//						currentThread->space->getPageTable()[i].physicalPage);
+//			}
+//
+//			bitmapLock.Release();
+//			processLock.Release();
+//			currentThread->Finish();
+//		}
+//	}
+//	return;
+//#endif
 	cout << "Exit result: " << status << endl;
 	processLock.Acquire();
 

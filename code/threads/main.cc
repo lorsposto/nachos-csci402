@@ -1705,7 +1705,7 @@ void beServer() {
 		char buffer[MaxMailSize];
 
     	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
-    	 printf("\tGot \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
+//    	 printf("\tGot \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 
       	int requestNumber = -1;
 		int primaryIndex = -1;

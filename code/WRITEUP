@@ -406,13 +406,47 @@ V. Testing:
 		- Creates a lock, a condition, and a monitor from the previous two, and then forks to get and set the monitor
 		- Expected Output:
 			- Client
+				CreateLock syscall.
+				Create Lock: Sending message: 1 Lock 1
+				Create Condition: Sending message: 5 Condition 1
+				Create Monitor: Sending message: 10 0 0 1
+				Exit result: 0
+				Get 0
+				Get Monitor: Sending message: 12 0
+				Set Monitor: Sending message: 13 0
+				Machine halting!
 			- Server
+				Request to Create Lock
+				Creating Lock:  Lock 1
+				Create Lock Server: Sending message: 0 to 1, box 1
+				Request to Create Condition
+				Creating condition:  Condition 1
+				Create Condition Server: Sending message: 0 to 1, box 1
+				Request to Create Monitor
+				Creating monitor: 0
+				Create Monitor Server: Sending message: 0 to 1, box 1
+				Request to Get Monitor
+				Getting monitor: 0
+				Get Monitor Server: Sending success message: 0 to 1, box 1
+				Request to Set Monitor
+				Setting monitor: 0; with value: -1
 	
 	+ testmonitorbad
 		- Tries to create a monitor with bogus lock and condition values; tries to get on an invalid monitor
 		- Expected Output:
 			- Client
+				Create Monitor: Sending message: 10 -1 -1 1
+				Get Monitor: Sending message: 12 -1
+				Exit result: 0
+				Machine halting!
 			- Server
+				Request to Create Monitor
+				Creating monitor: -1
+				Create Monitor Server: Sending message: 0 to 1, box 1
+				Request to Get Monitor
+				Getting monitor: -1
+				Invalid monitor index
+				Get Monitor Server: Sending failure message: -1 to 1, box 1
 
 VI. Discussion:
 + Part 1-2
@@ -453,9 +487,9 @@ VI. Discussion:
 		= testlockname
 			- The last lock creation should return the same index as the first because they have the same name.
 		= testmonitor
-			- 
+			- The server should respond with all success responses
 		= testmonitorbad
-			-
+			- The server should respond with fail responses
 	+ Experiment Result
 		- testlock
 			- The server sends successful responses to each resource request.
@@ -472,9 +506,9 @@ VI. Discussion:
 		= testlockname
 			- The last lock creation returns the same index as the first because they have the same name.
 		= testmonitor
-			- 
+			- The server responds with all success
 		= testmonitorbad
-			-
+			- The server responds with failure
 	+ Explanation
 		- testlock
 			- The server sends successful responses to each resource request because they happen in the right order
@@ -491,9 +525,9 @@ VI. Discussion:
 		= testlockname
 			- The last lock creation returns the same index as the first because they have the same name.
 		= testmonitor
-			- 
+			- All success because Set and Get are being called with valid locks and conditions
 		= testmonitorbad
-			-
+			- Failure because the lock and condition being used to create the monitor are invalid
 
 
 

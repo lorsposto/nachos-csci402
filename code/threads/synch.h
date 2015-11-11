@@ -141,4 +141,17 @@ class Condition {
     List* queue;
     Lock* waitingLock;
 };
+
+
+class Monitor {
+public:
+	Monitor();
+	~Monitor();
+	int Get();
+	void Set(int n);
+private:
+	Condition * condition;
+	Lock * lock;
+	int number;
+};
 #endif // SYNCH_H

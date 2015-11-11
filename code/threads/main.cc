@@ -566,7 +566,7 @@ void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
     }
 }
 
-void WaitCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -645,8 +645,76 @@ void WaitCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 		return;
 	}
+
+	//-- Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || index >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to acquire.\n");
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread\n.",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelLockLock.Release();
 	kernelConditionLock.Release();
-	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[index].condition->getName());
+	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[lockIndex].condition->getName());
 	// kernelConditionList[index].condition->Wait();
 
 	reply = 1;
@@ -667,7 +735,7 @@ void WaitCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 }
 
-void SignalCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -746,6 +814,74 @@ void SignalCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 		return;
 	}
+
+		//-- Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || index >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to acquire.\n");
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread\n.",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Signaling condition %s.\n", kernelConditionList[index].condition->getName());
 	// kernelConditionList[index].condition->Signal();
@@ -767,7 +903,7 @@ void SignalCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
     }
 }
 
-void BroadcastCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -846,6 +982,74 @@ void BroadcastCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 		return;
 	}
+
+		//-- Check lock
+	kernelLockLock.Acquire();
+	if (lockIndex < 0 || index >= kernelLockIndex) {
+		// bad index
+		printf("Bad lock index to acquire.\n");
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].lock == NULL) {
+		printf("No lock at index %i.\n", lockIndex);
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+
+	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
+		printf("Lock %s does not belong to current thread\n.",
+				kernelLockList[lockIndex].lock->getName());
+		kernelLockLock.Release();
+
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
+
+		outMailHdr.length = strlen(intStr) + 1;
+
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+
+		return;
+	}
+	kernelLockLock.Release();
 	kernelConditionLock.Release();
 	DEBUG('t', "Waiting on condition %s.\n", kernelConditionList[index].condition->getName());
 	// kernelConditionList[index].condition->Broadcast();
@@ -898,13 +1102,10 @@ void beServer() {
 		if(requestNumber == 1 || requestNumber == 5) { //creates
 			// get name
 			ss.getline(name, 256);
-			cout << name << endl;
 		}
 		else {
-			cout << ss.str() << endl;
 			ss >> primaryIndex;
 			ss >> secondaryIndex;
-			cout << "P " << primaryIndex << " S " << secondaryIndex << endl;
 		}
     	char* temp = buffer;
     	char* split;
@@ -954,17 +1155,18 @@ void beServer() {
     		case 7:
     			printf("Request to Wait on Condition\n");
     			printf("CONDITION WAIT INDEX: %i\n", primaryIndex);
-    			WaitCondition(primaryIndex, inPktHdr, inMailHdr);
+    			printf("LOCK WAIT INDEX: %i\n", secondaryIndex);
+    			WaitCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case 8:
     			printf("Request to Signal Condition\n");
-    			printf("CONDITION SIGNAL INDEX: %i\n", primaryIndex);
-    			SignalCondition(primaryIndex, inPktHdr, inMailHdr);
+    			printf("LOCK SIGNAL INDEX: %i\n", secondaryIndex);
+    			SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case 9:
     			printf("Request to Broadcast Condition\n");
-    			printf("CONDITION BROADCST INDEX: %i\n", primaryIndex);
-    			BroadcastCondition(primaryIndex, inPktHdr, inMailHdr);
+    			printf("LOCK BROADCAST INDEX: %i\n", secondaryIndex);
+    			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     	}
 

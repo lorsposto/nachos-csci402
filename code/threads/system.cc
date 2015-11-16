@@ -74,7 +74,7 @@ int kernelMonitorIndex = 0;
 Lock kernelMonitorLock("Kernel Monitors Lock");
 
 int NUM_SERVERS = 0;
-vector<Request> requests;
+vector<Request *> requests;
 #endif
 
 #ifdef FILESYS_NEEDED

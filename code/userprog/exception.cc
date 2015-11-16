@@ -553,7 +553,10 @@ void Acquire_Syscall(int index) {
 		std::stringstream ss;
 		ss << index;
 		std::string indexStr = ss.str();
-		std::string acquireLock = "3 ";
+//		std::string acquireLock = "3 ";
+		char b[5];
+		sprintf(b, "%i ", ACQUIRELOCK);
+		std::string acquireLock(b);
 
 		std::string message = acquireLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -615,7 +618,10 @@ void Release_Syscall(int index) {
 		std::stringstream ss;
 		ss << index;
 		std::string indexStr = ss.str();
-		std::string releaseLock = "4 ";
+//		std::string releaseLock = "4 ";
+		char b[5];
+		sprintf(b, "%i ", RELEASELOCK);
+		std::string releaseLock(b);
 
 		std::string message = releaseLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -681,7 +687,10 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	std::stringstream ss;
 	ss << conditionIndex << " " << lockIndex;
 	std::string indexStr = ss.str();
-	std::string waitCondition = "7 ";
+//	std::string waitCondition = "7 ";
+	char b[5];
+	sprintf(b, "%i ", WAITCOND);
+	std::string waitCondition(b);
 
 	std::string message = waitCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -770,7 +779,10 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 	std::stringstream ss;
 	ss << conditionIndex << " " << lockIndex;
 	std::string indexStr = ss.str();
-	std::string signalCondition = "8 ";
+//	std::string signalCondition = "8 ";
+	char b[5];
+	sprintf(b, "%i ", SIGNALCOND);
+	std::string signalCondition(b);
 
 	std::string message = signalCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -863,7 +875,10 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 	std::stringstream ss;
 	ss << conditionIndex << " " << lockIndex;
 	std::string indexStr = ss.str();
-	std::string broadcastCondition = "9 ";
+//	std::string broadcastCondition = "9 ";
+	char b[5];
+	sprintf(b, "%i ", BROADCASTCOND);
+	std::string broadcastCondition(b);
 
 	std::string message = broadcastCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -971,7 +986,10 @@ int CreateLock_Syscall(int vaddr, int len) {
 		std::stringstream ss;
 		ss << buf;
 		std::string nameStr = ss.str();
-		std::string createLock = "1 ";
+		char b[5];
+		sprintf(b, "%i ", CREATELOCK);
+		std::string createLock(b);
+//		std::string createLock = "1 ";
 
 		std::string message = createLock + nameStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1024,7 +1042,10 @@ void DestroyLock_Syscall(int index) {
 		std::stringstream ss;
 		ss << index;
 		std::string indexStr = ss.str();
-		std::string destroyLock = "2 ";
+		char b[5];
+		sprintf(b, "%i ", DESTROYLOCK);
+		string destroyLock(b);
+//		std::string destroyLock = "2 ";
 
 		std::string message = destroyLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1109,7 +1130,10 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	std::stringstream ss;
 	ss << buf;
 	std::string indexStr = ss.str();
-	std::string createCondition = "5 ";
+//	std::string createCondition = "5 ";
+	char b[5];
+	sprintf(b, "%i ", CREATECOND);
+	std::string createCondition(b);
 
 	std::string message = createCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1159,7 +1183,10 @@ void DestroyCondition_Syscall(int index) {
 	std::stringstream ss;
 	ss << index;
 	std::string indexStr = ss.str();
-	std::string destroyCondition = "6 ";
+//	std::string destroyCondition = "6 ";
+	char b[5];
+	sprintf(b, "%i ", DESTROYCOND);
+	std::string destroyCondition(b);
 
 	std::string message = destroyCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1247,7 +1274,10 @@ int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
 		ss << maxIndex;
 		std::string maxStr = ss.str();
 
-		std::string createMonitor = "10 ";
+//		std::string createMonitor = "10 ";
+		char b[5];
+		sprintf(b, "%i ", CREATEMV);
+		std::string createMonitor(b);
 
 		std::string message = createMonitor + lockStr + conditionStr + maxStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1289,7 +1319,10 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		std::stringstream ss;
 		ss << monitorIndex;
 		std::string indexStr = ss.str();
-		std::string destroyMonitor = "11 ";
+//		std::string destroyMonitor = "11 ";
+		char b[5];
+		sprintf(b, "%i ", DESTROYCOND);
+		std::string destroyMonitor(b);
 
 		std::string message = destroyMonitor + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1334,7 +1367,10 @@ int GetMonitor_Syscall(int monitorIndex) {
 	std::stringstream ss;
 	ss << monitorIndex;
 	std::string indexStr = ss.str();
-	std::string getMonitor = "12 ";
+//	std::string getMonitor = "12 ";
+	char b[5];
+	sprintf(b, "%i ", GETMV);
+	std::string getMonitor(b);
 
 	std::string message = getMonitor + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
@@ -1448,7 +1484,10 @@ int SetMonitor_Syscall(int monitorIndex, int value) {
 	std::stringstream ss;
 	ss << monitorIndex;
 	std::string indexStr = ss.str();
-	std::string getMonitor = "13 ";
+//	std::string getMonitor = "13 ";
+	char b[5];
+	sprintf(b, "%i ", SETMV);
+	std::string getMonitor(b);
 
 	std::string message = getMonitor + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;

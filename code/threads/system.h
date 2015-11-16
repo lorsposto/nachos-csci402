@@ -127,12 +127,25 @@ struct Request {
 	enum Status {
 		PENDING, COMPLETE
 	};
-	Status state;
+	Status status;
 	// one slot response for each  machine by index of machine
 	int * responses; // = new int[NUM_SERVERS]
 };
+const int CREATELOCK = 1;
+const int DESTROYLOCK = 2;
+const int ACQUIRELOCK = 3;
+const int RELEASELOCK = 4;
+const int CREATECOND = 5;
+const int DESTROYCOND = 6;
+const int WAITCOND = 7;
+const int SIGNALCOND = 8;
+const int BROADCASTCOND = 9;
+const int CREATEMV = 10;
+const int DESTROYMV = 11;
+const int GETMV = 12;
+const int SETMV = 13;
 extern int NUM_SERVERS;
-extern vector<Request> requests;
+extern vector<Request *> requests;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

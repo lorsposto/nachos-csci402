@@ -70,6 +70,8 @@ extern void Part2(void), TestSuite(void), PassportOffice(void);
 
 
 #ifdef NETWORK
+
+int askOtherServers(int, void*, void*);
 void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
@@ -92,6 +94,9 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 			break;
 		}
 	}
+
+	// PART 4: check if other servers have lock with name
+	createdLockIndex = askOtherServers(CREATELOCK, (void *)lockName, NULL);
 
 	// no lock with given name already exists
 	if (createdLockIndex == -1) {
@@ -1695,6 +1700,10 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 	PacketHeader inPktHdr, outPktHdr;
 	MailHeader inMailHdr, outMailHdr;
 
+	Request * r = new Request;
+	r->status = Request::PENDING;
+	r->responses = new int[NUM_SERVERS];
+	requests.push_back(r);
 
 	for (int i=0; i < NUM_SERVERS; ++i) {
 		if (i != machineNum) {
@@ -1730,6 +1739,7 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 			char buffer[MaxMailSize];
 
 			//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+			// await response
 	    	postOffice->Receive(i, &inPktHdr, &inMailHdr, buffer);
 		}
 	}
@@ -1788,70 +1798,70 @@ void beServer() {
     			printf("Unrecognized request: %s\n", split);
     			ASSERT(false);
     			break;
-    		case 1:
+    		case CREATELOCK:
     			printf("Request to Create Lock\n");
     			printf("Creating Lock: %s\n", name);
     			CreateLock(name, inPktHdr, inMailHdr);
     			break;
-    		case 2:
+    		case DESTROYLOCK:
     			printf("Request to Destroy Lock\n");
     			printf("Destroying Lock: %i\n", primaryIndex);
     			DestroyLock(primaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 3:
+    		case ACQUIRELOCK:
     			printf("Request to Acquire Lock\n");
     			printf("Acquiring Lock: %i\n", primaryIndex);
     			AcquireLock(primaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 4:
+    		case RELEASELOCK:
     			printf("Request to Release Lock\n");
     			printf("Releasing lock: %i\n", primaryIndex);
     			ReleaseLock(primaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 5:
+    		case CREATECOND:
     			printf("Request to Create Condition\n");
     			printf("Creating condition: %s\n", name);
     			CreateCondition(name, inPktHdr, inMailHdr);
     			break;
-    		case 6:
+    		case DESTROYCOND:
     			printf("Request to Destroy Condition\n");
     			printf("Destroying condition: %i\n", primaryIndex);
     			DestroyCondition(primaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 7:
+    		case WAITCOND:
     			printf("Request to Wait on Condition\n");
     			printf("Waiting on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
     			WaitCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 8:
+    		case SIGNALCOND:
     			printf("Request to Signal Condition\n");
     			printf("Signaling on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
     			SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 9:
+    		case BROADCASTCOND:
     			printf("Request to Broadcast Condition\n");
     			printf("Broadcasting on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
     			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 10:
+    		case CREATEMV:
     			printf("Request to Create Monitor\n");
     			printf("Creating monitor: %i\n", primaryIndex);
     			CreateMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 11:
+    		case DESTROYMV:
     			printf("Request to Destroy Monitor\n");
     			printf("Destroying monitor: %d\n", primaryIndex);
     			DestroyMonitor(primaryIndex, inPktHdr, inMailHdr);
     			break;
-    		case 12:
+    		case GETMV:
     			printf("Request to Get Monitor\n");
     			printf("Getting monitor: %i\n", primaryIndex);
     			GetMonitor(primaryIndex, inPktHdr, inMailHdr);
     			break;
-			case 13:
+			case SETMV:
 				printf("Request to Set Monitor\n");
 				printf("Setting monitor: %i; ", primaryIndex);
     			printf("with value: %i\n", secondaryIndex);

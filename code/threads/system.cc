@@ -33,6 +33,13 @@ char * swapFileName = "../swapfile";
 BitMap swapFileBM(10000000);
 Lock swapLock("Swap file lock");
 
+//----- NEW PASSPORT OFFICE SHIT ----------
+//class PassportOffice : PostOffice {
+	// not sure if we need this i have something vague in my notes
+//};
+
+//-----------------------------------------
+
 #ifdef USER_PROGRAM	// requires either FILESYS or FILESYS_STUB
 Machine *machine;	// user program memory and registers
 BitMap bitmap(NumPhysPages);
@@ -65,6 +72,9 @@ const int NUM_KERNEL_MONITORS = 1000;
 kernelMonitor kernelMonitorList[NUM_KERNEL_MONITORS];
 int kernelMonitorIndex = 0;
 Lock kernelMonitorLock("Kernel Monitors Lock");
+
+int NUM_SERVERS = 0;
+vector<Request> requests;
 #endif
 
 #ifdef FILESYS_NEEDED

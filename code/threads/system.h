@@ -16,7 +16,8 @@
 #include "interrupt.h"
 #include "stats.h"
 #include "timer.h"
-#include "machine.h"
+#include <vector>
+using namespace std;
 
 // Initialization and cleanup routines
 extern void Initialize(int argc, char **argv); 	// Initialization,
@@ -53,6 +54,12 @@ public:
 extern IPTEntry ipt[];
 extern Lock iptLock;
 extern Lock pageTableLock;
+
+//----- NEW PASSPORT OFFICE SHIT ----------
+// not sure if we need this i have something vague in my notes
+class PassportOffice;
+
+//-----------------------------------------
 #ifdef USER_PROGRAM
 #include "../userprog/bitmap.h"
 #include "machine.h"
@@ -114,6 +121,18 @@ extern kernelMonitor kernelMonitorList[];
 extern int kernelMonitorIndex;
 extern const int NUM_KERNEL_MONITORS;
 extern Lock kernelMonitorLock;
+
+
+struct Request {
+	enum Status {
+		PENDING, COMPLETE
+	};
+	Status state;
+	// one slot response for each  machine by index of machine
+	int * responses; // = new int[NUM_SERVERS]
+};
+extern int NUM_SERVERS;
+extern vector<Request> requests;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

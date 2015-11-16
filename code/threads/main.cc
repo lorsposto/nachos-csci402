@@ -105,7 +105,7 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	kernelLockLock.Release();
 
-	std::stringstream ss;
+	stringstream ss;
 	ss << createdLockIndex;
 	const char* intStr = ss.str().c_str();
 
@@ -142,7 +142,7 @@ void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 		printf("Bad lock index to destroy.\n");
 		kernelLockLock.Release();
 
-		std::stringstream ss;
+		stringstream ss;
 		ss << reply;
 		const char* intStr = ss.str().c_str();
 
@@ -1689,6 +1689,53 @@ void SetMonitor(int monitorIndex, int value, PacketHeader inPktHdr, MailHeader i
 
 }
 
+// code is syscall code, index is resource index if applicable
+// pass null if not applicable
+int askOtherServers(int code, void* arg1, void* arg2) {
+	PacketHeader inPktHdr, outPktHdr;
+	MailHeader inMailHdr, outMailHdr;
+
+
+	for (int i=0; i < NUM_SERVERS; ++i) {
+		if (i != machineNum) {
+			outMailHdr.from = machineNum;
+			outMailHdr.to = i;
+
+			outPktHdr.from = machineNum;
+			outPktHdr.to = i;
+
+			std::stringstream ss;
+			// TODO assuming these are ints for now (check code)
+			ss << *(static_cast<int*>(arg1));
+			if (arg2) {
+				ss << " " << *(static_cast<int*>(arg2));
+			}
+			std::string indexStr = ss.str();
+			char buf[5];
+			sprintf(buf, "%i ", code);
+			string codeString(buf);
+
+			string message = codeString + indexStr;
+			outMailHdr.length = strlen(message.c_str()) + 1;
+			cout << "Code " << code << ": Sending message to other server " << i << ": " << message << endl;
+			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+			 if ( !success ) {
+	      		printf("CODE %i to Server %i: The Server query failed. You must not have the other Nachos running. Terminating Nachos.\n", code, i);
+	      		interrupt->Halt();
+	    	}
+
+//	    	PacketHeader inPktHdr;
+//			MailHeader inMailHdr;
+			char buffer[MaxMailSize];
+
+			//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	    	postOffice->Receive(i, &inPktHdr, &inMailHdr, buffer);
+		}
+	}
+	return 0;
+}
+
 //maybe should not be in main.cc
 void beServer() {
 	/*while(true) {
@@ -1712,7 +1759,7 @@ void beServer() {
 		int secondaryIndex = -1;
 		int tertiaryIndex = -1;
 		char name[256];
-		std::stringstream ss;
+		stringstream ss;
 		ss << buffer;
 		ss.flush();
 		ss >> requestNumber;
@@ -1919,7 +1966,11 @@ int main(int argc, char **argv) {
 			MailTest(atoi(*(argv + 1)));
 			argCount = 2;
 		}
+		// this now takes an argument to define the number of servers
 		if (!strcmp(*argv, "-server")) {
+			ASSERT(argc > 1);
+			NUM_SERVERS = atoi(*(argv + 1));
+			cout << "The total number of servers is: " << NUM_SERVERS << endl;
 			beServer();
 		}
 #endif // NETWORK

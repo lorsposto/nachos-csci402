@@ -100,7 +100,7 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	// no lock with given name already exists
 	if (createdLockIndex == -1) {
-		createdLockIndex = kernelLockIndex;
+		createdLockIndex = kernelLockIndex + 100*machineNum;
 		kernelLockList[kernelLockIndex].lock = new Lock(lockName);
 		kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
 		kernelLockList[kernelLockIndex].isToBeDeleted = false;
@@ -127,7 +127,7 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
     }
 }
 
-void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -161,7 +161,7 @@ void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].lock == NULL) {
@@ -182,7 +182,7 @@ void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].lock->isBusy()) {
@@ -205,7 +205,7 @@ void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (!kernelLockList[index].lock->isBusy()
@@ -231,9 +231,10 @@ void DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
       printf("DESTROY LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
+     return index;
 }
 
-void AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -267,7 +268,7 @@ void AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].lock == NULL) {
@@ -288,7 +289,7 @@ void AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].addrsp != currentThread->space) {
@@ -310,7 +311,7 @@ void AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	kernelLockLock.Release();
 	DEBUG('t', "Acquiring lock %s.\n", kernelLockList[index].lock->getName());
@@ -331,10 +332,10 @@ void AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
       printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-
+     return index;
 }
 
-void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 
 	PacketHeader outPktHdr;
@@ -369,7 +370,7 @@ void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].lock == NULL) {
@@ -390,7 +391,7 @@ void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[index].addrsp != currentThread->space) {
@@ -412,7 +413,7 @@ void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	kernelLockLock.Release();
 	DEBUG('t', "Releasing lock %s.\n", kernelLockList[index].lock->getName());
@@ -437,6 +438,7 @@ void ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
       printf("RELEASE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
+     return index;
 }
 
 // -- CONDITIONS -- //
@@ -453,7 +455,7 @@ void CreateCondition(char* conditionName, PacketHeader inPktHdr, MailHeader inMa
 
 	//this currently does not prevent locks with the same name
 	kernelConditionLock.Acquire();
-	int createdConditionIndex = kernelConditionIndex;
+	int createdConditionIndex = kernelConditionIndex + 100*machineNum;
 	kernelConditionList[kernelConditionIndex].condition = new Condition(conditionName);
 	kernelConditionList[kernelConditionIndex].addrsp = currentThread->space; // #userprog
 	kernelConditionList[kernelConditionIndex].isToBeDeleted = false;
@@ -478,7 +480,7 @@ void CreateCondition(char* conditionName, PacketHeader inPktHdr, MailHeader inMa
     }
 }
 
-void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -512,7 +514,7 @@ void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].condition == NULL) {
@@ -533,7 +535,7 @@ void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	// busy if someone in wait queue
@@ -557,7 +559,7 @@ void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].condition->isQueueEmpty()
@@ -583,9 +585,10 @@ void DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
       printf("DESTROY Condition: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
+     return index;
 }
 
-void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -619,7 +622,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].condition == NULL) {
@@ -640,7 +643,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].addrsp != currentThread->space) {
@@ -662,7 +665,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	//-- Check lock
@@ -686,7 +689,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
@@ -707,7 +710,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
@@ -729,7 +732,7 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
@@ -751,10 +754,10 @@ void WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader i
       printf("WAIT CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-
+     return index;
 }
 
-void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -788,7 +791,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].condition == NULL) {
@@ -809,7 +812,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].addrsp != currentThread->space) {
@@ -831,7 +834,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 		//-- Check lock
@@ -855,7 +858,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
@@ -876,7 +879,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
@@ -898,7 +901,7 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
@@ -920,9 +923,10 @@ void SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader
       printf("SIGNAL CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
+     return index;
 }
 
-void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -956,7 +960,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].condition == NULL) {
@@ -977,7 +981,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelConditionList[index].addrsp != currentThread->space) {
@@ -999,7 +1003,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 		//-- Check lock
@@ -1023,7 +1027,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].lock == NULL) {
@@ -1044,7 +1048,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
@@ -1066,7 +1070,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	kernelLockLock.Release();
 	kernelConditionLock.Release();
@@ -1088,7 +1092,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
       printf("BROADCAST CONDITION: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-
+     return index;
 }
 
 void CreateMonitor(char* name, int size, PacketHeader inPktHdr, MailHeader inMailHdr)
@@ -1131,7 +1135,7 @@ void CreateMonitor(char* name, int size, PacketHeader inPktHdr, MailHeader inMai
 
 }
 
-void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1165,7 +1169,7 @@ void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelMonitorList[index].monitor == NULL) {
@@ -1186,7 +1190,7 @@ void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 
 	if (kernelMonitorList[kernelMonitorIndex].isToBeDeleted) {
@@ -1210,6 +1214,7 @@ void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
       printf("DESTROY MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
+     return index;
 }
 
 void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeader inMailHdr)
@@ -1245,7 +1250,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      interrupt->Halt();
 	    }
 
-		return;
+		return -1;
 	}
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
@@ -1263,7 +1268,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return;
+		return -1;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
@@ -1283,7 +1288,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return;
+		return -1;
 	}
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
@@ -1303,7 +1308,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
       printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-
+     return monitorIndex;
 }
 
 void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
@@ -1321,7 +1326,6 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
 	int reply = -1;
 
 	kernelMonitorLock.Acquire();
-	
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
 		kernelMonitorLock.Release();
@@ -1339,7 +1343,7 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
 	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return;
+		return -1;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
@@ -1359,7 +1363,7 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
 	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return;
+		return -1;
 	}
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
@@ -1380,18 +1384,41 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
       printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-
+     return monitorIndex;
 }
 
 // code is syscall code, index is resource index if applicable
 // pass null if not applicable
 int askOtherServers(int code, void* arg1, void* arg2) {
-	PacketHeader inPktHdr, outPktHdr;
-	MailHeader inMailHdr, outMailHdr;
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
 
 	Request * r = new Request;
 	r->status = Request::PENDING;
 	r->responses = new int[NUM_SERVERS];
+//	if (code == CREATELOCK || code == CREATECOND) {
+//		char * arg2s;
+//		if (!arg2) {
+//			arg2s = "null";
+//		}
+//		sprintf(&r->msg, "%i %s %s", code, static_cast<char*>(arg1), arg2s);
+//	}
+//	else {
+//		char * arg2s;
+//		if (!arg2) {
+//			arg2s = "null";
+//		}
+//		sprintf(&r->msg, "%i %i %s", code, static_cast<int*>(arg1), arg2s);
+//	}
+
+	// search for duplicates
+//	for(std::vector<Request *>::iterator it = requests.begin(); it != requests.end(); ++it) {
+//		if (strcmp(r->msg, *it->msg) && *it->status == Request::PENDING) {
+//			cout << "Found duplicate pending request" << endl;
+//			return -1;
+//		}
+//	}
+
 	requests.push_back(r);
 
 	for (int i=0; i < NUM_SERVERS; ++i) {
@@ -1403,17 +1430,21 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 			outPktHdr.to = i;
 
 			std::stringstream ss;
-			// TODO assuming these are ints for now (check code)
-			ss << *(static_cast<int*>(arg1));
+			if (code == CREATELOCK || code == CREATECOND) {
+				ss << (static_cast<char*>(arg1));
+			}
+			else {
+				ss << *(static_cast<int*>(arg1));
+			}
 			if (arg2) {
 				ss << " " << *(static_cast<int*>(arg2));
 			}
-			std::string indexStr = ss.str();
+			std::string indexStr = ss.str(); // aka resource id
 			char buf[5];
 			sprintf(buf, "%i ", code);
 			string codeString(buf);
 
-			string message = codeString + indexStr;
+			string message = "500 " + codeString + indexStr;
 			outMailHdr.length = strlen(message.c_str()) + 1;
 			cout << "Code " << code << ": Sending message to other server " << i << ": " << message << endl;
 			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
@@ -1423,16 +1454,191 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 	      		interrupt->Halt();
 	    	}
 
-//	    	PacketHeader inPktHdr;
-//			MailHeader inMailHdr;
+	    	PacketHeader inPktHdr;
+			MailHeader inMailHdr;
 			char buffer[MaxMailSize];
 
 			//imo we should have a receive here just to make sure the action finishes on the server b4 returning
 			// await response
-	    	postOffice->Receive(i, &inPktHdr, &inMailHdr, buffer);
+	    	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
+
+	    	// TODO receive
+	    	int rcode = -1;
+	    	int syscode = -1;
+	    	int status = -1;
+	    	cout << "Response: " << buffer << endl;
+	    	stringstream sss;
+	    	sss << buffer;
+	    	sss >> rcode >> syscode >> status;
+	    	if (rcode != SERVERRESPONSE) {
+	    		cout << "MESSAGE RECEIVED NOT A SERVER RESPONSE" << endl;
+	    		ASSERT(FALSE);
+	    	}
+	    	if (syscode != CREATELOCK) {
+	    		cout << "MESSAGE RECEIVED NOT CREATE LOCK" << endl;
+	    		ASSERT(FALSE);
+	    	}
+	    	r->responses[i] = status;
+	    	cout << "Status " << status << endl;
 		}
 	}
-	return 0;
+	int no = 0;
+	int yes = 0;
+	int yindex = -1;
+	for (int i=0; i < NUM_SERVERS; ++i) {
+		if (i != machineNum) {
+			if (r->responses[i] > 0) {
+				yes++;
+				yindex = i;
+			}
+			else {
+				no++;
+			}
+		}
+	}
+	if (yes == 1 && no == NUM_SERVERS-2) {
+		cout << "Another server had the resource" << endl;
+		return r->responses[yindex];
+	}
+	cout << "Resource not found at another server" << endl;
+	return -1;
+}
+
+void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
+	stringstream ss;
+	ss << msg;
+	int requestNumber = -1;
+	int primaryIndex = -1;
+	int secondaryIndex = -1;
+	int tertiaryIndex = -1;
+	ss >> requestNumber;
+
+	char name[256];
+	if (requestNumber == CREATELOCK || requestNumber == CREATECOND) {
+		ss.getline(name, 256);
+	} else {
+		ss >> primaryIndex;
+		ss >> secondaryIndex;
+		ss >> tertiaryIndex;
+	}
+	int index = -1;
+
+	switch(requestNumber) {
+		default:
+			printf("Unrecognized request: %s\n", msg);
+			ASSERT(false);
+			break;
+		case CREATELOCK:
+			printf("Request to Create Lock\n");
+			printf("Creating Lock: %s\n", name);
+//			CreateLock(name, inPktHdr, inMailHdr);
+			index = -1;
+			for (int i=0; i<kernelLockIndex; i++) {
+				if (strcmp(kernelLockList[i].lock->getName(), name) == 0) {
+					index = i;
+					break;
+				}
+			}
+			break;
+		case DESTROYLOCK:
+			printf("Request to Destroy Lock\n");
+			printf("Destroying Lock: %i\n", primaryIndex);
+			index = DestroyLock(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case ACQUIRELOCK:
+			printf("Request to Acquire Lock\n");
+			printf("Acquiring Lock: %i\n", primaryIndex);
+			index = AcquireLock(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case RELEASELOCK:
+			printf("Request to Release Lock\n");
+			printf("Releasing lock: %i\n", primaryIndex);
+			index = ReleaseLock(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case CREATECOND:
+			printf("Request to Create Condition\n");
+			printf("Creating condition: %s\n", name);
+//			CreateCondition(name, inPktHdr, inMailHdr);
+			index = -1;
+			for (int i=0; i<kernelConditionIndex; i++) {
+				if (strcmp(kernelConditionList[i].condition->getName(), name) == 0) {
+					index = i;
+					break;
+				}
+			}
+			break;
+		case DESTROYCOND:
+			printf("Request to Destroy Condition\n");
+			printf("Destroying condition: %i\n", primaryIndex);
+			index = DestroyCondition(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case WAITCOND:
+			printf("Request to Wait on Condition\n");
+			printf("Waiting on condition: %i; ", primaryIndex);
+			printf("with lock: %i\n", secondaryIndex);
+			index = WaitCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			break;
+		case SIGNALCOND:
+			printf("Request to Signal Condition\n");
+			printf("Signaling on condition: %i; ", primaryIndex);
+			printf("with lock: %i\n", secondaryIndex);
+			index = SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			break;
+		case BROADCASTCOND:
+			printf("Request to Broadcast Condition\n");
+			printf("Broadcasting on condition: %i; ", primaryIndex);
+			printf("with lock: %i\n", secondaryIndex);
+			index = BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			break;
+		case CREATEMV:
+			printf("Request to Create Monitor\n");
+			printf("Creating monitor: %i\n", primaryIndex);
+//			CreateMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+//			index = -1;
+//			for (int i=0; i<kernelMonitorIndex; i++) {
+//				if (strcmp(kernelMonitorList[i].monitor->getName(), name) == 0) {
+//					index = i;
+//					break;
+//				}
+//			}
+			break;
+		case DESTROYMV:
+			printf("Request to Destroy Monitor\n");
+			printf("Destroying monitor: %d\n", primaryIndex);
+			index = DestroyMonitor(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case GETMV:
+			printf("Request to Get Monitor\n");
+			printf("Getting monitor: %i\n", primaryIndex);
+			index = GetMonitor(primaryIndex, inPktHdr, inMailHdr);
+			break;
+		case SETMV:
+			printf("Request to Set Monitor\n");
+			printf("Setting monitor: %i; ", primaryIndex);
+			printf("with value: %i\n", secondaryIndex);
+			index = SetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			break;
+	}
+	// send reply to other server
+	PacketHeader outPktHdr;
+	MailHeader outMailHdr;
+
+	outMailHdr.from = machineNum;
+	outMailHdr.to = inMailHdr.from;
+
+	outPktHdr.from = machineNum;
+	outPktHdr.to = inPktHdr.from;
+
+	stringstream sss;
+	sss << "501 " << requestNumber << " " << index;
+	string message = sss.str();
+	cout << "Replying to server query with: " << message << endl;
+	outMailHdr.length = strlen(message.c_str()) + 1;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+	 if ( !success ) {
+ 		printf("The Server reply failed. You must not have the other Nachos running. Terminating Nachos.\n");
+ 		interrupt->Halt();
+	}
 }
 
 //maybe should not be in main.cc
@@ -1450,7 +1656,7 @@ void beServer() {
 		MailHeader inMailHdr;
 		char buffer[MaxMailSize];
 
-    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
 //    	 printf("\tGot \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 
       	int requestNumber = -1;
@@ -1463,7 +1669,8 @@ void beServer() {
 		ss.flush();
 		ss >> requestNumber;
 
-		if(requestNumber == CREATELOCK || requestNumber == CREATECOND) { //creates
+		if(requestNumber == CREATELOCK || requestNumber == CREATECOND
+				|| requestNumber == SERVERMSG) { //creates
 			// get name
 			ss.getline(name, 256);
 		}
@@ -1476,10 +1683,10 @@ void beServer() {
 			ss >> secondaryIndex;
 			ss >> tertiaryIndex;
 		}
-    	char* temp = buffer;
-    	char* split;
-
-    	split = strtok(temp, " ");
+//    	char* temp = buffer;
+//    	char* split;
+//
+//    	split = strtok(temp, " ");
 
     	//first number
 //    	int requestNumber = atoi(split);
@@ -1488,7 +1695,7 @@ void beServer() {
 
     	switch(requestNumber) {
     		default:
-    			printf("Unrecognized request: %s\n", split);
+    			printf("Unrecognized request: %s\n", buffer);
     			ASSERT(false);
     			break;
     		case CREATELOCK:
@@ -1559,6 +1766,12 @@ void beServer() {
 				printf("Setting monitor: %i; ", primaryIndex);
     			printf("with value: %i\n", secondaryIndex);
     			SetMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+				break;
+			case SERVERMSG:
+				cout << "Received server message" << endl;
+				// here name contains the whole rest of the message besides the 500 code
+				// todo fork this
+				receiveServerMsg(name, inPktHdr, inMailHdr);
 				break;
     	}
 

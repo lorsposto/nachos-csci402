@@ -113,6 +113,7 @@ extern const int NUM_KERNEL_CONDITIONS;
 extern Lock kernelConditionLock;
 
 struct kernelMonitor {
+	int num;
 	Monitor * monitor;
 	AddrSpace * addrsp;
 	bool isToBeDeleted;
@@ -130,6 +131,7 @@ struct Request {
 	Status status;
 	// one slot response for each  machine by index of machine
 	int * responses; // = new int[NUM_SERVERS]
+	char * msg;
 };
 const int CREATELOCK = 1;
 const int DESTROYLOCK = 2;
@@ -144,6 +146,8 @@ const int CREATEMV = 10;
 const int DESTROYMV = 11;
 const int GETMV = 12;
 const int SETMV = 13;
+const int SERVERMSG = 500;
+const int SERVERRESPONSE = 501;
 extern int NUM_SERVERS;
 extern vector<Request *> requests;
 #endif

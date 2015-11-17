@@ -1422,58 +1422,8 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 		return 0;
 	}
 
-	kernelConditionLock.Acquire();
-	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
-		printf("Invalid condition index.\n");
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelConditionList[conditionIndex].condition == NULL) {
-		printf("No condition at index %i.\n", conditionIndex);
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelConditionList[conditionIndex].condition->getName());
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
-	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
-
-	// Check lock
-	kernelLockLock.Acquire();
-	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
-		// bad index
-		printf("Bad lock index to broadcast.\n");
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelLockList[lockIndex].lock == NULL) {
-		printf("No lock at index %i.\n", lockIndex);
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
-		printf("Lock %s does not belong to current thread.\n",
-				kernelLockList[lockIndex].lock->getName());
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
 	DEBUG('t', "Getting Monitor [%i].\n", monitorIndex);
-	retVal = kernelMonitorList[monitorIndex].monitor->number;
-	kernelLockLock.Release();
-	kernelConditionLock.Release();
+	retVal = kernelMonitorList[monitorIndex].monitor->getVal(position);
 	kernelMonitorLock.Release();
 	return retVal;
 }
@@ -1538,58 +1488,8 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 		return 0;
 	}
 
-	kernelConditionLock.Acquire();
-	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
-		printf("Invalid condition index.\n");
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelConditionList[conditionIndex].condition == NULL) {
-		printf("No condition at index %i.\n", conditionIndex);
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelConditionList[conditionIndex].condition->getName());
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
-	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
-
-	// Check lock
-	kernelLockLock.Acquire();
-	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
-		// bad index
-		printf("Bad lock index to broadcast.\n");
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelLockList[lockIndex].lock == NULL) {
-		printf("No lock at index %i.\n", lockIndex);
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
-	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
-		printf("Lock %s does not belong to current thread.\n",
-				kernelLockList[lockIndex].lock->getName());
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		return 0;
-	}
-
 	DEBUG('t', "Setting Monitor [%i].\n", monitorIndex);
-	kernelMonitorList[monitorIndex].monitor->number = value;
-	kernelLockLock.Release();
-	kernelConditionLock.Release();
+	kernelMonitorList[monitorIndex].monitor->setVal(position, value);
 	kernelMonitorLock.Release();
 	return 0;
 }

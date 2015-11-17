@@ -167,7 +167,7 @@ int CreateCondition(char* name, int len);
 /* Destroy condition variable. */
 void DestroyCondition(int index);
 
-int CreateMonitor(int lock, int condition, int target, int size);
+int CreateMonitor(char* name, int len, int size);
 
 void DestroyMonitor(int index);
 

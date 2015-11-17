@@ -1246,8 +1246,21 @@ void PrintInt_Syscall(int num) {
 	printf("%i", num);
 }
 
-int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
+int CreateMonitor_Syscall(int vaddr, int len, int size) {
 	kernelMonitorLock.Acquire();
+
+	char *buf = new char[len + 1];  // Kernel buffer to put the name in
+
+	if (!buf)
+		return -1;
+	if (copyin(vaddr, len, buf) == -1) {
+		printf("%s", "Bad pointer passed to CreateMonitor\n");
+		delete buf;
+		return -1;
+	}
+
+	buf[len] = '\0';
+
 	#ifdef NETWORK
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
@@ -1259,27 +1272,21 @@ int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
-		ss << lockIndex << " ";
-		std::string lockStr = ss.str();
+
+		ss << size << " ";
+		std::string sizeStr = ss.str();
 
 		ss.clear();
 		ss.str("");
 
-		ss << conditionIndex << " ";
-		std::string conditionStr = ss.str();
+		ss << buf;
+		std::string nameStr = ss.str();
 
-		ss.clear();
-		ss.str("");
-
-		ss << maxIndex;
-		std::string maxStr = ss.str();
-
-//		std::string createMonitor = "10 ";
 		char b[5];
 		sprintf(b, "%i ", CREATEMV);
 		std::string createMonitor(b);
 
-		std::string message = createMonitor + lockStr + conditionStr + maxStr;
+		std::string message = createMonitor + sizeStr + nameStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
 		cout << "Create Monitor: Sending message: " << message << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
@@ -1293,7 +1300,6 @@ int CreateMonitor_Syscall(int lockIndex, int conditionIndex, int maxIndex) {
 		MailHeader inMailHdr;
 		char buffer[MaxMailSize];
 
-		//idk if 0 should be the first argument ugh
     	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
     	kernelMonitorLock.Release();
     	return atoi(buffer);
@@ -1319,7 +1325,6 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		std::stringstream ss;
 		ss << monitorIndex;
 		std::string indexStr = ss.str();
-//		std::string destroyMonitor = "11 ";
 		char b[5];
 		sprintf(b, "%i ", DESTROYCOND);
 		std::string destroyMonitor(b);
@@ -1349,7 +1354,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 }
 
 
-int GetMonitor_Syscall(int monitorIndex) {
+int GetMonitor_Syscall(int monitorIndex, int position) {
 	int conditionIndex = -1;
 	int lockIndex = -1;
 	int retVal = 0;
@@ -1365,14 +1370,20 @@ int GetMonitor_Syscall(int monitorIndex) {
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
-	ss << monitorIndex;
+	ss << monitorIndex << " ";
 	std::string indexStr = ss.str();
-//	std::string getMonitor = "12 ";
+
+	ss.clear();
+	ss.str("");
+
+	ss << position;
+	std::string positionStr = ss.str();
+
 	char b[5];
 	sprintf(b, "%i ", GETMV);
 	std::string getMonitor(b);
 
-	std::string message = getMonitor + indexStr;
+	std::string message = getMonitor + indexStr + positionStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
 	cout << "Get Monitor: Sending message: " << message << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
@@ -1467,7 +1478,7 @@ int GetMonitor_Syscall(int monitorIndex) {
 	return retVal;
 }
 
-int SetMonitor_Syscall(int monitorIndex, int value) {
+int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	int conditionIndex = -1;
 	int lockIndex = -1;
 
@@ -1899,11 +1910,11 @@ void ExceptionHandler(ExceptionType which) {
 			break;
 		case SC_SetMonitor:
 			DEBUG('a', "SetMonitor syscall.\n");
-			SetMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
+			SetMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5), machine->ReadRegister(6));
 			break;
 		case SC_GetMonitor:
 			DEBUG('a', "GetMonitor syscall.\n");
-			rv = GetMonitor_Syscall(machine->ReadRegister(4));
+			rv = GetMonitor_Syscall(machine->ReadRegister(4), machine->ReadRegister(5));
 			break;
 		}
 

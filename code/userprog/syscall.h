@@ -167,13 +167,13 @@ int CreateCondition(char* name, int len);
 /* Destroy condition variable. */
 void DestroyCondition(int index);
 
-int CreateMonitor(int lock, int condition, int target);
+int CreateMonitor(int lock, int condition, int target, int size);
 
 void DestroyMonitor(int index);
 
-int GetMonitor(int index);
+int GetMonitor(int index, int position);
 
-void SetMonitor(int index, int value);
+void SetMonitor(int index, int position, int value);
 
 int Rand();
 

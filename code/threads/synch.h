@@ -143,10 +143,18 @@ class Condition {
 };
 
 
-struct Monitor {
-	int condition;
-	int lock;
-	int number;
-	int target;
+class Monitor {
+    public:
+        Monitor(char* debugName, int maxSize);
+        ~Monitor();
+        char* getName() { return (name); }
+        int getVal(int position);
+        void setVal(int position, int value);
+
+    private:
+        char* name;
+	    int* val;
+        int size;
 };
+
 #endif // SYNCH_H

@@ -1091,7 +1091,7 @@ void BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHea
 
 }
 
-void CreateMonitor(int lockNum, int conditionNum, int maxNum, PacketHeader inPktHdr, MailHeader inMailHdr)
+void CreateMonitor(char* name, int size, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1105,11 +1105,7 @@ void CreateMonitor(int lockNum, int conditionNum, int maxNum, PacketHeader inPkt
 	//this currently does not prevent locks with the same name
 	kernelMonitorLock.Acquire();
 	int createdMonitorIndex = kernelMonitorIndex;
-	Monitor * newMonitor = new Monitor;
-	newMonitor->lock = lockNum;
-	newMonitor->condition = conditionNum;
-	newMonitor->target = maxNum;
-	newMonitor->number = 0;
+	Monitor * newMonitor = new Monitor(name, size);
 	kernelMonitorList[kernelMonitorIndex].monitor = newMonitor;
 	kernelMonitorList[kernelMonitorIndex].addrsp = currentThread->space; // #userprog
 	kernelMonitorList[kernelMonitorIndex].isToBeDeleted = false;
@@ -1216,7 +1212,7 @@ void DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
     }
 }
 
-void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1229,8 +1225,6 @@ void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
 	int reply = -1;
-	int lockIndex = -1;
-	int conditionIndex = -1;
 
 	kernelMonitorLock.Acquire();
 	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
@@ -1292,151 +1286,9 @@ void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 		return;
 	}
 
-		lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
-	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
-
-	kernelConditionLock.Acquire();
-	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
-		printf("Invalid condition index %i.\n", conditionIndex);
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelConditionList[conditionIndex].condition == NULL) {
-		printf("No condition at index %i.\n", conditionIndex);
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelConditionList[conditionIndex].condition->getName());
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	// Check lock
-	kernelLockLock.Acquire();
-	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
-		// bad index
-		printf("Bad lock index to broadcast.\n");
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-
-			std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelLockList[lockIndex].lock == NULL) {
-		printf("No lock at index %i.\n", lockIndex);
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
-		printf("Lock %s does not belong to current thread.\n",
-				kernelLockList[lockIndex].lock->getName());
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-	kernelLockLock.Release();
-	kernelConditionLock.Release();
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	
-	// --- FUNCTIONALITY
-	kernelLockList[lockIndex].lock->Acquire();
-	while (kernelMonitorList[monitorIndex].monitor->number != kernelMonitorList[monitorIndex].monitor->number) {
-		kernelConditionList[conditionIndex].condition->Wait(kernelLockList[lockIndex].lock);
-	}
-
-	reply = kernelMonitorList[monitorIndex].monitor->number;
-	kernelConditionList[conditionIndex].condition->Signal(kernelLockList[lockIndex].lock);
-
-	kernelLockList[lockIndex].lock->Release();
-	// ---
+	reply = kernelMonitorList[monitorIndex].monitor->getVal(position);
 
 	std::stringstream ss;
 	ss << reply;
@@ -1454,7 +1306,7 @@ void GetMonitor(int monitorIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 }
 
-void SetMonitor(int monitorIndex, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
+void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1467,29 +1319,9 @@ void SetMonitor(int monitorIndex, int value, PacketHeader inPktHdr, MailHeader i
 
 	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY.
 	int reply = -1;
-	int lockIndex = -1;
-	int conditionIndex = -1;
 
 	kernelMonitorLock.Acquire();
-	if (monitorIndex < 0 || monitorIndex >= kernelMonitorIndex) {
-		cout << "Invalid monitor index" << endl;
-		kernelMonitorLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
+	
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
 		kernelMonitorLock.Release();
@@ -1530,152 +1362,9 @@ void SetMonitor(int monitorIndex, int value, PacketHeader inPktHdr, MailHeader i
 		return;
 	}
 
-	lockIndex = kernelMonitorList[monitorIndex].monitor->lock;
-	cout << kernelMonitorList[monitorIndex].monitor->lock << endl;
-	conditionIndex = kernelMonitorList[monitorIndex].monitor->condition;
-
-	kernelConditionLock.Acquire();
-	if (conditionIndex < 0 || conditionIndex >= kernelConditionIndex) {
-		printf("Invalid condition index.\n");
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelConditionList[conditionIndex].condition == NULL) {
-		printf("No condition at index %i.\n", conditionIndex);
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelConditionList[conditionIndex].addrsp != currentThread->space) {
-		printf("Condition %s does not belong to the process.\n",
-				kernelConditionList[conditionIndex].condition->getName());
-		kernelConditionLock.Release();
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	// Check lock
-	kernelLockLock.Acquire();
-	if (lockIndex < 0 || lockIndex >= kernelLockIndex) {
-		// bad index
-		printf("Bad lock index %i.\n", lockIndex);
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelLockList[lockIndex].lock == NULL) {
-		printf("No lock at index %i.\n", lockIndex);
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-
-	if (kernelLockList[lockIndex].addrsp != currentThread->space) {
-		printf("Lock %s does not belong to current thread.\n",
-				kernelLockList[lockIndex].lock->getName());
-		kernelLockLock.Release();
-		kernelConditionLock.Release();
-
-		std::stringstream ss;
-		ss << reply;
-		const char* intStr = ss.str().c_str();
-
-		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
-
-	     if ( !success ) {
-	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-	      interrupt->Halt();
-	    }
-		return;
-	}
-	kernelLockLock.Release();
-	kernelConditionLock.Release();
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	
-	// --- FUNCTIONALITY wtf is this doing
-	kernelLockList[lockIndex].lock->Acquire();
-	while (kernelMonitorList[monitorIndex].monitor->number == kernelMonitorList[monitorIndex].monitor->number) {
-		kernelConditionList[conditionIndex].condition->Wait(kernelLockList[lockIndex].lock);
-	}
-
-	kernelMonitorList[monitorIndex].monitor->number = value;
-	kernelConditionList[conditionIndex].condition->Signal(kernelLockList[lockIndex].lock);
-
-	kernelLockList[lockIndex].lock->Release();
-	// ---
+	kernelMonitorList[monitorIndex].monitor->setVal(position, value);
 
 	reply = 1;
 	std::stringstream ss;
@@ -1774,8 +1463,12 @@ void beServer() {
 		ss.flush();
 		ss >> requestNumber;
 
-		if(requestNumber == 1 || requestNumber == 5) { //creates
+		if(requestNumber == CREATELOCK || requestNumber == CREATECOND) { //creates
 			// get name
+			ss.getline(name, 256);
+		}
+		else if (requestNumber == CREATEMV) {
+			ss >> primaryIndex;
 			ss.getline(name, 256);
 		}
 		else {
@@ -1848,8 +1541,8 @@ void beServer() {
     			break;
     		case CREATEMV:
     			printf("Request to Create Monitor\n");
-    			printf("Creating monitor: %i\n", primaryIndex);
-    			CreateMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+    			printf("Creating monitor: %s\n", name);
+    			CreateMonitor(name, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case DESTROYMV:
     			printf("Request to Destroy Monitor\n");
@@ -1859,13 +1552,13 @@ void beServer() {
     		case GETMV:
     			printf("Request to Get Monitor\n");
     			printf("Getting monitor: %i\n", primaryIndex);
-    			GetMonitor(primaryIndex, inPktHdr, inMailHdr);
+    			GetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
 			case SETMV:
 				printf("Request to Set Monitor\n");
 				printf("Setting monitor: %i; ", primaryIndex);
     			printf("with value: %i\n", secondaryIndex);
-    			SetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			SetMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
 				break;
     	}
 

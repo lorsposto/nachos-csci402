@@ -258,3 +258,31 @@ void Condition::Broadcast(Lock* conditionLock) {
 		Signal(conditionLock);
 	}
 }
+
+Monitor::Monitor(char* debugName, int maxSize) {
+	name = new char[20];
+	sprintf(name, debugName);
+	val = new int[size];
+	size = size;
+}
+
+Monitor::~Monitor() {
+	delete name;
+	delete val;
+}
+
+int Monitor::getVal(int position) {
+	if (position < 0 || position >= size) {
+		// printf("Error: invalid monitor value position.\n");
+		return -1;
+	}
+	return val[position];
+}
+
+void Monitor::setVal(int position, int value) {
+	if (position < 0 || position >= size) {
+		// printf("Error: invalid monitor value position.\n");
+		return;
+	}
+	val[position] = value;
+}

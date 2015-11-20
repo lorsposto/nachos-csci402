@@ -977,6 +977,8 @@ int CreateLock_Syscall(int vaddr, int len) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		// TODO give clients server no
+//		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
 		outPktHdr.to = 0;
 

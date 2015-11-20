@@ -126,12 +126,18 @@ extern Lock kernelMonitorLock;
 
 struct Request {
 	enum Status {
-		PENDING, COMPLETE
+		PENDING, FAILED, SUCCESS
 	};
 	Status status;
 	// one slot response for each  machine by index of machine
-	int * responses; // = new int[NUM_SERVERS]
+	int noResponses; // = new int[NUM_SERVERS]
 	char * msg;
+	int requesterMachineID;
+	int requesterMBID;
+	int requestType;
+	int index;
+	void* primaryIndex;
+	void* secondaryIndex;
 };
 const int CREATELOCK = 1;
 const int DESTROYLOCK = 2;
@@ -149,6 +155,7 @@ const int SETMV = 13;
 const int SERVERMSG = 500;
 const int SERVERRESPONSE = 501;
 extern int NUM_SERVERS;
+extern Lock requestLock;
 extern vector<Request *> requests;
 #endif
 

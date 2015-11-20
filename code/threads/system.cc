@@ -74,6 +74,7 @@ int kernelMonitorIndex = 0;
 Lock kernelMonitorLock("Kernel Monitors Lock");
 
 int NUM_SERVERS = 0;
+Lock requestLock("Request Lock");
 vector<Request *> requests;
 #endif
 

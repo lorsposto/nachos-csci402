@@ -71,7 +71,8 @@ extern void Part2(void), TestSuite(void), PassportOffice(void);
 
 #ifdef NETWORK
 
-int askOtherServers(int, void*, void*);
+void askOtherServers(Request*, int, void*, void*);
+void awaitResponse(int);
 void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
@@ -82,8 +83,6 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	outPktHdr.from = 0;
 	outPktHdr.to = inPktHdr.from;
-
-	kernelLockLock.Acquire();
 
 	int createdLockIndex = -1;
 
@@ -96,35 +95,57 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 	}
 
 	// PART 4: check if other servers have lock with name
-	createdLockIndex = askOtherServers(CREATELOCK, (void *)lockName, NULL);
+	if (createdLockIndex < 0) {
+		Request * r = new Request;
+		r->requesterMachineID = inPktHdr.from;
+		r->requesterMBID = inMailHdr.from;
+		r->requestType = CREATELOCK;
+		r->primaryIndex = (void*)lockName;
+		r->secondaryIndex = NULL;
+		r->noResponses = 0;
+		r->status = Request::PENDING;
+		requestLock.Acquire();
+		requests.push_back(r);
+		r->index = requests.size()-1;
+		requestLock.Release();
+		askOtherServers(r, CREATELOCK, (void *)lockName, NULL);
+
+		while (r->status == Request::PENDING) {
+			currentThread->Yield();
+		}
+		if(r->status == Request::SUCCESS) {
+			createdLockIndex = 1;
+			return;
+		}
+	}
 
 	// no lock with given name already exists
 	if (createdLockIndex == -1) {
+		kernelLockLock.Acquire();
 		createdLockIndex = kernelLockIndex + 100*machineNum;
 		kernelLockList[kernelLockIndex].lock = new Lock(lockName);
 		kernelLockList[kernelLockIndex].addrsp = currentThread->space; // #userprog
 		kernelLockList[kernelLockIndex].isToBeDeleted = false;
 		// the next new lock's index
 		kernelLockIndex++;
+		kernelLockLock.Release();
 	}
-
-	kernelLockLock.Release();
 
 	stringstream ss;
 	ss << createdLockIndex;
 	const char* intStr = ss.str().c_str();
 
 	outPktHdr.to = inPktHdr.from;
-    outMailHdr.to = inMailHdr.from;
+	outMailHdr.to = inMailHdr.from;
 
-    outMailHdr.length = strlen(intStr) + 1;
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-    cout << "Create Lock Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+	outMailHdr.length = strlen(intStr) + 1;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	cout << "Create Lock Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
-     if ( !success ) {
-      printf("CREATE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
+	 if ( !success ) {
+	  printf("CREATE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	  interrupt->Halt();
+	 }
 }
 
 int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
@@ -140,6 +161,37 @@ int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	//THE VALUE WE SEND BACK. IF -1, DESTROY LOCK FAILED IN SOME WAY. 
 	int reply = -1;
+
+	// check if we have lock
+	bool have = false;
+	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
+		have = true;
+		index = index - machineNum*100;
+	}
+
+	// PART 4: check if other servers have lock with name
+	if (!have) {
+		Request * r = new Request;
+		r->requesterMachineID = inPktHdr.from;
+		r->requesterMBID = inMailHdr.from;
+		r->requestType = DESTROYLOCK;
+		r->primaryIndex = (void*)index;
+		r->secondaryIndex = NULL;
+		r->noResponses = 0;
+		r->status = Request::PENDING;
+		requestLock.Acquire();
+		requests.push_back(r);
+		r->index = requests.size()-1;
+		requestLock.Release();
+		askOtherServers(r, DESTROYLOCK, (void *)index, NULL);
+
+		while (r->status == Request::PENDING) {
+			currentThread->Yield();
+		}
+		if(r->status == Request::SUCCESS) {
+			return -1;
+		}
+	}
 
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
@@ -1250,7 +1302,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      interrupt->Halt();
 	    }
 
-		return -1;
+		return;
 	}
 	if (kernelMonitorList[monitorIndex].monitor == NULL) {
 		printf("No monitor at index %i.\n", monitorIndex);
@@ -1268,7 +1320,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return -1;
+		return;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
@@ -1288,7 +1340,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 	      printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return -1;
+		return;
 	}
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
@@ -1308,7 +1360,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
       printf("GET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-     return monitorIndex;
+//     return monitorIndex;
 }
 
 void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
@@ -1343,7 +1395,7 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
 	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return -1;
+		return;
 	}
 
 	if (kernelMonitorList[monitorIndex].addrsp != currentThread->space) {
@@ -1363,7 +1415,7 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
 	      printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	      interrupt->Halt();
 	    }
-		return -1;
+		return;
 	}
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
@@ -1384,18 +1436,15 @@ void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr
       printf("SET MONITOR: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
       interrupt->Halt();
     }
-     return monitorIndex;
+//     return monitorIndex;
 }
 
 // code is syscall code, index is resource index if applicable
 // pass null if not applicable
-int askOtherServers(int code, void* arg1, void* arg2) {
+void askOtherServers(Request * r, int code, void* arg1, void* arg2) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
-	Request * r = new Request;
-	r->status = Request::PENDING;
-	r->responses = new int[NUM_SERVERS];
 //	if (code == CREATELOCK || code == CREATECOND) {
 //		char * arg2s;
 //		if (!arg2) {
@@ -1419,8 +1468,6 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 //		}
 //	}
 
-	requests.push_back(r);
-
 	for (int i=0; i < NUM_SERVERS; ++i) {
 		if (i != machineNum) {
 			outMailHdr.from = machineNum;
@@ -1434,10 +1481,10 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 				ss << (static_cast<char*>(arg1));
 			}
 			else {
-				ss << *(static_cast<int*>(arg1));
+				ss << (static_cast<int*>(arg1));
 			}
 			if (arg2) {
-				ss << " " << *(static_cast<int*>(arg2));
+				ss << " " << (static_cast<int*>(arg2));
 			}
 			std::string indexStr = ss.str(); // aka resource id
 			char buf[5];
@@ -1453,55 +1500,68 @@ int askOtherServers(int code, void* arg1, void* arg2) {
 	      		printf("CODE %i to Server %i: The Server query failed. You must not have the other Nachos running. Terminating Nachos.\n", code, i);
 	      		interrupt->Halt();
 	    	}
-
-	    	PacketHeader inPktHdr;
-			MailHeader inMailHdr;
-			char buffer[MaxMailSize];
-
-			//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-			// await response
-	    	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
-
-	    	// TODO receive
-	    	int rcode = -1;
-	    	int syscode = -1;
-	    	int status = -1;
-	    	cout << "Response: " << buffer << endl;
-	    	stringstream sss;
-	    	sss << buffer;
-	    	sss >> rcode >> syscode >> status;
-	    	if (rcode != SERVERRESPONSE) {
-	    		cout << "MESSAGE RECEIVED NOT A SERVER RESPONSE" << endl;
-	    		ASSERT(FALSE);
-	    	}
-	    	if (syscode != CREATELOCK) {
-	    		cout << "MESSAGE RECEIVED NOT CREATE LOCK" << endl;
-	    		ASSERT(FALSE);
-	    	}
-	    	r->responses[i] = status;
-	    	cout << "Status " << status << endl;
+			Thread *t = new Thread("Requst", 0);
+			t->Fork(awaitResponse, r->index);
+//			 awaitResponse(rindex);
 		}
 	}
-	int no = 0;
-	int yes = 0;
-	int yindex = -1;
-	for (int i=0; i < NUM_SERVERS; ++i) {
-		if (i != machineNum) {
-			if (r->responses[i] > 0) {
-				yes++;
-				yindex = i;
-			}
-			else {
-				no++;
-			}
+}
+
+void awaitResponse(int rindex) {
+	PacketHeader inPktHdr;
+	MailHeader inMailHdr;
+	char buffer[MaxMailSize];
+
+	requestLock.Acquire();
+	Request * r;
+	std::vector<Request *>::iterator it = requests.begin();
+	for(it = requests.begin(); it != requests.end(); ++it) {
+		if ((*it)->index == rindex) {
+			r = *it;
 		}
 	}
-	if (yes == 1 && no == NUM_SERVERS-2) {
-		cout << "Another server had the resource" << endl;
-		return r->responses[yindex];
+	requestLock.Release();
+
+	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
+	// await response
+	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
+
+	// TODO receive
+	int rcode = -1;
+	int syscode = -1;
+	int status = -1;
+	cout << "Response: " << buffer << endl;
+	stringstream sss;
+	sss << buffer;
+	sss >> rcode >> syscode >> status;
+
+	requestLock.Acquire();
+	if (rcode != SERVERRESPONSE) {
+		cout << "MESSAGE RECEIVED NOT A SERVER RESPONSE" << endl;
+		ASSERT(FALSE);
 	}
-	cout << "Resource not found at another server" << endl;
-	return -1;
+	if (syscode != r->requestType) {
+		cout << "MESSAGE RECEIVED NOT CREATE LOCK" << endl;
+		ASSERT(FALSE);
+	}
+
+	if (status > 0)
+	{
+		r->status = Request::SUCCESS;
+		requests.erase(it);
+		requestLock.Release();
+		return;
+	}
+	r->noResponses++;
+	cout << "No Responses " << r->noResponses << endl;
+
+	if (r->noResponses == NUM_SERVERS - 1) {
+		r->status = Request::FAILED;
+		cout << "Resource not found at another server" << endl;
+		requests.erase(it);
+	}
+	requestLock.Release();
+	return;
 }
 
 void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
@@ -1610,13 +1670,13 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 		case GETMV:
 			printf("Request to Get Monitor\n");
 			printf("Getting monitor: %i\n", primaryIndex);
-			index = GetMonitor(primaryIndex, inPktHdr, inMailHdr);
+			GetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 			break;
 		case SETMV:
 			printf("Request to Set Monitor\n");
 			printf("Setting monitor: %i; ", primaryIndex);
 			printf("with value: %i\n", secondaryIndex);
-			index = SetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			SetMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
 			break;
 	}
 	// send reply to other server
@@ -1643,6 +1703,7 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 
 //maybe should not be in main.cc
 void beServer() {
+	int num = 0;
 	/*while(true) {
 	 1.	Wait for request msg
 	 2.	Parse request
@@ -1657,6 +1718,7 @@ void beServer() {
 		char buffer[MaxMailSize];
 
     	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
+    	num++;
 //    	 printf("\tGot \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 
       	int requestNumber = -1;
@@ -1691,8 +1753,10 @@ void beServer() {
     	//first number
 //    	int requestNumber = atoi(split);
     	 // printf("REQUEST NUMBER: %d\n", requestNumber);
-
-
+//		char name[20];
+//		sprintf(name, "ClientReq%i", num);
+//		Thread t(name);
+		cout << "---" << endl;
     	switch(requestNumber) {
     		default:
     			printf("Unrecognized request: %s\n", buffer);

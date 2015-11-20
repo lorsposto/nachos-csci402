@@ -177,7 +177,7 @@ void SetMonitor(int index, int position, int value);
 
 int Rand();
 
-void PrintInt(char * name);
+void PrintInt(int i);
 
 #endif /* IN_ASM */
 

@@ -297,6 +297,36 @@ int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	outPktHdr.from = 0;
 	outPktHdr.to = inPktHdr.from;
 
+	bool have = false;
+	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
+		have = true;
+		index = index - machineNum*100;
+	}
+
+	// PART 4: check if other servers have lock with name
+	if (!have) {
+		Request * r = new Request;
+		r->requesterMachineID = inPktHdr.from;
+		r->requesterMBID = inMailHdr.from;
+		r->requestType = ACQUIRELOCK;
+		r->primaryIndex = (void*)index;
+		r->secondaryIndex = NULL;
+		r->noResponses = 0;
+		r->status = Request::PENDING;
+		requestLock.Acquire();
+		requests.push_back(r);
+		r->index = requests.size()-1;
+		requestLock.Release();
+		askOtherServers(r, ACQUIRELOCK, (void *)index, NULL);
+
+		while (r->status == Request::PENDING) {
+			currentThread->Yield();
+		}
+		if(r->status == Request::SUCCESS) {
+			return -1;
+		}
+	}
+
 	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY. 
 	int reply = -1;
 
@@ -398,6 +428,36 @@ int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	outPktHdr.from = 0;
 	outPktHdr.to = inPktHdr.from;
+
+	bool have = false;
+	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
+		have = true;
+		index = index - machineNum*100;
+	}
+
+	// PART 4: check if other servers have lock with name
+	if (!have) {
+		Request * r = new Request;
+		r->requesterMachineID = inPktHdr.from;
+		r->requesterMBID = inMailHdr.from;
+		r->requestType = RELEASELOCK;
+		r->primaryIndex = (void*)index;
+		r->secondaryIndex = NULL;
+		r->noResponses = 0;
+		r->status = Request::PENDING;
+		requestLock.Acquire();
+		requests.push_back(r);
+		r->index = requests.size()-1;
+		requestLock.Release();
+		askOtherServers(r, RELEASELOCK, (void *)index, NULL);
+
+		while (r->status == Request::PENDING) {
+			currentThread->Yield();
+		}
+		if(r->status == Request::SUCCESS) {
+			return -1;
+		}
+	}
 
 	//THE VALUE WE SEND BACK. IF -1, RELEASE LOCK FAILED IN SOME WAY. 
 	int reply = -1;

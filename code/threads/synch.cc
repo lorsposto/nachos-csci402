@@ -263,7 +263,7 @@ Monitor::Monitor(char* debugName, int maxSize) {
 	name = new char[20];
 	sprintf(name, debugName);
 	val = new int[size];
-	size = size;
+	size = maxSize;
 }
 
 Monitor::~Monitor() {

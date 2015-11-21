@@ -1302,15 +1302,14 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		outMailHdr.to = to;
 
 		std::stringstream ss;
-
-		ss << size << " ";
-		std::string sizeStr = ss.str();
+		ss << buf << " ";
+		std::string nameStr = ss.str();
 
 		ss.clear();
 		ss.str("");
 
-		ss << buf;
-		std::string nameStr = ss.str();
+		ss << size << " ";
+		std::string sizeStr = ss.str();
 
 		char b[5];
 		sprintf(b, "%i ", CREATEMV);

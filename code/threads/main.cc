@@ -73,7 +73,7 @@ extern void Part2(void), TestSuite(void), PassportOffice(void);
 
 void askOtherServers(Request*, int, void*, void*);
 void awaitResponse(int);
-void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
+int CreateLock(bool check, char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -94,6 +94,9 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 		}
 	}
 
+	if (!check) {
+		return createdLockIndex;
+	}
 	// PART 4: check if other servers have lock with name
 	if (createdLockIndex < 0) {
 		Request * r = new Request;
@@ -115,7 +118,7 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 		}
 		if(r->status == Request::SUCCESS) {
 			createdLockIndex = 1;
-			return;
+			return -1;
 		}
 	}
 
@@ -146,9 +149,10 @@ void CreateLock(char* lockName, PacketHeader inPktHdr, MailHeader inMailHdr)
 	  printf("CREATE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	  interrupt->Halt();
 	 }
+	return createdLockIndex;
 }
 
-int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyLock(bool check, int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -166,11 +170,10 @@ int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	bool have = false;
 	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
 		have = true;
-		index = index - machineNum*100;
 	}
 
 	// PART 4: check if other servers have lock with name
-	if (!have) {
+	if (!have && check) {
 		Request * r = new Request;
 		r->requesterMachineID = inPktHdr.from;
 		r->requesterMBID = inMailHdr.from;
@@ -193,6 +196,7 @@ int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 		}
 	}
 
+	index = index - machineNum*100;
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
 		// bad index
@@ -268,25 +272,27 @@ int DestroyLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 		kernelLockList[kernelLockIndex].lock = NULL;
 	}
 	kernelLockLock.Release();
-	reply = 1;
+	if (check) {
+		reply = 1;
 
-	std::stringstream ss;
-	ss << reply;
-	const char* intStr = ss.str().c_str();
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
 
-	outMailHdr.length = strlen(intStr) + 1;
+		outMailHdr.length = strlen(intStr) + 1;
 
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-    cout << "Destroy Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		cout << "Destroy Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
-     if ( !success ) {
-      printf("DESTROY LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
+		 if ( !success ) {
+		  printf("DESTROY LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+		  interrupt->Halt();
+		}
+	}
      return index;
 }
 
-int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int AcquireLock(bool check, int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -300,11 +306,10 @@ int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	bool have = false;
 	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
 		have = true;
-		index = index - machineNum*100;
 	}
 
 	// PART 4: check if other servers have lock with name
-	if (!have) {
+	if (!have && check) {
 		Request * r = new Request;
 		r->requesterMachineID = inPktHdr.from;
 		r->requesterMBID = inMailHdr.from;
@@ -329,6 +334,7 @@ int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 
 	//THE VALUE WE SEND BACK. IF -1, ACQUIRE LOCK FAILED IN SOME WAY. 
 	int reply = -1;
+	index = index - machineNum*100;
 
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
@@ -397,27 +403,31 @@ int AcquireLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	}
 	kernelLockLock.Release();
 	DEBUG('t', "Acquiring lock %s.\n", kernelLockList[index].lock->getName());
+	printf("Acquiring lock %s.\n", kernelLockList[index].lock->getName());
 	kernelLockList[index].lock->Acquire();
 
-	reply = 1;
+	if (check) {
+		reply = 1;
 
-	std::stringstream ss;
-	ss << reply;
-	const char* intStr = ss.str().c_str();
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
 
-	outMailHdr.length = strlen(intStr) + 1;
+		outMailHdr.length = strlen(intStr) + 1;
 
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-    cout << "Acquire Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Acquire Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
-     if ( !success ) {
-      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
+	     if ( !success ) {
+	      printf("ACQUIRE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+	}
+
      return index;
 }
 
-int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int ReleaseLock(bool check, int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 
 	PacketHeader outPktHdr;
@@ -432,11 +442,10 @@ int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	bool have = false;
 	if (machineNum*100 <= index && index < kernelLockIndex + machineNum*100) {
 		have = true;
-		index = index - machineNum*100;
 	}
 
 	// PART 4: check if other servers have lock with name
-	if (!have) {
+	if (!have && check) {
 		Request * r = new Request;
 		r->requesterMachineID = inPktHdr.from;
 		r->requesterMBID = inMailHdr.from;
@@ -462,6 +471,7 @@ int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	//THE VALUE WE SEND BACK. IF -1, RELEASE LOCK FAILED IN SOME WAY. 
 	int reply = -1;
 
+	index = index - machineNum*100;
 	kernelLockLock.Acquire();
 	if (index < 0 || index >= kernelLockIndex) {
 		// bad index
@@ -529,32 +539,36 @@ int ReleaseLock(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 	}
 	kernelLockLock.Release();
 	DEBUG('t', "Releasing lock %s.\n", kernelLockList[index].lock->getName());
+	printf("Releasing lock %s.\n", kernelLockList[index].lock->getName());
 	kernelLockList[index].lock->Release();
 
 	if (kernelLockList[index].isToBeDeleted && !kernelLockList[index].lock->isBusy()) {
 		kernelLockList[kernelLockIndex].lock = NULL;
 	}
 
-	reply = 1;
+	if (check) {
+		reply = 1;
 
-	std::stringstream ss;
-	ss << reply;
-	const char* intStr = ss.str().c_str();
+		std::stringstream ss;
+		ss << reply;
+		const char* intStr = ss.str().c_str();
 
-	outMailHdr.length = strlen(intStr) + 1;
+		outMailHdr.length = strlen(intStr) + 1;
 
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
-    cout << "Release Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
+	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    cout << "Release Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
-     if ( !success ) {
-      printf("RELEASE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
-      interrupt->Halt();
-    }
+	     if ( !success ) {
+	      printf("RELEASE LOCK: The Server Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	      interrupt->Halt();
+	    }
+	}
+
      return index;
 }
 
 // -- CONDITIONS -- //
-void CreateCondition(char* conditionName, PacketHeader inPktHdr, MailHeader inMailHdr)
+void CreateCondition(bool check, char* conditionName, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -592,7 +606,7 @@ void CreateCondition(char* conditionName, PacketHeader inPktHdr, MailHeader inMa
     }
 }
 
-int DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyCondition(bool check, int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -700,7 +714,7 @@ int DestroyCondition(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
      return index;
 }
 
-int WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int WaitCondition(bool check, int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -869,7 +883,7 @@ int WaitCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader in
      return index;
 }
 
-int SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int SignalCondition(bool check, int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1038,7 +1052,7 @@ int SignalCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader 
      return index;
 }
 
-int BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
+int BroadcastCondition(bool check, int index, int lockIndex, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1207,7 +1221,7 @@ int BroadcastCondition(int index, int lockIndex, PacketHeader inPktHdr, MailHead
      return index;
 }
 
-void CreateMonitor(char* name, int size, PacketHeader inPktHdr, MailHeader inMailHdr)
+void CreateMonitor(bool check, char* name, int size, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1247,7 +1261,7 @@ void CreateMonitor(char* name, int size, PacketHeader inPktHdr, MailHeader inMai
 
 }
 
-int DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
+int DestroyMonitor(bool check, int index, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1329,7 +1343,7 @@ int DestroyMonitor(int index, PacketHeader inPktHdr, MailHeader inMailHdr)
      return index;
 }
 
-void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeader inMailHdr)
+void GetMonitor(bool check, int monitorIndex, int position, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1423,7 +1437,7 @@ void GetMonitor(int monitorIndex, int position, PacketHeader inPktHdr, MailHeade
 //     return monitorIndex;
 }
 
-void SetMonitor(int monitorIndex, int position, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
+void SetMonitor(bool check, int monitorIndex, int position, int value, PacketHeader inPktHdr, MailHeader inMailHdr)
 {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1541,14 +1555,20 @@ void askOtherServers(Request * r, int code, void* arg1, void* arg2) {
 				ss << (static_cast<char*>(arg1));
 			}
 			else {
-				ss << (static_cast<int*>(arg1));
+				char buf[10];
+				sprintf(buf, "%i", static_cast<int*>(arg1));
+				ss << buf;
 			}
 			if (arg2) {
-				ss << " " << (static_cast<int*>(arg2));
+				char buf[10];
+				sprintf(buf, "%i", static_cast<int*>(arg2));
+				ss << " " << buf;
 			}
+			// MSG FORMAT
+			// "SERVERMSGCODE SYSCALLREQCODE CLIENT_MID CLIENT_MB RESOURCEES..."
 			std::string indexStr = ss.str(); // aka resource id
-			char buf[5];
-			sprintf(buf, "%i ", code);
+			char buf[10];
+			sprintf(buf, "%i %i %i ", code, r->requesterMachineID, r->requesterMBID);
 			string codeString(buf);
 
 			string message = "500 " + codeString + indexStr;
@@ -1593,19 +1613,20 @@ void awaitResponse(int rindex) {
 	cout << "Response: " << buffer << endl;
 	stringstream sss;
 	sss << buffer;
-	sss >> rcode >> syscode >> status;
+	sss   >> rcode >> syscode >> status;
+	cout << "status: " << status << "; syscode: " << syscode << "; rcode: " << rcode << endl;
 
 	requestLock.Acquire();
 	if (rcode != SERVERRESPONSE) {
-		cout << "MESSAGE RECEIVED NOT A SERVER RESPONSE" << endl;
+		cout << "MESSAGE RECEIVED NOT A SERVER RESPONSE: " << rcode << endl;
 		ASSERT(FALSE);
 	}
 	if (syscode != r->requestType) {
-		cout << "MESSAGE RECEIVED NOT CREATE LOCK" << endl;
+		cout << "MESSAGE RECEIVED NOT RIGHT TYPE: " << syscode << endl;
 		ASSERT(FALSE);
 	}
 
-	if (status > 0)
+	if (status >= 0)
 	{
 		r->status = Request::SUCCESS;
 		requests.erase(it);
@@ -1628,20 +1649,26 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 	stringstream ss;
 	ss << msg;
 	int requestNumber = -1;
+	int machID = -1;
+	int mbID = -1;
 	int primaryIndex = -1;
 	int secondaryIndex = -1;
 	int tertiaryIndex = -1;
 	ss >> requestNumber;
+	ss >> machID;
+	ss >> mbID;
 
 	char name[256];
 	if (requestNumber == CREATELOCK || requestNumber == CREATECOND) {
 		ss.getline(name, 256);
-	} else {
+	}
+	else {
 		ss >> primaryIndex;
 		ss >> secondaryIndex;
 		ss >> tertiaryIndex;
 	}
 	int index = -1;
+	cout << "Message: " << msg << endl;
 
 	switch(requestNumber) {
 		default:
@@ -1650,31 +1677,43 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 			break;
 		case CREATELOCK:
 			printf("Request to Create Lock\n");
-			printf("Creating Lock: %s\n", name);
-//			CreateLock(name, inPktHdr, inMailHdr);
 			index = -1;
-			for (int i=0; i<kernelLockIndex; i++) {
-				if (strcmp(kernelLockList[i].lock->getName(), name) == 0) {
-					index = i;
-					break;
-				}
-			}
+			index = CreateLock(false, name, inPktHdr, inMailHdr);
+//			index = -1;
+//			for (int i=0; i<kernelLockIndex; i++) {
+//				if (strcmp(kernelLockList[i].lock->getName(), name) == 0) {
+//					index = i;
+//					break;
+//				}
+//			}
 			break;
 		case DESTROYLOCK:
 			printf("Request to Destroy Lock\n");
-			printf("Destroying Lock: %i\n", primaryIndex);
-			index = DestroyLock(primaryIndex, inPktHdr, inMailHdr);
+			index = -1;
+//			if (machineNum*100 <= primaryIndex && primaryIndex < kernelLockIndex + machineNum*100) {
+//				index = primaryIndex - machineNum*100;
+//				break;
+//			}
+//			if (index < 0)
+			index = DestroyLock(false, primaryIndex, inPktHdr, inMailHdr);
 			break;
 		case ACQUIRELOCK:
 			printf("Request to Acquire Lock\n");
-			printf("Acquiring Lock: %i\n", primaryIndex);
-			index = AcquireLock(primaryIndex, inPktHdr, inMailHdr);
+			index = -1;
+//			if (machineNum*100 <= primaryIndex && primaryIndex < kernelLockIndex + machineNum*100) {
+//				index = primaryIndex - machineNum*100;
+//				break;
+//			}
+//			if (index < 0)
+			index = AcquireLock(false, primaryIndex, inPktHdr, inMailHdr);
 			break;
 		case RELEASELOCK:
 			printf("Request to Release Lock\n");
-			printf("Releasing lock: %i\n", primaryIndex);
-			index = ReleaseLock(primaryIndex, inPktHdr, inMailHdr);
-			break;
+			index = -1;
+//			if (machineNum*100 <= primaryIndex && primaryIndex < kernelLockIndex + machineNum*100) {
+//				index = primaryIndex - machineNum*100;
+//				break;
+//			}
 		case CREATECOND:
 			printf("Request to Create Condition\n");
 			printf("Creating condition: %s\n", name);
@@ -1690,25 +1729,25 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 		case DESTROYCOND:
 			printf("Request to Destroy Condition\n");
 			printf("Destroying condition: %i\n", primaryIndex);
-			index = DestroyCondition(primaryIndex, inPktHdr, inMailHdr);
+			index = DestroyCondition(false, primaryIndex, inPktHdr, inMailHdr);
 			break;
 		case WAITCOND:
 			printf("Request to Wait on Condition\n");
 			printf("Waiting on condition: %i; ", primaryIndex);
 			printf("with lock: %i\n", secondaryIndex);
-			index = WaitCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			index = WaitCondition(false, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 			break;
 		case SIGNALCOND:
 			printf("Request to Signal Condition\n");
 			printf("Signaling on condition: %i; ", primaryIndex);
 			printf("with lock: %i\n", secondaryIndex);
-			index = SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			index = SignalCondition(false, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 			break;
 		case BROADCASTCOND:
 			printf("Request to Broadcast Condition\n");
 			printf("Broadcasting on condition: %i; ", primaryIndex);
 			printf("with lock: %i\n", secondaryIndex);
-			index = BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			index = BroadcastCondition(false, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 			break;
 		case CREATEMV:
 			printf("Request to Create Monitor\n");
@@ -1725,20 +1764,44 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 		case DESTROYMV:
 			printf("Request to Destroy Monitor\n");
 			printf("Destroying monitor: %d\n", primaryIndex);
-			index = DestroyMonitor(primaryIndex, inPktHdr, inMailHdr);
+			index = DestroyMonitor(false, primaryIndex, inPktHdr, inMailHdr);
 			break;
 		case GETMV:
 			printf("Request to Get Monitor\n");
 			printf("Getting monitor: %i\n", primaryIndex);
-			GetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+			GetMonitor(false, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
 			break;
 		case SETMV:
 			printf("Request to Set Monitor\n");
 			printf("Setting monitor: %i; ", primaryIndex);
 			printf("with value: %i\n", secondaryIndex);
-			SetMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+			SetMonitor(false, primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
 			break;
 	}
+
+	 // reply to client if necessary
+	 if (index >= 0) {
+
+		PacketHeader outPktHdr;
+		MailHeader outMailHdr;
+
+		outMailHdr.from = machineNum;
+		outMailHdr.to = mbID;
+
+		outPktHdr.from = machineNum;
+		outPktHdr.to = machID;
+
+		stringstream sss;
+		sss << index;
+		string message = sss.str();
+		cout << "Replying to client directly with machine #, mailbox #, message: " << machID << ", " << mbID << ", " << message << endl;
+		outMailHdr.length = strlen(message.c_str()) + 1;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+		 if ( !success ) {
+	 		printf("The Client direct reply failed. You must not have the other Nachos running. Terminating Nachos.\n");
+	 		interrupt->Halt();
+		}
+	 }
 	// send reply to other server
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
@@ -1825,71 +1888,71 @@ void beServer() {
     		case CREATELOCK:
     			printf("Request to Create Lock\n");
     			printf("Creating Lock: %s\n", name);
-    			CreateLock(name, inPktHdr, inMailHdr);
+    			CreateLock(true, name, inPktHdr, inMailHdr);
     			break;
     		case DESTROYLOCK:
     			printf("Request to Destroy Lock\n");
     			printf("Destroying Lock: %i\n", primaryIndex);
-    			DestroyLock(primaryIndex, inPktHdr, inMailHdr);
+    			DestroyLock(true, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case ACQUIRELOCK:
     			printf("Request to Acquire Lock\n");
     			printf("Acquiring Lock: %i\n", primaryIndex);
-    			AcquireLock(primaryIndex, inPktHdr, inMailHdr);
+    			AcquireLock(true, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case RELEASELOCK:
     			printf("Request to Release Lock\n");
     			printf("Releasing lock: %i\n", primaryIndex);
-    			ReleaseLock(primaryIndex, inPktHdr, inMailHdr);
+    			ReleaseLock(true, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case CREATECOND:
     			printf("Request to Create Condition\n");
     			printf("Creating condition: %s\n", name);
-    			CreateCondition(name, inPktHdr, inMailHdr);
+    			CreateCondition(true, name, inPktHdr, inMailHdr);
     			break;
     		case DESTROYCOND:
     			printf("Request to Destroy Condition\n");
     			printf("Destroying condition: %i\n", primaryIndex);
-    			DestroyCondition(primaryIndex, inPktHdr, inMailHdr);
+    			DestroyCondition(true, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case WAITCOND:
     			printf("Request to Wait on Condition\n");
     			printf("Waiting on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
-    			WaitCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			WaitCondition(true, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case SIGNALCOND:
     			printf("Request to Signal Condition\n");
     			printf("Signaling on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
-    			SignalCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			SignalCondition(true, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case BROADCASTCOND:
     			printf("Request to Broadcast Condition\n");
     			printf("Broadcasting on condition: %i; ", primaryIndex);
     			printf("with lock: %i\n", secondaryIndex);
-    			BroadcastCondition(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			BroadcastCondition(true, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
     		case CREATEMV:
     			printf("Request to Create Monitor\n");
     			printf("Creating monitor: %s\n", name);
-    			CreateMonitor(name, primaryIndex, inPktHdr, inMailHdr);
+    			CreateMonitor(true, name, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case DESTROYMV:
     			printf("Request to Destroy Monitor\n");
     			printf("Destroying monitor: %d\n", primaryIndex);
-    			DestroyMonitor(primaryIndex, inPktHdr, inMailHdr);
+    			DestroyMonitor(true, primaryIndex, inPktHdr, inMailHdr);
     			break;
     		case GETMV:
     			printf("Request to Get Monitor\n");
     			printf("Getting monitor: %i\n", primaryIndex);
-    			GetMonitor(primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
+    			GetMonitor(true, primaryIndex, secondaryIndex, inPktHdr, inMailHdr);
     			break;
 			case SETMV:
 				printf("Request to Set Monitor\n");
 				printf("Setting monitor: %i; ", primaryIndex);
     			printf("with value: %i\n", secondaryIndex);
-    			SetMonitor(primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
+    			SetMonitor(true, primaryIndex, secondaryIndex, tertiaryIndex, inPktHdr, inMailHdr);
 				break;
 			case SERVERMSG:
 				cout << "Received server message" << endl;
@@ -2007,10 +2070,12 @@ int main(int argc, char **argv) {
 			argCount = 2;
 		}
 		// this now takes an argument to define the number of servers
-		if (!strcmp(*argv, "-server")) {
+		if (!strcmp(*argv, "-servers")) {
 			ASSERT(argc > 1);
 			NUM_SERVERS = atoi(*(argv + 1));
 			cout << "The total number of servers is: " << NUM_SERVERS << endl;
+		}
+		if (!strcmp(*argv, "-server")) {
 			beServer();
 		}
 #endif // NETWORK

@@ -560,7 +560,7 @@ void Acquire_Syscall(int index) {
 
 		std::string message = acquireLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Acquire Lock: Sending message: " << message << endl;
+		cout << "Acquire Lock: Sending message: " << outPktHdr.from << ", " << outMailHdr.from << ", " << message << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
 
 		 if ( !success ) {
@@ -574,6 +574,15 @@ void Acquire_Syscall(int index) {
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
     	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+
+    	int reqStatus = -1;
+    	stringstream req;
+    	req << buffer;
+    	req >> reqStatus;
+
+    	if (reqStatus < 0) {
+    		cout << "ERROR: SERVER REQUEST FAILED!!" << endl;
+    	}
 
     	return;
 	#endif
@@ -640,6 +649,14 @@ void Release_Syscall(int index) {
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
     	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 
+    	int reqStatus = -1;
+    	stringstream req;
+    	req << buffer;
+    	req >> reqStatus;
+
+    	if (reqStatus < 0) {
+    		cout << "ERROR: SERVER REQUEST FAILED!!" << endl;
+    	}
     	return;
 	#endif
 
@@ -977,13 +994,12 @@ int CreateLock_Syscall(int vaddr, int len) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
-		// TODO give clients server no
-//		int to = rand() % NUM_SERVERS;
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
 		outMailHdr.from = 1;
-		outMailHdr.to = 0;
+		outMailHdr.to = to;
 
 		std::stringstream ss;
 		ss << buf;
@@ -1035,11 +1051,12 @@ void DestroyLock_Syscall(int index) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
 		outMailHdr.from = 1;
-		outMailHdr.to = 0;
+		outMailHdr.to = to;
 
 		std::stringstream ss;
 		ss << index;
@@ -1066,6 +1083,14 @@ void DestroyLock_Syscall(int index) {
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
     	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
 
+    	int reqStatus = -1;
+    	stringstream req;
+    	req << buffer;
+    	req >> reqStatus;
+
+    	if (reqStatus < 0) {
+    		cout << "ERROR: SERVER REQUEST FAILED!!" << endl;
+    	}
     	return;
 	#endif
 
@@ -1123,11 +1148,12 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
 	outMailHdr.from = 1;
-	outMailHdr.to = 0;
+	outMailHdr.to = to;
 
 	std::stringstream ss;
 	ss << buf;
@@ -1176,11 +1202,12 @@ void DestroyCondition_Syscall(int index) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
 	outMailHdr.from = 1;
-	outMailHdr.to = 0;
+	outMailHdr.to = to;
 
 	std::stringstream ss;
 	ss << index;
@@ -1267,11 +1294,12 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
 		outMailHdr.from = 1;
-		outMailHdr.to = 0;
+		outMailHdr.to = to;
 
 		std::stringstream ss;
 
@@ -1318,11 +1346,12 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
 		outMailHdr.from = 1;
-		outMailHdr.to = 0;
+		outMailHdr.to = to;
 
 		std::stringstream ss;
 		ss << monitorIndex;
@@ -1365,11 +1394,12 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
 	outMailHdr.from = 1;
-	outMailHdr.to = 0;
+	outMailHdr.to = to;
 
 	std::stringstream ss;
 	ss << monitorIndex << " ";
@@ -1438,11 +1468,12 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
 	outMailHdr.from = 1;
-	outMailHdr.to = 0;
+	outMailHdr.to = to;
 
 	std::stringstream ss;
 	ss << monitorIndex;

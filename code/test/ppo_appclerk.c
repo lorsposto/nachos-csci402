@@ -32,7 +32,7 @@ int main() {
 	state = AVAILABLE;
 
 	appClerkIndexLock = CreateLock("AppClerkIndexLock", 17);
-	appLineLock = CreateLock("AppLineLock", 13);
+	appLineLock = CreateLock("AppClerkLineLock", 13);
 	regularLineCV = CreateCondition("AppClerkRegularCV", 17);
 	bribeLineCV = CreateCondition("AppClerkBribeCV", 15);
 	transactionCV = CreateCondition("AppClerkTransactionCV", 21);

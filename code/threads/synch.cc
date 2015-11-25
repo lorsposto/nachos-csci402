@@ -164,12 +164,19 @@ Condition::Condition(char* debugName) {
 	sprintf(name, debugName);
 	waitingLock = NULL;
 	queue = new List;
+#ifdef NETWORK
+	waitingLockIndex = -1;
+	fauxLock = new Lock("Faux Lock");
+#endif
 }
 
 Condition::~Condition() {
 	delete name;
 	delete waitingLock;
 	delete queue;
+#ifdef NETWORK
+	delete fauxLock;
+#endif
 }
 
 bool Condition::isQueueEmpty() {
@@ -184,6 +191,7 @@ void Condition::Wait(Lock* conditionLock) {
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
 		return;
 	}
+
 	if (conditionLock == NULL) {
 		// print message
 		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
@@ -258,6 +266,94 @@ void Condition::Broadcast(Lock* conditionLock) {
 		Signal(conditionLock);
 	}
 }
+
+#ifdef NETWORK
+int Condition::Wait(int conditionLockIndex) {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+
+	if (conditionLockIndex < 0) {
+		// print message
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	if (waitingLockIndex < 0) {
+		// no one waiting
+		waitingLockIndex = conditionLockIndex;
+	}
+	if (waitingLockIndex != conditionLockIndex) {
+		// lock is the one being given up
+		printf("\tWaiting lock %i is not the same as lock %i.\n",
+				waitingLockIndex, conditionLockIndex);
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	// OK to wait
+//	queue->Append((void *) currentThread);
+//	fauxLock->Release();
+	currentThread->Sleep();
+//	fauxLock->Acquire();
+//	fauxLock->Release();
+	(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+}
+
+int Condition::Signal(int conditionLockIndex) {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+	if (conditionLockIndex < 0) {
+		// print message
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	if (waitingLockIndex < 0) {
+		// no one waiting
+		waitingLockIndex = conditionLockIndex;
+	}
+	if (waitingLockIndex != conditionLockIndex) {
+		// lock is the one being given up
+		printf("\tWaiting lock %i is not the same as lock %i.\n",
+				waitingLockIndex, conditionLockIndex);
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	if (queue->IsEmpty()) {
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+
+	Thread* waitingThread = (Thread *) queue->Remove();
+	scheduler->ReadyToRun(waitingThread); // put in ready queue
+	if (queue->IsEmpty()) {
+		waitingLockIndex = -1;
+	}
+	(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+	return 1;
+}
+
+int Condition::Broadcast(int conditionLockIndex) {
+	IntStatus oldLevel = interrupt->SetLevel(IntOff);   // disable interrupts
+	if (conditionLockIndex < 0) {
+		// print message
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	if (waitingLockIndex < 0) {
+		// no one waiting
+		waitingLockIndex = conditionLockIndex;
+	}
+	if (waitingLockIndex != conditionLockIndex) {
+		// lock is the one being given up
+		printf("\tWaiting lock %i is not the same as lock %i.\n",
+				waitingLockIndex, conditionLockIndex);
+		(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+		return -1;
+	}
+	(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+	while (!queue->IsEmpty()) {
+		Signal(conditionLockIndex);
+	}
+	return 1;
+}
+
+#endif
 
 Monitor::Monitor(char* debugName, int maxSize) {
 	name = new char[20];

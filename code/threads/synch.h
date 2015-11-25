@@ -134,12 +134,26 @@ class Condition {
     void Broadcast(Lock *conditionLock);// the currentThread for all of 
 					// these operations
 
+#ifdef NETWORK
+    int Wait(int conditionLockIndex); 	// these are the 3 operations on
+					// condition variables; releasing the
+					// lock and going to sleep are
+					// *atomic* in Wait()
+    int Signal(int conditionLockIndex);   // conditionLock must be held by
+    int Broadcast(int conditionLockIndex);// the currentThread for all of
+					// these operations
+    Lock * fauxLock;
+#endif
+
     bool isQueueEmpty();
     
   private:
     char* name;
     List* queue;
     Lock* waitingLock;
+#ifdef NETWORK
+    int waitingLockIndex;
+#endif
 };
 
 

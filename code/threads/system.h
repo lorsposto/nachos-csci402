@@ -152,6 +152,7 @@ const int CREATEMV = 10;
 const int DESTROYMV = 11;
 const int GETMV = 12;
 const int SETMV = 13;
+const int CHECKLOCK = 14;
 const int SERVERMSG = 500;
 const int SERVERRESPONSE = 501;
 extern int NUM_SERVERS;

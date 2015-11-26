@@ -35,8 +35,8 @@ int main() {
 	appLineLock = CreateLock("AppClerkLineLock", 13);
 	appMonitorIndex = CreateMonitor("AppClerkCount", 13, 100);
 	appCustomerIndex = CreateMonitor("AppCustomerIndex", 16, 100);
-	bribeMonitorIndex = CreateMonitor("AppClerkBribeLines", 13, 100);
-	regularMonitorIndex = CreateMonitor("AppClerkRegularLines", 15, 100);
+	bribeMonitorIndex = CreateMonitor("AppClerkBribeLineNum", 20, 100);
+	regularMonitorIndex = CreateMonitor("AppClerkRegularLineNum", 22, 100);
 	customerApprovedList = CreateMonitor("CustomerApprovedList", 20, 100);
 	bribeLineCVs = CreateMonitor("AppClerkBribeCV", 15, 100);
 	regularLineCVs = CreateMonitor("AppClerkRegularCV", 17, 100);
@@ -47,9 +47,6 @@ int main() {
 	Acquire(appClerkIndexLock);
 	myIndex = GetMonitor(appMonitorIndex, 0);
 	Release(appClerkIndexLock);
-
-
-
 
 	customer = -1;
 	money = 0;

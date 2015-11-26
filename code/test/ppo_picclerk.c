@@ -9,7 +9,7 @@ typedef enum {
 	AVAILABLE, BUSY, BREAK
 } clerkState;
 
-int myIndex, i, picClerkIndexLock, picLineLock, regularLineCV, bribeLineCV, transactionCV, transactionLock, breakCV,
+int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
 	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerApprovedList, 
 	customerPicDoneList, customer, money;
 
@@ -34,13 +34,13 @@ int main() {
 
 	picClerkIndexLock = CreateLock("PicClerkIndexLock", 17);
 	picLineLock = CreateLock("PicClerkLineLock", 13);
-	regularLineCV = CreateCondition("PicClerkRegularCV", 17);
-	bribeLineCV = CreateCondition("PicClerkBribeCV", 15);
-	transactionCV = CreateCondition("PicClerkTransactionCV", 21);
-	transactionLock = CreateLock("PicClerkTransactionLock", 23);
-	breakCV = CreateCondition("PicClerkBreakCV", 15);
-	bribeMonitorIndex = CreateMonitor("PicBribeLines", 13, 1);
-	regularMonitorIndex = CreateMonitor("PicRegularLines", 15, 1);
+	regularLineCVs = CreateMonitor("PicClerkRegularCV", 17, 100);
+	bribeLineCVs = CreateMonitor("PicClerkBribeCV", 15, 100);
+	transactionCVs = CreateMonitor("PicClerkTransactionCV", 21, 100);
+	transactionLocks = CreateMonitor("PicClerkTransactionLock", 23, 100);
+	breakCVs = CreateMonitor("PicClerkBreakCV", 15, 100);
+	bribeMonitorIndex = CreateMonitor("PicBribeLineNum", 15, 100);
+	regularMonitorIndex = CreateMonitor("PicRegularLineNum", 17, 100);
 	picMonitorIndex = CreateMonitor("PicClerkCount", 13, 100);
 	picCustomerIndex = CreateMonitor("PicCustomerIndex", 16, 100);
 	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 20, 100);
@@ -60,21 +60,21 @@ int main() {
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
-				Signal(bribeLineCV, picLineLock);
+				Signal(GetMonitor(bribeLineCVs, myIndex), picLineLock);
 				state == BUSY;
 			} else if (getRegularLineCount() > 0) {
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
-				Signal(regularLineCV, picLineLock);
+				Signal(GetMonitor(regularLineCVs, myIndex), picLineLock);
 				state = BUSY;
 			} else {
 				state = BREAK;
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is going on break.\n", 20, ConsoleOutput);
-				Wait(breakCV, picLineLock);
+				Wait(GetMonitor(breakCVs, myIndex), picLineLock);
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is coming off break.\n", 22, ConsoleOutput);
@@ -82,10 +82,10 @@ int main() {
 				break;
 			}
 
-			Acquire(transactionLock);
+			Acquire(GetMonitor(transactionLocks, myIndex));
 			Release(picLineLock);
 
-			Wait(transactionCV, transactionLock);
+			Wait(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
 
 			Write("PictureClerk ", 17, ConsoleOutput);
 			PrintInt(myIndex);
@@ -111,11 +111,11 @@ int main() {
 				PrintInt(getCurrentCustomer());
 				Write(".\n", 2, ConsoleOutput);
 
-				Signal(transactionCV,
-						transactionLock);
+				Signal(GetMonitor(transactionCVs, myIndex),
+						GetMonitor(transactionLocks, myIndex));
 				/* Waiting for customer to accept photo */
-				Wait(transactionCV,
-						transactionLock);
+				Wait(GetMonitor(transactionCVs, myIndex),
+						GetMonitor(transactionLocks, myIndex));
 
 				firstTime = false;
 			}
@@ -126,12 +126,13 @@ int main() {
 			PrintInt(getCurrentCustomer());
 			Write(" does like their picture.\n", 26, ConsoleOutput);
 
-			Signal(transactionCV,
-					transactionLock);
+			Signal(GetMonitor(transactionCVs, myIndex),
+				GetMonitor(transactionLocks, myIndex));
 
-			Wait(transactionCV,
-					transactionLock);
-			Release(transactionLock);
+			Wait(GetMonitor(transactionCVs, myIndex),
+				GetMonitor(transactionLocks, myIndex));
+
+			Release(GetMonitor(transactionLocks, myIndex));
 		}
 	}
 

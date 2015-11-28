@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk
+all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -85,6 +85,12 @@ testlockname.o: testlockname.c
 testlockname: testlockname.o start.o
 	$(LD) $(LDFLAGS) start.o testlockname.o -o testlockname.coff
 	../bin/coff2noff testlockname.coff testlockname	
+
+testcondition.o: testcondition.c
+	$(CC) $(CFLAGS) -c testcondition.c
+testcondition: testcondition.o start.o
+	$(LD) $(LDFLAGS) start.o testcondition.o -o testcondition.coff
+	../bin/coff2noff testcondition.coff testcondition
 
 testcondition1.o: testcondition1.c
 	$(CC) $(CFLAGS) -c testcondition1.c

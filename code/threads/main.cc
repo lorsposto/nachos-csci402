@@ -81,7 +81,7 @@ int CreateLock(bool askOtherServers, bool sendMsg, char* lockName, PacketHeader 
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	int createdLockIndex = -1;
@@ -160,7 +160,7 @@ int DestroyLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	//THE VALUE WE SEND BACK. IF -1, DESTROY LOCK FAILED IN SOME WAY. 
@@ -305,7 +305,7 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	bool have = false;
@@ -445,7 +445,7 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	bool have = false;
@@ -589,7 +589,7 @@ int CreateCondition(bool askOtherServers, bool sendMsg, char* conditionName, Pac
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	int createdConditionIndex = -1;
@@ -665,7 +665,7 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have lock
@@ -809,7 +809,7 @@ int checkLockForCondition(int lockIndex, PacketHeader inPktHdr, MailHeader inMai
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	int reply = -1;
@@ -910,7 +910,7 @@ void forkWait(int params) {
 	outMailHdr.from = 0;
 	outMailHdr.to = mbnum;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = mnum;
 
 	kernelConditionList[conditionIndex].condition->Wait(lockIndex);
@@ -941,7 +941,7 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have condition
@@ -1220,7 +1220,7 @@ void forkSignal(int params) {
 	outMailHdr.from = 0;
 	outMailHdr.to = mbnum;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = mnum;
 
 //	kernelConditionList[conditionIndex].condition->Signal(lockIndex);
@@ -1251,7 +1251,7 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have condition
@@ -1508,7 +1508,7 @@ void forkBroadcast(int params) {
 	outMailHdr.from = 0;
 	outMailHdr.to = mbnum;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = mnum;
 
 //	kernelConditionList[conditionIndex].condition->Broadcast(lockIndex);
@@ -1539,7 +1539,7 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have condition
@@ -1788,7 +1788,7 @@ int CreateMonitor(bool askOtherServers, bool sendMsg, char* name, int size, Pack
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	int createdMonitorIndex = -1;
@@ -1866,7 +1866,7 @@ int DestroyMonitor(bool askOtherServers, bool sendMsg, int index, PacketHeader i
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have lock
@@ -1987,7 +1987,7 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have lock
@@ -2120,7 +2120,7 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
-	outPktHdr.from = 0;
+	outPktHdr.from = machineNum;
 	outPktHdr.to = inPktHdr.from;
 
 	// askOtherServers if we have lock
@@ -2258,7 +2258,7 @@ void askOtherServersFcn(Request * r, int code, void* arg1, void* arg2) {
 
 	for (int i=0; i < NUM_SERVERS; ++i) {
 		if (i != machineNum) {
-			outMailHdr.from = machineNum;
+			outMailHdr.from = 0;
 			outMailHdr.to = i;
 
 			outPktHdr.from = machineNum;
@@ -2318,7 +2318,7 @@ void awaitResponse(int rindex) {
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
 	// await response
-	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
 
 	// TODO receive
 	int rcode = -1;
@@ -2473,7 +2473,7 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
-		outMailHdr.from = machineNum;
+		outMailHdr.from = 0;
 		outMailHdr.to = mbID;
 
 		outPktHdr.from = machineNum;
@@ -2494,7 +2494,7 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
-	outMailHdr.from = machineNum;
+	outMailHdr.from = 0;
 	outMailHdr.to = inMailHdr.from;
 
 	outPktHdr.from = machineNum;
@@ -2528,7 +2528,7 @@ void beServer() {
 		MailHeader inMailHdr;
 		char buffer[MaxMailSize];
 
-    	postOffice->Receive(machineNum, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(0, &inPktHdr, &inMailHdr, buffer);
     	num++;
 //    	 printf("\tGot \"%s\" from %d, box %d\n",buffer,inPktHdr.from,inMailHdr.from);
 

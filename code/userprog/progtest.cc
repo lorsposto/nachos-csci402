@@ -49,6 +49,13 @@ StartProcess(char *filename)
 	activeProcesses++;
 
 	currentThread->space = space;
+
+#ifdef NETWORK
+	currentMBIDLock.Acquire();
+	currentThread->threadIndex = currentMBID;
+	currentMBID++;
+	currentMBIDLock.Release();
+#endif
 	processLock.Release();
 
 //    delete executable;			// close file

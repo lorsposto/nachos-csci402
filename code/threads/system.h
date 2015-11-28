@@ -158,6 +158,9 @@ const int SERVERRESPONSE = 501;
 extern int NUM_SERVERS;
 extern Lock requestLock;
 extern vector<Request *> requests;
+
+extern Lock currentMBIDLock;
+extern int currentMBID;
 #endif
 
 #ifdef FILESYS_NEEDED 		// FILESYS or FILESYS_STUB 

@@ -466,7 +466,12 @@ void Exec_Syscall(int vaddr, int len) {
 
 	// Create a new thread
 	Thread* t = new Thread("exec_thread", 0);
-
+#ifdef NETWORK
+	currentMBIDLock.Acquire();
+	t->threadIndex = currentMBID;
+	currentMBID++;
+	currentMBIDLock.Release();
+#endif
 	processLock.Release();
 
 	// Allocate the space created to this thread's space
@@ -524,6 +529,12 @@ void Fork_Syscall(int vaddr, int len) {
 	// Allocate the addrespace to the thread being forked which is essentially current thread's addresspsace
 	// because threads share the process addressspace
 	t->space = currentThread->space;
+	#ifdef NETWORK
+		currentMBIDLock.Acquire();
+		t->threadIndex = currentMBID;
+		currentMBID++;
+		currentMBIDLock.Release();
+	#endif
 
 //	delete[] oldPageTable;
 //	oldPageTable = NULL;
@@ -544,10 +555,11 @@ void Acquire_Syscall(int index) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
+		outMailHdr.from = currentThread->threadIndex;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -573,7 +585,7 @@ void Acquire_Syscall(int index) {
 		char buffer[MaxMailSize];
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
     	int reqStatus = -1;
     	stringstream req;
@@ -618,10 +630,11 @@ void Release_Syscall(int index) {
 		PacketHeader outPktHdr;
 		MailHeader outMailHdr;
 
+		int to = rand() % NUM_SERVERS;
 		outPktHdr.from = machineNum;
-		outPktHdr.to = 0;
+		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
+		outMailHdr.from = currentThread->threadIndex;
 		outMailHdr.to = 0;
 
 		std::stringstream ss;
@@ -647,7 +660,7 @@ void Release_Syscall(int index) {
 		char buffer[MaxMailSize];
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
     	int reqStatus = -1;
     	stringstream req;
@@ -695,10 +708,11 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
+	outMailHdr.from = currentThread->threadIndex;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -724,7 +738,7 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return;
 #endif
@@ -787,10 +801,11 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
+	outMailHdr.from = currentThread->threadIndex;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -816,7 +831,7 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return;
 #endif
@@ -883,10 +898,11 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 	PacketHeader outPktHdr;
 	MailHeader outMailHdr;
 
+	int to = rand() % NUM_SERVERS;
 	outPktHdr.from = machineNum;
-	outPktHdr.to = 0;
+	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
+	outMailHdr.from = currentThread->threadIndex;
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
@@ -912,7 +928,7 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return;
 #endif
@@ -998,8 +1014,8 @@ int CreateLock_Syscall(int vaddr, int len) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
-		outMailHdr.to = to;
+		outMailHdr.from = currentThread->threadIndex;
+		outMailHdr.to = 0;
 
 		std::stringstream ss;
 		ss << buf;
@@ -1024,7 +1040,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 		char buffer[MaxMailSize];
 
 		//idk if 0 should be the first argument ugh
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
     	return atoi(buffer);
 	#endif
@@ -1055,8 +1071,8 @@ void DestroyLock_Syscall(int index) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
-		outMailHdr.to = to;
+		outMailHdr.from = currentThread->threadIndex;
+		outMailHdr.to = 0;
 
 		std::stringstream ss;
 		ss << index;
@@ -1081,7 +1097,7 @@ void DestroyLock_Syscall(int index) {
 		char buffer[MaxMailSize];
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
     	int reqStatus = -1;
     	stringstream req;
@@ -1152,8 +1168,8 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
-	outMailHdr.to = to;
+	outMailHdr.from = currentThread->threadIndex;
+	outMailHdr.to = 0;
 
 	std::stringstream ss;
 	ss << buf;
@@ -1178,7 +1194,7 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return atoi(buffer);
 #endif
@@ -1206,8 +1222,8 @@ void DestroyCondition_Syscall(int index) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
-	outMailHdr.to = to;
+	outMailHdr.from = currentThread->threadIndex;
+	outMailHdr.to = 0;
 
 	std::stringstream ss;
 	ss << index;
@@ -1232,7 +1248,7 @@ void DestroyCondition_Syscall(int index) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return;
 #endif
@@ -1298,8 +1314,8 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
-		outMailHdr.to = to;
+		outMailHdr.from = currentThread->threadIndex;
+		outMailHdr.to = 0;
 
 		std::stringstream ss;
 		ss << buf << " ";
@@ -1329,7 +1345,7 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		MailHeader inMailHdr;
 		char buffer[MaxMailSize];
 
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
     	kernelMonitorLock.Release();
     	return atoi(buffer);
 	#endif
@@ -1349,8 +1365,8 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		outPktHdr.from = machineNum;
 		outPktHdr.to = to;
 
-		outMailHdr.from = 1;
-		outMailHdr.to = to;
+		outMailHdr.from = currentThread->threadIndex;
+		outMailHdr.to = 0;
 
 		std::stringstream ss;
 		ss << monitorIndex;
@@ -1374,7 +1390,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		char buffer[MaxMailSize];
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-    	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+    	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
     	kernelMonitorLock.Release();
     	return;
 	#endif
@@ -1397,8 +1413,8 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
-	outMailHdr.to = to;
+	outMailHdr.from = currentThread->threadIndex;
+	outMailHdr.to = 0;
 
 	std::stringstream ss;
 	ss << monitorIndex << " ";
@@ -1429,7 +1445,7 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return atoi(buffer);
 #endif
@@ -1471,8 +1487,8 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	outPktHdr.from = machineNum;
 	outPktHdr.to = to;
 
-	outMailHdr.from = 1;
-	outMailHdr.to = to;
+	outMailHdr.from = currentThread->threadIndex;
+	outMailHdr.to = 0;
 
 	std::stringstream ss;
 	ss << monitorIndex;
@@ -1497,7 +1513,7 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	char buffer[MaxMailSize];
 
 	//imo we should have a receive here just to make sure the action finishes on the server b4 returning
-	postOffice->Receive(1, &inPktHdr, &inMailHdr, buffer);
+	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
 
 	return atoi(buffer);
 #endif

@@ -102,7 +102,11 @@ class Thread {
     char* getName() { return (name); }
     void Print();
 
-    int threadIndex;
+    int threadIndex; // using as mailbox number
+
+//#ifdef NETWORK
+//    int mbnumber; // mailbox
+//#endif
 
   private:
     // some of the private data for this class is listed above

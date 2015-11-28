@@ -76,6 +76,10 @@ Lock kernelMonitorLock("Kernel Monitors Lock");
 int NUM_SERVERS = 0;
 Lock requestLock("Request Lock");
 vector<Request *> requests;
+
+Lock currentMBIDLock("MBID Lock");
+int currentMBID = 0;
+
 #endif
 
 #ifdef FILESYS_NEEDED

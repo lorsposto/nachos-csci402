@@ -5,529 +5,186 @@
 		Lorraine Sposto	llsposto@usc.edu
 
 I. Requirements:
-- Modify Nachos' memory mechanism to allow for virtual memory
-- Implement an inverse page table
-- Implement Demand Paged Virtual Memory, preloading nothing into memory
-- Implement the MMU process to handle page faults, IPT misses, and employ the TLB
-- Implement caching through a TLB to provide fast access to already-translated virtual pages
-- Implement caching through a swap file, to store in such a way that gives the illusion of infinite memory and avoid loading from disk
-- Implement Random and FIFO page replacement for when physical memory is full
-- Provide necessary tests to demonstrate the functionality of the IPT, TLB, eviction and swap file
-- Implement remote procedure calls for Lock, Condition, Monitor variables
-- Implement new system calls for monitor variables
-- Be able to run user program test suite (Locks, Condition, MVs) as a server and clients
+- Convert passport office (PPO) into a distributable program
+	- Each PPO entity is a user program to be executed
+	- PPO entities are clients and shared data through monitor variables on servers
+- Expand RPCs to coordinate shared data distributed amongst multiple servers, in which case all servers do not have each shared resource and must communicate with the other servers
+
 
 II. Assumptions:
-	- Part 1 test: NumPhysPages is set large (e.g. 2048, at least 120) so that many instances of matmult fits into physical memory
-	- Part 2 test: NumPhysPages is set to 32 so that large user programs like matmult do not fit into physical memory
-	- Monitors monitor for a certain target value. When GET is calld on a Monitor, it waits until its value reaches the target defined when the monitor was created. When SET is called, it waits until the value is not the target value.
-	- There are no checks for Locks or Conditions with duplicate names
+	- Fewer than 10 of each clerk/cashier type running at one time
 
 III. Design:
-+ Parts 1 & 2
-	- On a page fault, handlePageFault() begins the routine to load a page into memory.
-	- handlePageFault():
-		- searches IPT for physical page number that corresponds to the requested virtual page
-		- if the PPN is not found --> ppn = handleIPTMiss()
-		- with a valid PPN, updates the TLB with the page
-		- if the eviction policy is FIFO, the VPN is added to the queue
-	- handleIPTMiss()
-		- finds an empty PPN in memory to put the VP
-		- if no empty PPN --> ppn = handleMemoryFull()
-		- assesses the location of the needed VP from the processes page table
-		- if in EXECUTABLE, read a page from certain offset of the executable to memory
-		- if in SWAP, read from a certain offset of the swap file to memory
-		- updates physical page for the page table entry of the VPN
-		- updates the IPT entry for the PPN found
-		- returns PPN
-	- handleMemoryFull()
-		- selects a PPN to evict depending on policy: either random or FIFO
-		- for FIFO: a pageQueue holds the recently accessed VPNs
-		- after a page is selected for eviction, if it is in the TLB the TLB entry is invalidated
-		- if the page is dirty, it is written to the swap file
-		- returns PPN
++ Part 1
+	- Each PPO entity is contained within its own user program, prefixed with 'ppo_': ppo_appclerk, ppo_cashier, ppo_customer, ppo_manager, ppo_picclerk, ppo_ppclerk
+	- User program run_passport_office executes each PPO participant
 
-+ Part 3
-	- The server run continuously, receiving, parsing, and fulfilling resource request messages from client user programs
-	- When a user program requires a resource, the corresponding syscall communicates with the server to retrieve the resource
-	- On the client side, when a user program calls a syscall, instead of handling the request itself it sends a request to the server
-	- Upon reception of a request message from a client, the server launches a routine that is the original functionality of the syscall i.e. validating the resource request and performing the desired action for the OS resource
-	- In the case where the user program performs an illegal action through the RPC, the server sends a failure reply. However, the folly is on the user program for the illegal action -- it is the responsibility of the user program to handle errors.
++ Part 2
+	- Server Design
+		- in main.cc
+		- Each server awaits received messages into its mailbox #0, and each client sends mail to a servers mailbox #0. Even though message handling is multi-threaded, messages are always received in MB #0.
+		- Upon receiving a message, a server parses the message for each value in the message (typically: MSG_TYPE ARG1 ARG2 ...) and passes the arguments to the appropriate handling routine (be it a syscall handler or server message processing)
+		- Each syscall handling routine contains boolean parameters to indicate whether message to either the sender or originating client should be sent
+	- Client Design
+		- Each process/thread running on the client machine receives messages in the mailbox indicated by that thread's index in order to distinguish appropriate ownerships, message recipients, etc.
+		- If a client receives an error message back from the server for a syscall, ... ???
+
 
 IV. Implementation:
 	+ Files Modified
-		addrspace.cc - updated constructor to load nothing into memory, added PageTableEntry class
-		exception.cc - implementation of all network system call functionality; implementation of virtual memory management routines
-		progtest.cc - updating the process table with the very first process
-		start.s - added assembly for new system calls
-		syscall.h - added new #define values for new system calls, created function prototypes
-		system.h - new global variables delcarations
-		system.cc - new global varaible initialization
-		main.cc - implementation of server, client message function
-		test/Makefile - to include new user programs
-		vm/Makefile - include network directory
+		- threads/main.cc - server functionality
+		- threads/sync.h;.cc - modified monitor variables
+		- userprog/exception.cc - client functionality
+		- userprog/progtest.cc - added process index to main thread via monitor variable
+		- test/run_passport_office.c - changed to execute PPO entities
 
 	+ Files added
-		swapfile - file to be opened as the swapfile
-		test/fork_matmult - test to fork 2 instances of matmult
-		test/exec_matmult - test to exec 2 instances of matmult
-		test/testlockname - test to create lock with already existing name
+		test/ppo_appclerk.c - application clerk user program
+		test/ppo_cashier.c - cashier user program
+		test/ppo_manager.c - manager user program
+		test/ppo_picclerk.c - picture clerk user program
+		test/ppo_ppclerk.c - passport clerk user program
 
 	+ Data Structures added, and the file they were added to.
-		- system.h/cc - 
-			class PageTableEntry : public TranslationEntry {
-			public:
-				enum DiskLocation {
-					SWAP,
-					EXECUTABLE,
-					MEMORY
-				};
-				int byteOffset;
-				int swapOffset;
-				DiskLocation diskLocation;
-			};
-			class IPTEntry : public PageTableEntry {
-			public:
-				AddrSpace * space;
-			};
-			IPTEntry ipt[];
-			Lock iptLock;
-			Lock pageTableLock;
-			int currentTLBEntry;
-			bool isFIFO; //if not FIFO, RAND
-			Queue pageQueue;
-			OpenFile * swapFile;
-			char * swapFileName;
-			BitMap swapFileBM;
-			Lock swapLock;
+		- threads/system.h;.cc
 			struct kernelMonitor {
+				int num;
 				Monitor * monitor;
 				AddrSpace * addrsp;
 				bool isToBeDeleted;
 			};
-			kernelMonitor kernelMonitorList[];
-			int kernelMonitorIndex;
-			const int NUM_KERNEL_MONITORS;
-			Lock kernelMonitorLock;
-		- synch.h:
-			struct Monitor {
-				int condition; // index of condition in kernel table
-				int lock;	// index of lock in kernel table
-				int number;
-				int target;
+			extern kernelMonitor kernelMonitorList[];
+			extern int kernelMonitorIndex;
+			extern const int NUM_KERNEL_MONITORS;
+			extern Lock kernelMonitorLock;
+
+			struct Request {
+				enum Status {
+					PENDING, FAILED, SUCCESS
+				};
+				Status status;
+				// one slot response for each  machine by index of machine
+				int noResponses; // = new int[NUM_SERVERS]
+				char * msg;
+				int requesterMachineID;
+				int requesterMBID;
+				int requestType;
+				int index;
+				void* primaryIndex;
+				void* secondaryIndex;
 			};
+			const int CREATELOCK = 1;
+			const int DESTROYLOCK = 2;
+			const int ACQUIRELOCK = 3;
+			const int RELEASELOCK = 4;
+			const int CREATECOND = 5;
+			const int DESTROYCOND = 6;
+			const int WAITCOND = 7;
+			const int SIGNALCOND = 8;
+			const int BROADCASTCOND = 9;
+			const int CREATEMV = 10;
+			const int DESTROYMV = 11;
+			const int GETMV = 12;
+			const int SETMV = 13;
+			const int CHECKLOCK = 14;
+			const int SERVERMSG = 500;
+			const int SERVERRESPONSE = 501;
+			extern int NUM_SERVERS;
+			extern Lock requestLock;
+			extern vector<Request *> requests;
+
+			extern Lock currentMBIDLock;
+			extern int currentMBID;
 
 	+ Data Structures modified, and the file they were added to.
-			
-		addrspace.h:
-			AddrSpace - page table modified to be of PageTableEntries
+		- threads/sync.h;.cc
+			class Monitor {
+			    public:
+			        Monitor(char* debugName, int maxSize);
+			        ~Monitor();
+			        char* getName() { return (name); }
+			        int getVal(int position);
+			        void setVal(int position, int value);
+
+			    private:
+			        char* name;
+				    int* val;
+			        int size;
+			};	
+		
+		
 
 	+ Functions added and in which file.
-			exception.h/cc
-				handlePageFault() -- begins page fault handling routine to find PPN and update TLB
-				handleIPTMiss() -- handles an IPT from handlePageFault and returns PPN
-				handleMemoryFull() -- handles page eviction and returns PPN for handleIPTMiss
-				CreateMonitor_Syscall() -- syscall to handle create monitor functionality in user program
-				DestroyMonitor_Syscall() -- syscall to handle destroy monitor functionality in user program
-				GetMonitor_Syscall() -- syscall to handle get monitor functionality in user program
-				SetMonitor_Syscall() -- syscall to handle set monitor functionality in user program
-			main.cc
-				beServer() - continuous server function to retrieve and handle resource requests
-				CreateLock() - this and the following are routines called by beServer to fulfill each specific resource request
-				DestroyLock()
-				AcquireLock()
-				ReleaseLock()
-				CreateCondition()
-				DestroyCondition()
-				WaitCondition()
-				SignalCondition()
-				BroadcastCondition()
-				CreateMonitor()
-				DestroyMonitor()
-				GetMonitor()
-				SetMonitor()
+		- threads/main.cc
+			- void askOtherServersFcn(Request*, int, void*, void*) - function for server to construct request messages to other servers
+			- void awaitResponse(int) - function to fork to await responses from other servers, so that it can go on to handle other incoming requests
+			- void forkWait(int params) - function for server to fork so that it can move on to handle other incoming messages while waiting on a condition
+			- void forkSignal(int params) - function for server to fork so that it can move on to handle other incoming messages while signaling on a condition
+			- void forkBroadcast(int params) - function for server to fork so that it can move on to handle other incoming messages while broadcasting on a condition
+			- void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) - function for a server to handle incoming requests (questions) from another server (different from awaitResponse)
 
 	+ Functions modified and in which file.
-			addrspace.cc:
-				AddrSpace(OpenFile *executable) - change to not load anything into memory
-				SaveState/RestoreState - invalidates TLB on context switch
-			exception.cc:
-				ExceptionHandler(ExceptionType which) - expand for new syscall cases, add page fault handling
+		- threads/main.cc
+			- main() - modified to add new command line flags:
+				- "-servers <#>" - flag to set the number of servers
+				- "-server" - flag to run a server
+			- beServer() - modified to handle incoming server messages and other management of message-sending coordination
+			- CreateLock() - this and the following were modified to query other servers for missing resources before sending a failure message
+			- DestroyLock()
+			- AcquireLock()
+			- ReleaseLock()
+			- CreateCondition()
+			- DestroyCondition()
+			- WaitCondition()
+			- SignalCondition()
+			- BroadcastCondition()
+			- CreateMonitor()
+			- DestroyMonitor()
+			- GetMonitor()
+			- SetMonitor()
+		- userprog/progtest.cc
+			- void StartProcess(char *filename) - modified to set thread index based on mailbox # monitor variable
+		- userprog/exception.cc
+			- void Fork_Syscall(int vaddr, int len) - modified to set thread index based on mailbox # monitor variable
+			- void Exec_Syscall(int vaddr, int len) - modified to set thread index based on mailbox # monitor variable
+			- void Acquire_Syscall(int index) - this and the following syscall functions were modified to randomly choose a server to message to complete the action
+			- void Release_Syscall(int index)
+			- void Wait_Syscall(int conditionIndex, int lockIndex)
+			- void Signal_Syscall(int conditionIndex, int lockIndex)
+			- void Broadcast_Syscall(int conditionIndex, int lockIndex)
+			- int CreateLock_Syscall(int vaddr, int len)
+			- void DestroyLock_Syscall(int index)
+			- int CreateCondition_Syscall(int vaddr, int len)
+			- void DestroyCondition_Syscall(int index)
+			- int CreateMonitor_Syscall(int vaddr, int len, int size)
+			- void DestroyMonitor_Syscall(int monitorIndex)
+			- int GetMonitor_Syscall(int monitorIndex, int position)
+			- int SetMonitor_Syscall(int monitorIndex, int position, int value)
 
 V. Testing:  
-+ NOTE: Make sure a file named 'swapfile' exists in the code directory
-
-+ Part 1 and Part 2 Tests:
-	+ test/fork_matmult
-		- forks two instances of matmult, which has been converted into a fork-able function within fork_matmult.c
-		- Expected output:
-			$: nachos -P RAND -x ../test/fork_matmult
-			Exit result: 0
-			Exit result: 7220
-			Exit result: 7220
-			Machine halting!
-
-			Ticks: total 2675684, idle 0, system 1269700, user 1405984
-			Disk I/O: reads 0, writes 0
-			Console I/O: reads 0, writes 0
-			Paging: faults 0
-			Network I/O: packets received 0, sent 0
-
-	+ test/exec_matmult:
-		- execs two instances of the matmult user program
-		- Expected output:
-			$: nachos -P RAND -x ../test/exec_matmult
-			Exit result: 0
-			Exit result: 7220
-			Exit result: 7220
-			Machine halting!
-
-			Ticks: total 2675403, idle 0, system 1269450, user 1405953
-			Disk I/O: reads 0, writes 0
-			Console I/O: reads 0, writes 0
-			Paging: faults 0
-			Network I/O: packets received 0, sent 0
-+ Part 3 Tests
-	+ testlock
-		- tests Create, Acquire, Release, Destroy lock
-		- Expected output:
-			- Client:
-				$: nachos -m 1 -x ../test/testlock
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Acquire Lock: Sending message: 3 0
-				Release Lock: Sending message: 4 0
-				Destroy Lock: Sending message: 2 0
-				Exit result: 0
-				Machine halting!
-			- Server
-				$: nachos -m 0 -server
-				Request to Create Lock
-				Creating Lock:  Lock 1
-				Create Lock Server: Sending message: 0 to 1, box 1
-				Request to Acquire Lock
-				Acquiring Lock: 0
-				Acquire Lock Server: Sending success message: 1 to 1, box 1
-				Request to Release Lock
-				Releasing lock: 0
-				Release Lock Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Lock
-				Destroying Lock: 0
-				Destroy Lock Server: Sending success message: 1 to 1, box 1
-	+ testlockbad
-		- tests Creating, then Releasing, then Acquiring a lock (bad order)
-		- Expected output:
-			- Client:
-				testlockbad: this test creates a lock and calls acquire and release in the wrong order.
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Release Lock: Sending message: 4 0
-				Acquire Lock: Sending message: 3 0
-				Destroy Lock: Sending message: 2 0
-				Exit result: 0
-				Machine halting!
-			- Server:
-				Request to Create Lock
-				Creating Lock:  Lock 1
-				Create Lock Server: Sending message: 0 to 1, box 1
-				Request to Release Lock
-				Releasing lock: 0
-				        Non-owner thread main cannot release lock  Lock 1!
-				Release Lock Server: Sending success message: 1 to 1, box 1
-				Request to Acquire Lock
-				Acquiring Lock: 0
-				Acquire Lock Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Lock
-				Destroying Lock: 0
-				Destroy Lock Server: Sending failure message: -1 to 1, box 1
-	+ testcondition1:
-		- testcondition1: this test creates a lock and condition and calls acquire, broadcast, and release in the right order
-		- Expected output:
-			- Client:
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Acquire Lock: Sending message: 3 0
-				Create Condition: Sending message: 5 Condition 1
-				Broadcast Condition: Sending message: 9 0 0
-				Release Lock: Sending message: 4 0
-				Destroy Condition: Sending message: 6 0
-				Destroy Lock: Sending message: 2 0
-				Exit result: 0
-				Machine halting!
-			- Server:
-			Request to Create Lock
-			Creating Lock:  Lock 1
-			Create Lock Server: Sending message: 0 to 1, box 1
-			Request to Acquire Lock
-			Acquiring Lock: 0
-			Acquire Lock Server: Sending success message: 1 to 1, box 1
-			Request to Create Condition
-			Creating condition:  Condition 1
-			Create Condition Server: Sending message: 0 to 1, box 1
-			Request to Broadcast Condition
-			Broadcasting on condition: 0; with lock: 0
-			Broadcast Condition Server: Sending success message: 1 to 1, box 1
-			Request to Release Lock
-			Releasing lock: 0
-			Release Lock Server: Sending success message: 1 to 1, box 1
-			Request to Destroy Condition
-			Destroying condition: 0
-			Destroy Condition Server: Sending success message: 1 to 1, box 1
-			Request to Destroy Lock
-			Destroying Lock: 0
-			Destroy Lock Server: Sending success message: 1 to 1, box 1
-	+ testcondition2:
-		- Creates a lock and condition and calls acquire, signal, and release in the right order.
-		- Expected output:
-			- Client
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Acquire Lock: Sending message: 3 0
-				Create Condition: Sending message: 5 Condition 1
-				Signal Conditon: Sending message: 8 0 0
-				Release Lock: Sending message: 4 0
-				Destroy Condition: Sending message: 6 0
-				Destroy Lock: Sending message: 2 0
-				Exit result: 0
-				Machine halting!
-			- Server
-				Request to Create Lock
-				Creating Lock:  Lock 1
-				Create Lock Server: Sending message: 0 to 1, box 1
-				Request to Acquire Lock
-				Acquiring Lock: 0
-				Acquire Lock Server: Sending success message: 1 to 1, box 1
-				Request to Create Condition
-				Creating condition:  Condition 1
-				Create Condition Server: Sending message: 0 to 1, box 1
-				Request to Signal Condition
-				Signaling on condition: 0; with lock: 0
-				Signal Condition Server: Sending success message: 1 to 1, box 1
-				Request to Release Lock
-				Releasing lock: 0
-				Release Lock Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Condition
-				Destroying condition: 0
-				Destroy Condition Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Lock
-				Destroying Lock: 0
-				Destroy Lock Server: Sending success message: 1 to 1, box 1
-	+ testconditionbad1
-		- Creates a condition and broadcasts without a valid lock number.
-		- Expected output:
-			- Client
-				Create Condition: Sending message: 5 Condition 1
-				Broadcast Condition: Sending message: 9 0 -1
-				Destroy Condition: Sending message: 6 0
-				Exit result: 0
-				Machine halting!
-			- Server
-				Request to Create Condition
-				Creating condition:  Condition 1
-				Create Condition Server: Sending message: 0 to 1, box 1
-				Request to Broadcast Condition
-				Broadcasting on condition: 0; with lock: -1
-				Bad lock index to acquire.
-				Acquire Lock Server: Sending failure message: -1 to 1, box 1
-				Request to Destroy Condition
-				Destroying condition: 0
-				Destroy Condition Server: Sending success message: 1 to 1, box 1
-	+ testconditionbad2
-		- Creates a lock and condition and calls broadcast without acquiring the lock.
-		- Expected output:
-			- Client
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Create Condition: Sending message: 5 Condition 1
-				Broadcast Condition: Sending message: 9 0 0
-				Destroy Condition: Sending message: 6 0
-				Destroy Lock: Sending message: 2 0
-				Exit result: 0
-				Machine halting!
-			- Server
-				Request to Create Lock
-				Creating Lock:  Lock 1
-				Create Lock Server: Sending message: 0 to 1, box 1
-				Request to Create Condition
-				Creating condition:  Condition 1
-				Create Condition Server: Sending message: 0 to 1, box 1
-				Request to Broadcast Condition
-				Broadcasting on condition: 0; with lock: 0
-				Trying to call Broadcast on Lock not owned by mainBroadcast Condition Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Condition
-				Destroying condition: 0
-				Destroy Condition Server: Sending success message: 1 to 1, box 1
-				Request to Destroy Lock
-				Destroying Lock: 0
-				Destroy Lock Server: Sending success message: 1 to 1, box 1
-
-	+ testlockname:
-		- tries to create three locks, first is created as usual, second is created as usual, and third has same name as first so the first lock index is returned instead of creating a new lock
-		- Expected output:
-			$: nachos -m 0 -server
-			Got "1 Lock 1" from 1, box 1
-			REQUEST NUMBER: 1
-			Request to Create Lock
-			LOCK NAME:  Lock 1
-			Create Lock Server: Sending message: 0 to 1, box 1
-			Got "1 Lock 2" from 1, box 1
-			REQUEST NUMBER: 1
-			Request to Create Lock
-			LOCK NAME:  Lock 2
-			Create Lock Server: Sending message: 1 to 1, box 1
-			Got "1 Lock 1" from 1, box 1
-			REQUEST NUMBER: 1
-			Request to Create Lock
-			LOCK NAME:  Lock 1
-			Create Lock Server: Sending message: 0 to 1, box 
-
-			$: nachos -m 1 -x ../test/testlockname
-			Prog test
-			testlockname: this test creates three locks to show multiple locks can be created, and two locks with the same name to show that names must be unique.
-			CreateLock syscall.
-			Create Lock: Sending message: 1 Lock 1
-			CreateLock syscall.
-			Create Lock: Sending message: 1 Lock 2
-			CreateLock syscall.
-			Create Lock: Sending message: 1 Lock 1
-			l1 (Lock 1) has index 0
-			l2 (Lock 2) has index 1
-			l3 (Lock 1) has index 0
-			Exit result: 0
-			Machine halting!
-
-			Ticks: total 17890, idle 17323, system 440, user 127
-			Disk I/O: reads 0, writes 0
-			Console I/O: reads 0, writes 0
-			Paging: faults 0
-			Network I/O: packets received 3, sent 3
-	
-	+ testmonitor
-		- Creates a lock, a condition, and a monitor from the previous two, and then forks to get and set the monitor
-		- Expected Output:
-			- Client
-				CreateLock syscall.
-				Create Lock: Sending message: 1 Lock 1
-				Create Condition: Sending message: 5 Condition 1
-				Create Monitor: Sending message: 10 0 0 1
-				Exit result: 0
-				Get 0
-				Get Monitor: Sending message: 12 0
-				Set Monitor: Sending message: 13 0
-				Machine halting!
-			- Server
-				Request to Create Lock
-				Creating Lock:  Lock 1
-				Create Lock Server: Sending message: 0 to 1, box 1
-				Request to Create Condition
-				Creating condition:  Condition 1
-				Create Condition Server: Sending message: 0 to 1, box 1
-				Request to Create Monitor
-				Creating monitor: 0
-				Create Monitor Server: Sending message: 0 to 1, box 1
-				Request to Get Monitor
-				Getting monitor: 0
-				Get Monitor Server: Sending success message: 0 to 1, box 1
-				Request to Set Monitor
-				Setting monitor: 0; with value: -1
-	
-	+ testmonitorbad
-		- Tries to create a monitor with bogus lock and condition values; tries to get on an invalid monitor
-		- Expected Output:
-			- Client
-				Create Monitor: Sending message: 10 -1 -1 1
-				Get Monitor: Sending message: 12 -1
-				Exit result: 0
-				Machine halting!
-			- Server
-				Request to Create Monitor
-				Creating monitor: -1
-				Create Monitor Server: Sending message: 0 to 1, box 1
-				Request to Get Monitor
-				Getting monitor: -1
-				Invalid monitor index
-				Get Monitor Server: Sending failure message: -1 to 1, box 1
++ To run a server:
+	nachos -m <#MACHINE_NUM> -servers <#NUM_SERVERS> -server
++ To run a client user program:
+	nachos -m <#MACHINE_NUM> -servers <#NUM_SERVERS> -x <USER_PROG>
++ Part 1:
+	- ???
++ Part 2: 
+	- ???
 
 VI. Discussion:
 + Part 1-2
 	+ Experiment expectation.  (What is supposed to happen.)
-		fork_matmult:
-			- Part 1 (NumPhysPages large): matmult should successfully execute two times by being forked as a function. The output each time is printed on exit. 
-			- Part 2 (NumPhysPages small): matmult should successfully execute two times by being forked as a function. The output each time is printed on exit. 
-		exec_matmult:
-			- Part 1 (NumPhysPages large): matmult should successfully execute two times by being forked as a user program. The output each time is printed on exit.
-			- Part 2 (NumPhysPages small): matmult should successfully execute two times by being forked as a user program. The output each time is printed on exit.
-
+		
 	+ Experiment result.  (What actually happened.)
-		fork_matmult: matmult runs twice successfully and the return value is printed on exit.
-		exec_matmult: matmult runs twice successfully and the return value is printed on exit.
 		
 	+ Explanation
-		fork_matmult:
-			- Part 1 (NumPhysPages large): Because NumPhysPages is large, memory management only needs to utilize the PTs, IPT, and TLB.
-			- Part 2 (NumPhysPages small): Because NumPhysPages is small, VM utilizes PTs, IPT, and TLB, as well as a swapfile and page eviction when memory is full.
-		exec_matmult: 
-			- Part 1 (NumPhysPages large): Because NumPhysPages is large, memory management only needs to utilize the PTs, IPT, and TLB. Because nothing is preloaded into memory initially, we know our implementation of handling page faults is successful as the program is dynamically loaded into memory.
-			- Part 2 (NumPhysPages small): Because NumPhysPages is small, VM utilizes PTs, IPT, and TLB, as well as a swapfile and page eviction when memory is full. Since matmult is larger than the small physical memory size (NumPhysPages == 32), we know that at some point physical memory will run out and page eviction and swap file use will have to take place.
-+ Part 3
++ Part 2
 	+ Experiment expectation
-		- testlock
-			- The user program Creates, Acquires, Releases, and Destroys a lock
-			- It is expected that the client sends requests for each of these actions and that the server sends successful responses to each because they happen in the right order
-		= testlockbad
-			- Because the user Releases and Acquires a lock in the wrong order, the server should send error reply messages
-		= testcondition1
-			- Because Create, Broadcast, and Acquire on the lock, and Destroy are all called in the correct order, the server should only send success messages.
-		= testcondition2
-			- Because acquire, signal and release are called in the right order, the server should only send success messages
-		= testconditionbad1
-			- When broadcast is called, because the lock number is invalid the server should respond with a failure
-		= testconditionbad2
-			- When the broadcast is called, because the lock was not acquire beforehand, the server should respond with a failure.
-		= testlockname
-			- The last lock creation should return the same index as the first because they have the same name.
-		= testmonitor
-			- The server should respond with all success responses
-		= testmonitorbad
-			- The server should respond with fail responses
+		
 	+ Experiment Result
-		- testlock
-			- The server sends successful responses to each resource request.
-		= testlockbad
-			- The server should sends error reply messages for Release and Acquire.
-		= testcondition1
-			- The server sends success messages for each resource request.
-		= testcondition2
-			- The server sends success messages for each resource request.
-		= testconditionbad1
-			- The server sends a failure message when broadcast is called.
-		= testconditionbad2
-			- The server sends a failure message when broadcast is calld.
-		= testlockname
-			- The last lock creation returns the same index as the first because they have the same name.
-		= testmonitor
-			- The server responds with all success
-		= testmonitorbad
-			- The server responds with failure
+		
 	+ Explanation
-		- testlock
-			- The server sends successful responses to each resource request because they happen in the right order
-		= testlockbad
-			- The server should sends error reply messages for Release and Acquire because the program tries the Release the lock it has not yet acquired, which is incorrect.
-		= testcondition1
-			- The server sends success messages for each resource request because the program creates, acquires lock, broadcasts, destroys in the correct order.
-		= testcondition2
-			- The server sends success messages for each resource request because the program creates, acquires lock, broadcasts, destroys in the correct order.
-		= testconditionbad1
-			- The server sends a failure message when broadcast is called because the lock index is invalid.
-		= testconditionbad2
-			- The server sends a failure message when broadcast is called because the program must first acquire the lock.
-		= testlockname
-			- The last lock creation returns the same index as the first because they have the same name.
-		= testmonitor
-			- All success because Set and Get are being called with valid locks and conditions
-		= testmonitorbad
-			- Failure because the lock and condition being used to create the monitor are invalid
+		
 
 
 

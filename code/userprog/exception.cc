@@ -1346,7 +1346,7 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		char buffer[MaxMailSize];
 
     	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
-    	kernelMonitorLock.Release();
+    	
     	return atoi(buffer);
 	#endif
 	kernelMonitorLock.Release();

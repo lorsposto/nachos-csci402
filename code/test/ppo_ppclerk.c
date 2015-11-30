@@ -9,8 +9,15 @@ typedef enum {
 	AVAILABLE, BUSY, BREAK
 } clerkState;
 
-int myIndex, i, ppClerkIndexLock, ppLineLock, regularLineCV, bribeLineCV, transactionCV, transactionLock, breakCV,
-	bribeMonitorIndex, regularMonitorIndex, ppMonitorIndex, ppCustomerIndex, customer, money;
+int myIndex, i, passClerkIndexLock, ppLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
+	bribeMonitorIndex, regularMonitorIndex, passMonitorIndex, passCustomerIndex, customer, money, customerApprovedList;
+
+char myBribeCV[32] = " PassClerkBribeCV";
+char myRegularCV[32] = " PassClerkRegularCV";
+char myTransactionCV[32] = " PassClerkTransactionCV";
+char myRegularCount[32] = " PassClerkRegularLineCount";
+char myBribeCount[32] = " PassClerkBribeLineCount";
+char myTransactionLock[32] = " PassClerkTransactionLock";
 
 clerkState state;
 
@@ -23,7 +30,7 @@ int getRegularLineCount() {
 }
 
 int getCurrentCustomer() {
-	return GetMonitor(ppCustomerIndex, myIndex);
+	return GetMonitor(passCustomerIndex, myIndex);
 }
 
 int main() {
@@ -31,24 +38,37 @@ int main() {
 	bool approved = false;
 	state = AVAILABLE;
 
-	ppClerkIndexLock = CreateLock("PassClerkIndexLock", 18);
-	ppLineLock = CreateLock("PassClerkLineLock", 14);
-	regularLineCV = CreateCondition("PassClerkRegularCV", 18);
-	bribeLineCV = CreateCondition("PassClerkBribeCV", 16);
-	transactionCV = CreateCondition("PassClerkTransactionCV", 22);
-	transactionLock = CreateLock("PassClerkTransactionLock", 24);
-	breakCV = CreateCondition("PassClerkBreakCV", 16);
-	bribeMonitorIndex = CreateMonitor("PassBribeLines", 14, 1);
-	regularMonitorIndex = CreateMonitor("PassRegularLines", 16, 1);
-	ppMonitorIndex = CreateMonitor("PassClerkCount", 14, 100);
-	ppCustomerIndex = CreateMonitor("PassCustomerIndex", 17, 100);
+	passClerkIndexLock = CreateLock("PassClerkIndexLock", 18);
+	ppLineLock = CreateLock("PassClerkLineLock", 17);
+	regularLineCVs = CreateMonitor("PassClerkRegularCV", 18, 100);
+	bribeLineCVs = CreateMonitor("PassClerkBribeCV", 18, 100);
+	transactionCVs = CreateMonitor("PassClerkTransactionCV", 22, 100);
+	transactionLocks = CreateMonitor("PassClerkTransactionLock", 24, 100);
+	breakCVs = CreateMonitor("PassClerkBreakCV", 16, 100);
+	bribeMonitorIndex = CreateMonitor("PassBribeLineNum", 16, 100);
+	regularMonitorIndex = CreateMonitor("PassRegularLineNum", 18, 100);
+	passMonitorIndex = CreateMonitor("PassClerkCount", 14, 1);
+	passCustomerIndex = CreateMonitor("PassCustomerIndex", 17, 100);
+	customerApprovedList = CreateMonitor("CustomerApprovedList", 20, 100);
 
-	Acquire(ppClerkIndexLock);
-	myIndex = GetMonitor(ppMonitorIndex, 0);
-	Release(ppClerkIndexLock);
+	Acquire(passClerkIndexLock);
+	myIndex = GetMonitor(passMonitorIndex, 0);
+	Release(passClerkIndexLock);
 
-	customer = -1;
-	money = 0;
+	myBribeCV[0] = myIndex + '0';
+	myRegularCV[0] = myIndex + '0';
+	myTransactionCV[0] = myIndex + '0';
+	myRegularCount[0] = myIndex + '0';
+	myBribeCount[0] = myIndex + '0';
+	myTransactionLock[0] = myIndex + '0';
+
+	SetMonitor(bribeLineCVs, myIndex, CreateMonitor(myBribeCV, 32, 1));
+	SetMonitor(regularLineCVs, myIndex, CreateMonitor(myRegularCV, 32, 1));
+	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 32, 1));
+	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
+	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
+	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
+
 
 	while(1) {
 		while (state != BREAK) {
@@ -58,34 +78,34 @@ int main() {
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
-				Signal(bribeLineCV, ppLineLock);
+				Signal(GetMonitor(bribeLineCVs, myIndex), ppLineLock);
 				state == BUSY;
 			} else if (getRegularLineCount() > 0) {
 				Write("PassportClerk ", 14, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
-				Signal(regularLineCV, ppLineLock);
+				Signal(GetMonitor(regularLineCVs, myIndex), ppLineLock);
 				state = BUSY;
 			} else {
 				state = BREAK;
-				Write("ApplicationClerk ", 17, ConsoleOutput);
+				Write("PassportClerk ", 14, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is going on break.\n", 20, ConsoleOutput);
-				Wait(breakCV, appLineLock);
-				Write("ApplicationClerk ", 17, ConsoleOutput);
+				Wait(GetMonitor(breakCVs, myIndex), ppLineLock);
+				Write("PassportClerk ", 14, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is coming off break.\n", 22, ConsoleOutput);
-				Release(appLineLock);
+				Release(ppLineLock);
 				break;
 			}
 
-			Acquire(transactionLock);
-			Release(appLineLock);
+			Acquire(GetMonitor(transactionLocks, myIndex));
+			Release(ppLineLock);
 
-			Wait(transactionCV, transactionLock);
+			Wait(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
 
-			Write("ApplicationClerk ", 17, ConsoleOutput);
+			Write("PassportClerk ", 14, ConsoleOutput);
 			PrintInt(myIndex);
 			Write(" has received SSN ", 18, ConsoleOutput);
 			PrintInt(getCurrentCustomer());
@@ -97,7 +117,7 @@ int main() {
 				Yield();
 			}
 
-			Write("ApplicationClerk ", 17, ConsoleOutput);
+			Write("PassportClerk ", 17, ConsoleOutput);
 			PrintInt(myIndex);
 			Write(" has recorded a complete application for Customer ", 50,
 			ConsoleOutput);
@@ -106,9 +126,9 @@ int main() {
 
 			/* set application as complete */
 			SetMonitor(customerApprovedList, getCurrentCustomer(), 1);
-			Signal(transactionCV, transactionLock);
-			Wait(transactionCV, transactionLock);
-			Release(transactionLock);
+			Signal(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
+			Wait(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
+			Release(GetMonitor(transactionLocks, myIndex));
 		}
 	}
 

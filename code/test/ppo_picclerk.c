@@ -70,9 +70,6 @@ int main() {
 	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
 	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
 
-	customer = -1;
-	money = 0;
-
 	while(1) {
 		while (state != BREAK) {
 			Acquire(picLineLock);

@@ -12,21 +12,21 @@ typedef enum {
 int myIndex, i, appClerkIndexLock, appLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
 	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerAppDoneList, customer, money;
 
-char myBribeCV[32] = " PicClerkBribeCV";
-char myRegularCV[32] = " PicClerkRegularCV";
-char myTransactionCV[32] = " PicClerkTransactionCV";
-char myRegularCount[32] = " PicClerkRegularLineCount";
-char myBribeCount[32] = " PicClerkBribeLineCount";
-char myTransactionLock[32] = " PicClerkTransactionLock";
+char myBribeCV[32] = " AppClerkBribeCV";
+char myRegularCV[32] = " AppClerkRegularCV";
+char myTransactionCV[32] = " AppClerkTransactionCV";
+char myRegularCount[32] = " AppClerkRegularLineCount";
+char myBribeCount[32] = " AppClerkBribeLineCount";
+char myTransactionLock[32] = " AppClerkTransactionLock";
 
 clerkState state;
 
 int getBribeLineCount() {
-	return GetMonitor(GetMonitor(bribeMonitorIndex, myIndex), myIndex);
+	return GetMonitor(bribeMonitorIndex, myIndex);
 }
 
 int getRegularLineCount() {
-	return GetMonitor(GetMonitor(regularMonitorIndex, myIndex), myIndex);
+	return GetMonitor(regularMonitorIndex, myIndex);
 }
 
 int getCurrentCustomer() {
@@ -69,9 +69,6 @@ int main() {
 	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
 	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
 
-
-	customer = -1;
-	money = 0;
 
 	while(1) {
 		while (state != BREAK) {

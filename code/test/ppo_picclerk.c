@@ -14,6 +14,14 @@ int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, tr
 
 clerkState state;
 
+char myBribeCV[32] = " PicClerkBribeCV";
+char myRegularCV[32] = " PicClerkRegularCV";
+char myTransactionCV[32] = " PicClerkTransactionCV";
+char myRegularCount[32] = " PicClerkRegularLineCount";
+char myBribeCount[32] = " PicClerkBribeLineCount";
+char myTransactionLock[32] = " PicClerkTransactionLock";
+
+
 int getBribeLineCount() {
 	return GetMonitor(bribeMonitorIndex, myIndex);
 }
@@ -47,6 +55,20 @@ int main() {
 	Acquire(picClerkIndexLock);
 	myIndex = GetMonitor(picMonitorIndex, 0);
 	Release(picClerkIndexLock);
+
+	myBribeCV[0] = myIndex + '0';
+	myRegularCV[0] = myIndex + '0';
+	myTransactionCV[0] = myIndex + '0';
+	myRegularCount[0] = myIndex + '0';
+	myBribeCount[0] = myIndex + '0';
+	myTransactionLock[0] = myIndex + '0';
+
+	SetMonitor(bribeLineCVs, myIndex, CreateMonitor(myBribeCV, 32, 1));
+	SetMonitor(regularLineCVs, myIndex, CreateMonitor(myRegularCV, 32, 1));
+	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 32, 1));
+	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
+	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
+	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
 
 	customer = -1;
 	money = 0;

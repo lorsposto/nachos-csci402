@@ -1372,7 +1372,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 		ss << monitorIndex;
 		std::string indexStr = ss.str();
 		char b[5];
-		sprintf(b, "%i ", DESTROYCOND);
+		sprintf(b, "%i ", DESTROYMV);
 		std::string destroyMonitor(b);
 
 		std::string message = destroyMonitor + indexStr;
@@ -1391,7 +1391,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 
 		//imo we should have a receive here just to make sure the action finishes on the server b4 returning
     	postOffice->Receive(currentThread->threadIndex, &inPktHdr, &inMailHdr, buffer);
-    	kernelMonitorLock.Release();
+    	
     	return;
 	#endif
 

@@ -2256,6 +2256,20 @@ void askOtherServersFcn(Request * r, int code, void* arg1, void* arg2) {
 //		}
 //	}
 
+	if (NUM_SERVERS <= 1) {
+		std::vector<Request *>::iterator it = requests.begin();
+		for(it = requests.begin(); it != requests.end(); ++it) {
+			if ((*it)->index == r->index) {
+				break;
+			}
+		}
+		r->status = Request::FAILED;
+		cout << "No other servers to query." << endl;
+		requestLock.Acquire();
+		requests.erase(it);
+		requestLock.Release();
+		return;
+	}
 	for (int i=0; i < NUM_SERVERS; ++i) {
 		if (i != machineNum) {
 			outMailHdr.from = 0;

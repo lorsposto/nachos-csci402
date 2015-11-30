@@ -10,8 +10,7 @@ typedef enum {
 } clerkState;
 
 int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
-	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerApprovedList, 
-	customerPicDoneList, customer, money;
+	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerPicDoneList, customer, money;
 
 clerkState state;
 
@@ -33,7 +32,7 @@ int main() {
 	state = AVAILABLE;
 
 	picClerkIndexLock = CreateLock("PicClerkIndexLock", 17);
-	picLineLock = CreateLock("PicClerkLineLock", 13);
+	picLineLock = CreateLock("PicClerkLineLock", 16);
 	regularLineCVs = CreateMonitor("PicClerkRegularCV", 17, 100);
 	bribeLineCVs = CreateMonitor("PicClerkBribeCV", 15, 100);
 	transactionCVs = CreateMonitor("PicClerkTransactionCV", 21, 100);
@@ -43,7 +42,7 @@ int main() {
 	regularMonitorIndex = CreateMonitor("PicRegularLineNum", 17, 100);
 	picMonitorIndex = CreateMonitor("PicClerkCount", 13, 100);
 	picCustomerIndex = CreateMonitor("PicCustomerIndex", 16, 100);
-	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 20, 100);
+	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 19, 100);
 
 	Acquire(picClerkIndexLock);
 	myIndex = GetMonitor(picMonitorIndex, 0);

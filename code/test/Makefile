@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk
+all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk ppo_customer
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -211,6 +211,12 @@ ppo_picclerk.o: ppo_picclerk.c
 ppo_picclerk: ppo_picclerk.o start.o
 	$(LD) $(LDFLAGS) start.o ppo_picclerk.o -o ppo_picclerk.coff
 	../bin/coff2noff ppo_picclerk.coff ppo_picclerk	
+
+ppo_customer.o: ppo_customer.c
+	$(CC) $(CFLAGS) -c ppo_customer.c
+ppo_customer: ppo_customer.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_customer.o -o ppo_customer.coff
+	../bin/coff2noff ppo_customer.coff ppo_customer
 
 clean:
 	rm -f *.o *.coff

@@ -10,7 +10,7 @@ typedef enum {
 } clerkState;
 
 int myIndex, i, appClerkIndexLock, appLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
-	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerApprovedList, customer, money;
+	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerAppDoneList, customer, money;
 
 clerkState state;
 
@@ -32,12 +32,12 @@ int main() {
 	state = AVAILABLE;
 
 	appClerkIndexLock = CreateLock("AppClerkIndexLock", 17);
-	appLineLock = CreateLock("AppClerkLineLock", 13);
+	appLineLock = CreateLock("AppClerkLineLock", 16);
 	appMonitorIndex = CreateMonitor("AppClerkCount", 13, 100);
 	appCustomerIndex = CreateMonitor("AppCustomerIndex", 16, 100);
 	bribeMonitorIndex = CreateMonitor("AppClerkBribeLineNum", 20, 100);
 	regularMonitorIndex = CreateMonitor("AppClerkRegularLineNum", 22, 100);
-	customerApprovedList = CreateMonitor("CustomerApprovedList", 20, 100);
+	customerAppDoneList = CreateMonitor("CustomerAppDoneList", 19, 100);
 	bribeLineCVs = CreateMonitor("AppClerkBribeCV", 15, 100);
 	regularLineCVs = CreateMonitor("AppClerkRegularCV", 17, 100);
 	transactionCVs = CreateMonitor("AppClerkTransactionCV", 21, 100);
@@ -106,7 +106,7 @@ int main() {
 			Write(".\n", 2, ConsoleOutput);
 
 			/* set application as complete */
-			SetMonitor(customerApprovedList, getCurrentCustomer(), 1);
+			SetMonitor(customerAppDoneList, getCurrentCustomer(), 1);
 			Signal(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
 			Wait(GetMonitor(transactionCVs, myIndex), GetMonitor(transactionLocks, myIndex));
 			Release(GetMonitor(transactionLocks, myIndex));

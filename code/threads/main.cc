@@ -2265,9 +2265,11 @@ void askOtherServersFcn(Request * r, int code, void* arg1, void* arg2) {
 		}
 		r->status = Request::FAILED;
 		cout << "No other servers to query." << endl;
-		requestLock.Acquire();
-		requests.erase(it);
-		requestLock.Release();
+//		requestLock.Acquire();
+//		cout << "Requests length " << requests.size() << endl;
+//		cout << "Erasing request " << (*it)->index << " represented by " << *(it) << " of " << r << endl;
+//		requests.erase(it);
+//		requestLock.Release();
 		return;
 	}
 	for (int i=0; i < NUM_SERVERS; ++i) {

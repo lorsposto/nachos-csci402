@@ -2294,7 +2294,7 @@ void askOtherServersFcn(Request * r, int code, void* arg1, void* arg2) {
 	      		printf("CODE %i to Server %i: The Server query failed. You must not have the other Nachos running. Terminating Nachos.\n", code, i);
 	      		interrupt->Halt();
 	    	}
-			Thread *t = new Thread("Requst", 0);
+			Thread *t = new Thread("Request", 0);
 			t->Fork(awaitResponse, r->index);
 //			 awaitResponse(rindex);
 		}

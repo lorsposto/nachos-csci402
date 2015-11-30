@@ -1491,14 +1491,26 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	outMailHdr.to = 0;
 
 	std::stringstream ss;
-	ss << monitorIndex;
+	ss << monitorIndex << " ";
 	std::string indexStr = ss.str();
-//	std::string getMonitor = "13 ";
+
+	ss.clear();
+	ss.str("");
+
+	ss << position << " ";
+	std::string positionStr = ss.str();
+
+	ss.clear();
+	ss.str("");
+
+	ss << value;
+	std::string valueStr = ss.str();
+
 	char b[5];
 	sprintf(b, "%i ", SETMV);
 	std::string getMonitor(b);
 
-	std::string message = getMonitor + indexStr;
+	std::string message = getMonitor + indexStr + positionStr + valueStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
 	cout << "Set Monitor: Sending message: " << message << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));

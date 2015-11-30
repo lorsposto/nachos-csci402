@@ -1,10 +1,13 @@
 #include "syscall.h"
 
 int main() {
-    int m;
+    int m, n;
     m = CreateMonitor("TestMonitor", 11, 1);
     PrintInt(m);
-    SetMonitor(m, 0, 1);
-    GetMonitor(m, 0);
+    Write("\n", 1, ConsoleOutput);
+    SetMonitor(m, 0, 8);
+    n = GetMonitor(m, 0);
+    PrintInt(n);
+    Write("\n", 1, ConsoleOutput);
     DestroyMonitor(m);
 }

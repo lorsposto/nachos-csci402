@@ -806,6 +806,7 @@ int main() {
 	SetMonitor(customerTypes, customer, CUSTOMER);
 
 	SetMonitor(customerIndex, 0, GetMonitor(customerIndex, 0) + 1);
+	customer = customerIndex;
 
 	Write("Customer ", 9, ConsoleOutput);
 	PrintInt(customer);

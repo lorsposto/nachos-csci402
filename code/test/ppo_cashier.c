@@ -38,9 +38,9 @@ int main() {
 	cashierCustomerIndex = CreateMonitor("CashierCustomerIndex", 19, 100);
 	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 19, 100); /* ==picdone */
 	customerAppDoneList = CreateMonitor("CustomerAppDoneList", 19, 100); /* == appdone */
-	customerPassDoneList = CreateMonitor("CustomerPassDoneList", 20, 100);
+	customerPassDoneList = CreateMonitor("CustomerPassportDoneList", 20, 100);
 	customerEarlybirdList = CreateMonitor("CustomerEarlybirdList", 21, 100); /* == earlybird */
-	customerApprovedList = CreateMonitor("CustomerApprovedList", 20, 100); 
+	customerApprovedList = CreateMonitor("CustomerCashierDoneList", 20, 100); 
 	cashierMoneys = CreateMonitor("CashierMoneyList", 16, 100); 
 	customerMoneys = CreateMonitor("CustomerMoneyList", 17, 100); 
 	customerGotPassport = CreateMonitor("CustomerGotPassportList", 23, 100); 

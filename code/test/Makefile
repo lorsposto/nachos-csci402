@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk ppo_ppclerk ppo_cashier ppo_manager ppo_customer
+all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk ppo_ppclerk ppo_cashier ppo_manager ppo_customer ppo_exec_customers ppo_exec_cashiers ppo_exec_manager ppo_exec_picappclerks ppo_exec_ppclerks
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -236,7 +236,35 @@ ppo_customer: ppo_customer.o start.o
 	$(LD) $(LDFLAGS) start.o ppo_customer.o -o ppo_customer.coff
 	../bin/coff2noff ppo_customer.coff ppo_customer
 
+ppo_exec_cashiers.o: ppo_exec_cashiers.c
+	$(CC) $(CFLAGS) -c ppo_exec_cashiers.c
+ppo_exec_cashiers: ppo_exec_cashiers.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_exec_cashiers.o -o ppo_exec_cashiers.coff
+	../bin/coff2noff ppo_exec_cashiers.coff ppo_exec_cashiers
 
+ppo_exec_customers.o: ppo_exec_customers.c
+	$(CC) $(CFLAGS) -c ppo_exec_customers.c
+ppo_exec_customers: ppo_exec_customers.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_exec_customers.o -o ppo_exec_customers.coff
+	../bin/coff2noff ppo_exec_customers.coff ppo_exec_customers
+
+ppo_exec_manager.o: ppo_exec_manager.c
+	$(CC) $(CFLAGS) -c ppo_exec_manager.c
+ppo_exec_manager: ppo_exec_manager.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_exec_manager.o -o ppo_exec_manager.coff
+	../bin/coff2noff ppo_exec_manager.coff ppo_exec_manager
+
+ppo_exec_picappclerks.o: ppo_exec_picappclerks.c
+	$(CC) $(CFLAGS) -c ppo_exec_picappclerks.c
+ppo_exec_picappclerks: ppo_exec_picappclerks.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_exec_picappclerks.o -o ppo_exec_picappclerks.coff
+	../bin/coff2noff ppo_exec_picappclerks.coff ppo_exec_picappclerks
+
+ppo_exec_ppclerks.o: ppo_exec_ppclerks.c
+	$(CC) $(CFLAGS) -c ppo_exec_ppclerks.c
+ppo_exec_ppclerks: ppo_exec_ppclerks.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_exec_ppclerks.o -o ppo_exec_ppclerks.coff
+	../bin/coff2noff ppo_exec_ppclerks.coff ppo_exec_ppclerks
 
 clean:
 	rm -f *.o *.coff

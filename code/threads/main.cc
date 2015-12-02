@@ -118,8 +118,10 @@ int CreateLock(bool askOtherServers, bool sendMsg, char* lockName, PacketHeader 
 		}
 		if(r->status == Request::SUCCESS) {
 			createdLockIndex = 1;
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// no lock with given name already exists
@@ -192,8 +194,10 @@ int DestroyLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -333,8 +337,10 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -473,8 +479,10 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 	// server doesn't have resource and isn't supposed to do anything
 	if(!have && !askOtherServers) {
@@ -625,8 +633,10 @@ int CreateCondition(bool askOtherServers, bool sendMsg, char* conditionName, Pac
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	//this currently does not prevent locks with the same name
@@ -694,8 +704,10 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 	// server doesn't have resource and isn't supposed to do anything
 	if(!have && !askOtherServers) {
@@ -970,8 +982,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -1280,8 +1294,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -1568,8 +1584,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -1794,7 +1812,7 @@ int CreateMonitor(bool askOtherServers, bool sendMsg, char* name, int size, Pack
 	int createdMonitorIndex = -1;
 
 	// askOtherServers if lock with given name already exists
-	for (int i=0; i<kernelLockIndex; i++) {
+	for (int i=0; i<kernelMonitorIndex; i++) {
 		if (strcmp(kernelMonitorList[i].monitor->getName(), name) == 0) {
 			createdMonitorIndex = i;
 			break;
@@ -1825,15 +1843,16 @@ int CreateMonitor(bool askOtherServers, bool sendMsg, char* name, int size, Pack
 		}
 		if(r->status == Request::SUCCESS) {
 			createdMonitorIndex = 1;
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	//this currently does not prevent locks with the same name
 	kernelMonitorLock.Acquire();
 	createdMonitorIndex = kernelMonitorIndex + machineNum*100;
-	Monitor * newMonitor = new Monitor(name, size);
-	kernelMonitorList[kernelMonitorIndex].monitor = newMonitor;
+	kernelMonitorList[kernelMonitorIndex].monitor = new Monitor(name, size);
 	kernelMonitorList[kernelMonitorIndex].addrsp = currentThread->space; // #userprog
 	kernelMonitorList[kernelMonitorIndex].isToBeDeleted = false;
 	// the next new lock's index
@@ -1895,8 +1914,10 @@ int DestroyMonitor(bool askOtherServers, bool sendMsg, int index, PacketHeader i
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything
@@ -2016,8 +2037,10 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 	// server doesn't have resource and isn't supposed to do anything
 	if(!have && !askOtherServers) {
@@ -2149,8 +2172,10 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 			currentThread->Yield();
 		}
 		if(r->status == Request::SUCCESS) {
+			delete r;
 			return -1;
 		}
+		delete r;
 	}
 
 	// server doesn't have resource and isn't supposed to do anything

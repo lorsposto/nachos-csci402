@@ -84,25 +84,21 @@ int main() {
 
 				Signal(GetMonitor(lineCVs, myIndex), cashierLineLock);
 				SetMonitor(cashStateIndex, myIndex, 1);
-			}
-			else {
+			}/*else {
+				state = BREAK;
 				SetMonitor(cashStateIndex, myIndex, 2);
-				/*printf("%s is going on break.\n",
-				 cashierLines[cashierIndex]->name);*/
 				Write("Cashier ", 8, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is going on break.\n", 20, ConsoleOutput);
 
 				Wait(GetMonitor(breakCVs, myIndex), cashierLineLock);
-				/*printf("%s is coming off break.\n",
-				 cashierLines[cashierIndex]->name);*/
 				Write("Cashier ", 8, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is coming off break.\n", 22, ConsoleOutput);
 
 				Release(cashierLineLock);
 				break;
-			}
+			}*/
 
 			Acquire(GetMonitor(transactionLocks, myIndex));
 			Release(cashierLineLock);

@@ -128,6 +128,7 @@ struct Request {
 	enum Status {
 		PENDING, FAILED, SUCCESS
 	};
+
 	Status status;
 	// one slot response for each  machine by index of machine
 	int noResponses; // = new int[NUM_SERVERS]

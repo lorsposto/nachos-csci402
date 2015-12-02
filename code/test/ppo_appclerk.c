@@ -88,7 +88,7 @@ int main() {
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), appLineLock);
 				SetMonitor(appStateIndex, myIndex, 1);
-			} else {
+			/*else {
 				SetMonitor(appStateIndex, myIndex, 2);
 				Write("ApplicationClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
@@ -99,7 +99,7 @@ int main() {
 				Write(" is coming off break.\n", 22, ConsoleOutput);
 				Release(appLineLock);
 				break;
-			}
+			}*/
 
 			Acquire(GetMonitor(transactionLocks, myIndex));
 			Release(appLineLock);

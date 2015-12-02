@@ -88,7 +88,7 @@ int main() {
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), ppLineLock);
 				SetMonitor(passStateIndex, myIndex, 1);
-			} else {
+			} /*else {
 				SetMonitor(passStateIndex, myIndex, 2);
 				Write("PassportClerk ", 14, ConsoleOutput);
 				PrintInt(myIndex);
@@ -99,7 +99,7 @@ int main() {
 				Write(" is coming off break.\n", 22, ConsoleOutput);
 				Release(ppLineLock);
 				break;
-			}
+			}*/
 
 			Acquire(GetMonitor(transactionLocks, myIndex));
 			Release(ppLineLock);

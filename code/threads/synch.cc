@@ -294,6 +294,7 @@ int Condition::Wait(int conditionLockIndex) {
 //	fauxLock->Acquire();
 //	fauxLock->Release();
 	(void) interrupt->SetLevel(oldLevel);   // re-enable interrupts
+	return 1;
 }
 
 int Condition::Signal(int conditionLockIndex) {
@@ -358,7 +359,8 @@ int Condition::Broadcast(int conditionLockIndex) {
 Monitor::Monitor(char* debugName, int maxSize) {
 	name = new char[20];
 	sprintf(name, debugName);
-	val = new int[size];
+//	val = new int[size];
+	val = new vector<int>(maxSize, 0);
 	size = maxSize;
 }
 
@@ -372,7 +374,7 @@ int Monitor::getVal(int position) {
 		// printf("Error: invalid monitor value position.\n");
 		return -1;
 	}
-	return val[position];
+	return (*val)[position];
 }
 
 void Monitor::setVal(int position, int value) {
@@ -380,5 +382,5 @@ void Monitor::setVal(int position, int value) {
 		// printf("Error: invalid monitor value position.\n");
 		return;
 	}
-	val[position] = value;
+	(*val)[position] = value;
 }

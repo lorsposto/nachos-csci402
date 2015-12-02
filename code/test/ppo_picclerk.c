@@ -88,7 +88,7 @@ int main() {
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), picLineLock);
 				SetMonitor(stateIndex, myIndex, 1);
-			} else {
+			} /*else {
 				SetMonitor(stateIndex, myIndex, 2);
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
@@ -99,7 +99,7 @@ int main() {
 				Write(" is coming off break.\n", 22, ConsoleOutput);
 				Release(picLineLock);
 				break;
-			}
+			}*/
 
 			Acquire(GetMonitor(transactionLocks, myIndex));
 			Release(picLineLock);

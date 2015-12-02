@@ -572,8 +572,11 @@ void Acquire_Syscall(int index) {
 
 		std::string message = acquireLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Acquire Lock: Sending message: " << outPktHdr.from << ", " << outMailHdr.from << ", " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+		cout << "Acquire Lock: Sending message: " << outPktHdr.from << ", " << outMailHdr.from << ", " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("ACQUIRE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -647,8 +650,12 @@ void Release_Syscall(int index) {
 
 		std::string message = releaseLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Release Lock: Sending message: " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+
+		cout << "Release Lock: Sending message: " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("RELEASE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -725,8 +732,12 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 
 	std::string message = waitCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Wait Condition: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+
+	cout << "Wait Condition: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("WAIT CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -818,8 +829,12 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 
 	std::string message = signalCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Signal Conditon: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+
+	cout << "Signal Conditon: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("SIGNAL CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -915,8 +930,11 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 
 	std::string message = broadcastCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Broadcast Condition: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+	cout << "Broadcast Condition: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("BROADCAST CONDTION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1027,8 +1045,11 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 		std::string message = createLock + nameStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Create Lock: Sending message: " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+		cout << "Create Lock: Sending message: " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("CREATE LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1084,8 +1105,11 @@ void DestroyLock_Syscall(int index) {
 
 		std::string message = destroyLock + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Destroy Lock: Sending message: " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+		
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+		cout << "Destroy Lock: Sending message: " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("DESTROY LOCK: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1181,8 +1205,12 @@ int CreateCondition_Syscall(int vaddr, int len) {
 
 	std::string message = createCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Create Condition: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+
+	cout << "Create Condition: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("CREATE CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1235,8 +1263,11 @@ void DestroyCondition_Syscall(int index) {
 
 	std::string message = destroyCondition + indexStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Destroy Condition: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+	cout << "Destroy Condition: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("DESTROY CONDITION: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1333,8 +1364,12 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 
 		std::string message = createMonitor + sizeStr + nameStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Create Monitor: Sending message: " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+
+		cout << "Create Monitor: Sending message: " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("CREATE MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1377,8 +1412,11 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 
 		std::string message = destroyMonitor + indexStr;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		cout << "Destroy Monitor: Sending message: " << message << endl;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+
+		char* sendMessage = new char[message.size()];
+		strcpy(sendMessage, message.c_str());
+		cout << "Destroy Monitor: Sending message: " << sendMessage << endl;
+		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
       		printf("DESTROY MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1432,8 +1470,10 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 
 	std::string message = getMonitor + indexStr + positionStr;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Get Monitor: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
+	cout << "Get Monitor: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("GET MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");
@@ -1511,9 +1551,12 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	std::string getMonitor(b);
 
 	std::string message = getMonitor + indexStr + positionStr + valueStr;
+
+	char* sendMessage = new char[message.size()];
+	strcpy(sendMessage, message.c_str());
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Set Monitor: Sending message: " << message << endl;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+	cout << "Set Monitor: Sending message: " << sendMessage << endl;
+	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
   		printf("SET MONITOR: The Client Send failed. You must not have the other Nachos running. Terminating Nachos.\n");

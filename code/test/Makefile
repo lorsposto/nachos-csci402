@@ -31,7 +31,7 @@ CPP = $(GCCDIR)cpp
 INCDIR =-I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
-all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk ppo_ppclerk ppo_cashier ppo_customer
+all: halt matmult matmult2 sort testfiles testlock testlockbad testlockname testcondition testcondition1 testcondition2 testconditionbad1 testconditionbad2 testexec testforkexec1 testforkexec2 testforkexecbad testfork run_passport_office passport_office testrand testprint helloworld fork_matmult exec_matmult testmonitor testmonitorbad ppo_appclerk ppo_picclerk ppo_ppclerk ppo_cashier ppo_manager ppo_customer
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.s > strt.s
@@ -218,6 +218,12 @@ ppo_ppclerk: ppo_ppclerk.o start.o
 	$(LD) $(LDFLAGS) start.o ppo_ppclerk.o -o ppo_ppclerk.coff
 	../bin/coff2noff ppo_ppclerk.coff ppo_ppclerk
 
+ppo_manager.o: ppo_manager.c
+	$(CC) $(CFLAGS) -c ppo_manager.c
+ppo_manager: ppo_manager.o start.o
+	$(LD) $(LDFLAGS) start.o ppo_manager.o -o ppo_manager.coff
+	../bin/coff2noff ppo_manager.coff ppo_manager
+
 ppo_cashier.o: ppo_cashier.c
 	$(CC) $(CFLAGS) -c ppo_cashier.c
 ppo_cashier: ppo_cashier.o start.o
@@ -229,6 +235,8 @@ ppo_customer.o: ppo_customer.c
 ppo_customer: ppo_customer.o start.o
 	$(LD) $(LDFLAGS) start.o ppo_customer.o -o ppo_customer.coff
 	../bin/coff2noff ppo_customer.coff ppo_customer
+
+
 
 clean:
 	rm -f *.o *.coff

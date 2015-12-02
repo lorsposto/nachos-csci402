@@ -10,7 +10,7 @@ typedef enum {
 } clerkState;
 
 int myIndex, i, appClerkIndexLock, appLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
-	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerAppDoneList, customer, money;
+	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerAppDoneList, customer, money, appStateIndex;
 
 char myBribeCV[32] = " AppClerkBribeCV";
 char myRegularCV[32] = " AppClerkRegularCV";
@@ -36,7 +36,6 @@ int getCurrentCustomer() {
 int main() {
 
 	bool approved = false;
-	state = AVAILABLE;
 
 	appClerkIndexLock = CreateLock("AppClerkIndexLock", 17);
 	appLineLock = CreateLock("AppClerkLineLock", 16);
@@ -50,6 +49,7 @@ int main() {
 	transactionCVs = CreateMonitor("AppClerkTransactionCV", 21, 100);
 	transactionLocks = CreateMonitor("AppClerkTransactionLock", 23, 100);
 	breakCVs = CreateMonitor("AppClerkBreakCV", 15, 100);
+	appStateIndex = CreateMonitor("AppState", 8, 100);
 
 	Acquire(appClerkIndexLock);
 	myIndex = GetMonitor(appMonitorIndex, 0);
@@ -68,10 +68,11 @@ int main() {
 	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
 	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
 	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
+	SetMonitor(appStateIndex, myIndex, 0);
 
 
 	while(1) {
-		while (state != BREAK) {
+		while (GetMonitor(appStateIndex, myIndex) != 2) {
 			Acquire(appLineLock);
 			if(getBribeLineCount() > 0) {
 				Write("ApplicationClerk ", 17, ConsoleOutput);
@@ -79,16 +80,16 @@ int main() {
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
 				Signal(GetMonitor(bribeLineCVs, myIndex), appLineLock);
-				state == BUSY;
+				SetMonitor(appStateIndex, myIndex, 1);
 			} else if (getRegularLineCount() > 0) {
 				Write("ApplicationClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), appLineLock);
-				state = BUSY;
+				SetMonitor(appStateIndex, myIndex, 1);
 			} else {
-				state = BREAK;
+				SetMonitor(appStateIndex, myIndex, 2);
 				Write("ApplicationClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is going on break.\n", 20, ConsoleOutput);

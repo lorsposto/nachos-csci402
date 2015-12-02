@@ -12,7 +12,7 @@ typedef enum {
 int myIndex, i, cashierIndexLock, cashierLineLock, lineCVs, transactionCVs, transactionLocks, breakCVs,
  	lineMonitorIndex, cashierMonitorIndex, cashierCustomerIndex, customerEarlybirdList, customerApprovedList, customerPicDoneList, 
  	customerAppDoneList, customerPassDoneList, cashierMoneys, customerMoneys, customerGotPassport, customerCertified, cashierApproved,
- 	customer, money;
+ 	cashStateIndex, customer, money;
 
 clerkState state;
 
@@ -46,6 +46,7 @@ int main() {
 	customerGotPassport = CreateMonitor("CustomerGotPassportList", 23, 100); 
 	customerCertified = CreateMonitor("CustomerCertifiedList", 21, 100); 
 	cashierApproved = CreateMonitor("CashierApprovedList", 20, 100); 
+	cashStateIndex = CreateMonitor("CashierState", 12, 100);
 
 	cashierIndexLock = CreateLock("CashierIndexLock", 16);
 	cashierMonitorIndex = CreateMonitor("CashierClerkCount", 17, 100);
@@ -64,12 +65,11 @@ int main() {
 	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 32, 1));
 	SetMonitor(lineMonitorIndex, myIndex, CreateMonitor(myLineCount, 32, 1));
 	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
-
-	state = AVAILABLE;
+	SetMonitor(cashStateIndex, myIndex, 0);
 
 	while (1) {
 		/* once they are not on break, process the line*/
-		while (state != BREAK) {
+		while (GetMonitor(cashStateIndex, myIndex) != 2) {
 			Acquire(cashierLineLock);
 
 			if (GetMonitor(lineMonitorIndex, myIndex) > 0) {
@@ -83,10 +83,10 @@ int main() {
 						52, ConsoleOutput);
 
 				Signal(GetMonitor(lineCVs, myIndex), cashierLineLock);
-				state = BUSY;
+				SetMonitor(cashStateIndex, myIndex, 1);
 			}
 			else {
-				state = BREAK;
+				SetMonitor(cashStateIndex, myIndex, 2);
 				/*printf("%s is going on break.\n",
 				 cashierLines[cashierIndex]->name);*/
 				Write("Cashier ", 8, ConsoleOutput);

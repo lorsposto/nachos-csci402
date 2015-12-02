@@ -10,7 +10,7 @@ typedef enum {
 } clerkState;
 
 int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
-	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerPicDoneList, customer, money;
+	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerPicDoneList, customer, money, stateIndex;
 
 clerkState state;
 
@@ -37,7 +37,6 @@ int getCurrentCustomer() {
 int main() {
 
 	bool firstTime = true;
-	state = AVAILABLE;
 
 	picClerkIndexLock = CreateLock("PicClerkIndexLock", 17);
 	picLineLock = CreateLock("PicClerkLineLock", 16);
@@ -48,6 +47,7 @@ int main() {
 	breakCVs = CreateMonitor("PicClerkBreakCV", 15, 100);
 	bribeMonitorIndex = CreateMonitor("PicBribeLineNum", 15, 100);
 	regularMonitorIndex = CreateMonitor("PicRegularLineNum", 17, 100);
+	stateIndex = CreateMonitor("PicState", 8, 100);
 	picMonitorIndex = CreateMonitor("PicClerkCount", 13, 100);
 	picCustomerIndex = CreateMonitor("PicCustomerIndex", 16, 100);
 	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 19, 100);
@@ -69,9 +69,10 @@ int main() {
 	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
 	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
 	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
+	SetMonitor(stateIndex, myIndex, 0); /*set state to available*/
 
 	while(1) {
-		while (state != BREAK) {
+		while (GetMonitor(stateIndex, myIndex) != 2) {
 			Acquire(picLineLock);
 			if(getBribeLineCount() > 0) {
 				Write("PictureClerk ", 17, ConsoleOutput);
@@ -79,16 +80,16 @@ int main() {
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
 				Signal(GetMonitor(bribeLineCVs, myIndex), picLineLock);
-				state == BUSY;
+				SetMonitor(stateIndex, myIndex, 1);
 			} else if (getRegularLineCount() > 0) {
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" has signalled a Customer to come to their counter.\n",
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), picLineLock);
-				state = BUSY;
+				SetMonitor(stateIndex, myIndex, 1);
 			} else {
-				state = BREAK;
+				SetMonitor(stateIndex, myIndex, 2);
 				Write("PictureClerk ", 17, ConsoleOutput);
 				PrintInt(myIndex);
 				Write(" is going on break.\n", 20, ConsoleOutput);

@@ -144,7 +144,9 @@ int CreateLock(bool askOtherServers, bool sendMsg, char* lockName, PacketHeader 
 	outMailHdr.to = inMailHdr.from;
 
 	outMailHdr.length = strlen(intStr) + 1;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	cout << "Create Lock Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	 if ( !success ) {
@@ -362,8 +364,10 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 		const char* intStr = ss.str().c_str();
 
 		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -383,8 +387,10 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 		const char* intStr = ss.str().c_str();
 
 		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -406,7 +412,10 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Acquire Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -430,7 +439,10 @@ int AcquireLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Acquire Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -505,7 +517,10 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Release Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -526,7 +541,10 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Release Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -547,8 +565,11 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 		const char* intStr = ss.str().c_str();
 
 		outMailHdr.length = strlen(intStr) + 1;
-
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Release Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -576,7 +597,10 @@ int ReleaseLock(bool askOtherServers, bool sendMsg, int index, PacketHeader inPk
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Release Lock Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -657,7 +681,11 @@ int CreateCondition(bool askOtherServers, bool sendMsg, char* conditionName, Pac
 	outMailHdr.to = inMailHdr.from;
 
 	outMailHdr.length = strlen(intStr) + 1;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+
+	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	cout << "Create Condition Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	 if ( !success ) {
@@ -731,7 +759,10 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
 	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -752,7 +783,10 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -776,7 +810,10 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Destroy Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -803,7 +840,10 @@ int DestroyCondition(bool askOtherServers, bool sendMsg, int index, PacketHeader
 
 	outMailHdr.length = strlen(intStr) + 1;
 
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
     cout << "Destroy Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
      if ( !success ) {
@@ -846,7 +886,10 @@ int checkLockForCondition(int lockIndex, PacketHeader inPktHdr, MailHeader inMai
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Check Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -867,7 +910,10 @@ int checkLockForCondition(int lockIndex, PacketHeader inPktHdr, MailHeader inMai
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Check Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -889,7 +935,10 @@ int checkLockForCondition(int lockIndex, PacketHeader inPktHdr, MailHeader inMai
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Check Lock Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -936,7 +985,10 @@ void forkWait(int params) {
 
 	outMailHdr.length = strlen(intStr) + 1;
 
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	cout << "Wait Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	 if ( !success ) {
@@ -1011,7 +1063,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1032,7 +1087,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1054,7 +1112,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1105,7 +1166,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-		    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+			strncpy(message, intStr, sizeof(message));
+			bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 		    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 		     if ( !success ) {
@@ -1132,7 +1196,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			char * message = new char[sizeof(intStr)];
+			strncpy(message, intStr, sizeof(message));
+			bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1153,7 +1220,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			char * message = new char[sizeof(intStr)];
+			strncpy(message, intStr, sizeof(message));
+			bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1175,7 +1245,10 @@ int WaitCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex, 
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			char * message = new char[sizeof(intStr)];
+			strncpy(message, intStr, sizeof(message));
+			bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1248,7 +1321,10 @@ void forkSignal(int params) {
 
 	outMailHdr.length = strlen(intStr) + 1;
 
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	cout << "Signal Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	 if ( !success ) {
@@ -1323,7 +1399,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+		strncpy(message, intStr, sizeof(message));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1344,7 +1423,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1366,7 +1448,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1413,7 +1498,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-		    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 		    cout << "Wait Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 		     if ( !success ) {
@@ -1440,7 +1528,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1461,7 +1552,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1483,7 +1577,10 @@ int SignalCondition(bool askOtherServers, bool sendMsg, int index, int lockIndex
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Signal Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1538,7 +1635,10 @@ void forkBroadcast(int params) {
 
 	outMailHdr.length = strlen(intStr) + 1;
 
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	cout << "Broadcast Condition Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	 if ( !success ) {
@@ -1613,7 +1713,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1634,7 +1737,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1656,7 +1762,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Broadcast Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1703,7 +1812,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-		    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+		    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 		    cout << "Broadcasting Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 		     if ( !success ) {
@@ -1730,7 +1842,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Broadcasting Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1751,7 +1866,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Broadcasting Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1773,7 +1891,10 @@ int BroadcastCondition(bool askOtherServers, bool sendMsg, int index, int lockIn
 
 			outMailHdr.length = strlen(intStr) + 1;
 
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+				char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 			cout << "Broadcasting Condition Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 			 if ( !success ) {
@@ -1867,7 +1988,10 @@ int CreateMonitor(bool askOtherServers, bool sendMsg, char* name, int size, Pack
     outMailHdr.to = inMailHdr.from;
 
     outMailHdr.length = strlen(intStr) + 1;
-    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
     cout << "Create Monitor Server: Sending message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
      if ( !success ) {
@@ -1941,7 +2065,10 @@ int DestroyMonitor(bool askOtherServers, bool sendMsg, int index, PacketHeader i
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Destroy Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1962,7 +2089,10 @@ int DestroyMonitor(bool askOtherServers, bool sendMsg, int index, PacketHeader i
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Destroy Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -1988,7 +2118,10 @@ int DestroyMonitor(bool askOtherServers, bool sendMsg, int index, PacketHeader i
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Destroy Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2062,7 +2195,10 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2081,7 +2217,10 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2101,7 +2240,10 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Get Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2123,7 +2265,10 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Get Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2198,7 +2343,10 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2218,7 +2366,10 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Set Monitor Server: Sending failure message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2241,7 +2392,10 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 		outMailHdr.length = strlen(intStr) + 1;
 
-	    bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    // bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(intStr));
+	    	char * message = new char[sizeof(intStr)];
+	strncpy(message, intStr, sizeof(message));
+	bool success = postOffice->Send(outPktHdr, outMailHdr, message);
 	    cout << "Set Monitor Server: Sending success message: " << intStr << " to " << outPktHdr.to << ", box " << outMailHdr.to << endl;
 
 	     if ( !success ) {
@@ -2329,7 +2483,10 @@ void askOtherServersFcn(Request * r, int code, void* arg1, void* arg2) {
 			string message = "500 " + codeString + indexStr;
 			outMailHdr.length = strlen(message.c_str()) + 1;
 			cout << "Code " << code << ": Sending message to other server " << i << ": " << message << endl;
-			bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+			char * messager = new char[message.size()];
+			strncpy(messager, message.c_str(), sizeof(messager));
+			bool success = postOffice->Send(outPktHdr, outMailHdr, messager);
+			// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
 
 			 if ( !success ) {
 	      		printf("CODE %i to Server %i: The Server query failed. You must not have the other Nachos running. Terminating Nachos.\n", code, i);
@@ -2525,7 +2682,10 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 		string message = sss.str();
 		cout << "Replying to client directly with machine #, mailbox #, message: " << machID << ", " << mbID << ", " << message << endl;
 		outMailHdr.length = strlen(message.c_str()) + 1;
-		bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+		char * messager = new char[message.size()];
+		strncpy(messager, message.c_str(), sizeof(messager));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, messager);
+		// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
 		 if ( !success ) {
 	 		printf("The Client direct reply failed. You must not have the other Nachos running. Terminating Nachos.\n");
 	 		interrupt->Halt();
@@ -2546,7 +2706,10 @@ void receiveServerMsg(char * msg, PacketHeader inPktHdr, MailHeader inMailHdr) {
 	string message = sss.str();
 	cout << "Replying to server query with: " << message << endl;
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
+			char * messager = new char[message.size()];
+		strncpy(messager, message.c_str(), sizeof(messager));
+		bool success = postOffice->Send(outPktHdr, outMailHdr, messager);
+	// bool success = postOffice->Send(outPktHdr, outMailHdr, const_cast<char*>(message.c_str()));
 	 if ( !success ) {
  		printf("The Server reply failed. You must not have the other Nachos running. Terminating Nachos.\n");
  		interrupt->Halt();

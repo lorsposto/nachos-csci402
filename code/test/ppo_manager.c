@@ -24,21 +24,21 @@ int main() {
 	picLineLock = CreateLock("PicClerkLineLock", 16);
 	picMonitorIndex = CreateMonitor("PicClerkCount", 13, 100);
 	picBribeMonitorIndex = CreateMonitor("PicBribeLineNum", 15, 100);
-	picRegularMonitorIndex = CreateMonitor("PicRegularLineNum", 17, 100);
+	picRegularMonitorIndex = CreateMonitor("PicRegLineNum", 13, 100);
 	picStateIndex = CreateMonitor("PicState", 8, 100);
 	picBreakCVs = CreateMonitor("PicClerkBreakCV", 15, 100);
 
 	appLineLock = CreateLock("AppClerkLineLock", 16);
 	appMonitorIndex = CreateMonitor("AppClerkCount", 13, 100);
 	appBribeMonitorIndex = CreateMonitor("AppClerkBribeLineNum", 20, 100);
-	appRegularMonitorIndex = CreateMonitor("AppClerkRegularLineNum", 22, 100);
+	appRegularMonitorIndex = CreateMonitor("AppClerkRegLineNum", 18, 100);
 	appStateIndex = CreateMonitor("AppState", 8, 100);
 	appBreakCVs = CreateMonitor("AppClerkBreakCV", 15, 100);
 
 	passLineLock = CreateLock("PassClerkLineLock", 17);
 	passMonitorIndex = CreateMonitor("PassClerkCount", 14, 100);
 	passBribeMonitorIndex = CreateMonitor("PassBribeLineNum", 16, 100);
-	passRegularMonitorIndex = CreateMonitor("PassRegularLineNum", 18, 100);
+	passRegularMonitorIndex = CreateMonitor("PassRegLineNum", 14, 100);
 	passStateIndex = CreateMonitor("PassState", 9, 100);
  	passBreakCVs = CreateMonitor("PassClerkBreakCV", 16, 100);
 

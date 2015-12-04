@@ -16,11 +16,11 @@ int myIndex, i, cashierIndexLock, cashierLineLock, lineCVs, transactionCVs, tran
 
 clerkState state;
 
-char myBribeCV[32] = " CashierBribeCV";
-char myRegularCV[32] = " CashierRegularCV";
-char myTransactionCV[32] = " CashierTransactionCV";
-char myLineCount[32] = " CashierLineCount";
-char myTransactionLock[32] = " CashierTransactionLock";
+char myBribeCV[22] = " CashierBribeCV";
+char myRegularCV[22] = " CashierRegCV";
+char myTransactionCV[22] = " CashierTransCV";
+char myLineCount[22] = " CashierLineCount";
+char myTransactionLock[22] = " CashierTransLock";
 
 int getCurrentCustomer() {
 	return GetMonitor(cashierCustomerIndex, myIndex);
@@ -30,8 +30,8 @@ int main() {
 	cashierIndexLock = CreateLock("CashierIndexLock", 16);
 	cashierLineLock = CreateLock("CashierLineLock", 15);
 	lineCVs = CreateMonitor("CashierLineCV", 13, 100);
-	transactionCVs = CreateMonitor("CashierTransactionCV", 20, 100);
-	transactionLocks = CreateMonitor("CashierTransactionLock", 21, 100);
+	transactionCVs = CreateMonitor("CashierTransCV", 14, 100);
+	transactionLocks = CreateMonitor("CashierTransLock", 15, 100);
 	breakCVs = CreateMonitor("CashierBreakCV", 14, 100);
 	lineMonitorIndex = CreateMonitor("CashierLineNum", 14, 100);
 	cashierMonitorIndex = CreateMonitor("CashierClerkCount", 17, 100);

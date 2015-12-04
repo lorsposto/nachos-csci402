@@ -1472,7 +1472,7 @@ int GetMonitor_Syscall(int monitorIndex, int position) {
 	outMailHdr.length = strlen(message.c_str()) + 1;
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
-	cout << "Get Monitor: Sending message: " << sendMessage << endl;
+	//cout << "Get Monitor: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -1555,7 +1555,7 @@ int SetMonitor_Syscall(int monitorIndex, int position, int value) {
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
 	outMailHdr.length = strlen(message.c_str()) + 1;
-	cout << "Set Monitor: Sending message: " << sendMessage << endl;
+	//cout << "Set Monitor: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {

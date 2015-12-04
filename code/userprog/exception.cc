@@ -575,7 +575,7 @@ void Acquire_Syscall(int index) {
 
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
-		cout << "Acquire Lock: Sending message: " << outPktHdr.from << ", " << outMailHdr.from << ", " << sendMessage << endl;
+		//cout << "Acquire Lock: Sending message: " << outPktHdr.from << ", " << outMailHdr.from << ", " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
@@ -654,7 +654,7 @@ void Release_Syscall(int index) {
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
 
-		cout << "Release Lock: Sending message: " << sendMessage << endl;
+		//cout << "Release Lock: Sending message: " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
@@ -736,7 +736,7 @@ void Wait_Syscall(int conditionIndex, int lockIndex) {
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
 
-	cout << "Wait Condition: Sending message: " << sendMessage << endl;
+	//cout << "Wait Condition: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -833,7 +833,7 @@ void Signal_Syscall(int conditionIndex, int lockIndex) {
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
 
-	cout << "Signal Conditon: Sending message: " << sendMessage << endl;
+	//cout << "Signal Conditon: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -933,7 +933,7 @@ void Broadcast_Syscall(int conditionIndex, int lockIndex) {
 
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
-	cout << "Broadcast Condition: Sending message: " << sendMessage << endl;
+	//cout << "Broadcast Condition: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -1048,7 +1048,7 @@ int CreateLock_Syscall(int vaddr, int len) {
 
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
-		cout << "Create Lock: Sending message: " << sendMessage << endl;
+		//cout << "Create Lock: Sending message: " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
@@ -1108,7 +1108,7 @@ void DestroyLock_Syscall(int index) {
 		
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
-		cout << "Destroy Lock: Sending message: " << sendMessage << endl;
+		//cout << "Destroy Lock: Sending message: " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
@@ -1209,7 +1209,7 @@ int CreateCondition_Syscall(int vaddr, int len) {
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
 
-	cout << "Create Condition: Sending message: " << sendMessage << endl;
+	//cout << "Create Condition: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -1266,7 +1266,7 @@ void DestroyCondition_Syscall(int index) {
 
 	char* sendMessage = new char[message.size() + 1];
 	strcpy(sendMessage, message.c_str());
-	cout << "Destroy Condition: Sending message: " << sendMessage << endl;
+	//cout << "Destroy Condition: Sending message: " << sendMessage << endl;
 	bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 	 if ( !success ) {
@@ -1368,7 +1368,7 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
 
-		cout << "Create Monitor: Sending message: " << sendMessage << endl;
+		//cout << "Create Monitor: Sending message: " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {
@@ -1415,7 +1415,7 @@ void DestroyMonitor_Syscall(int monitorIndex) {
 
 		char* sendMessage = new char[message.size() + 1];
 		strcpy(sendMessage, message.c_str());
-		cout << "Destroy Monitor: Sending message: " << sendMessage << endl;
+		//cout << "Destroy Monitor: Sending message: " << sendMessage << endl;
 		bool success = postOffice->Send(outPktHdr, outMailHdr, sendMessage);
 
 		 if ( !success ) {

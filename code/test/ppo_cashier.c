@@ -16,40 +16,40 @@ int myIndex, i, cashierIndexLock, cashierLineLock, lineCVs, transactionCVs, tran
 
 clerkState state;
 
-char myBribeCV[22] = " CashierBribeCV";
-char myRegularCV[22] = " CashierRegCV";
-char myTransactionCV[22] = " CashierTransCV";
-char myLineCount[22] = " CashierLineCount";
-char myTransactionLock[22] = " CashierTransLock";
+char myBribeCV[22] = " CashBribeCV";
+char myRegularCV[22] = " CashRegCV";
+char myTransactionCV[22] = " CashTransCV";
+char myLineCount[22] = " CashLineCount";
+char myTransactionLock[22] = " CashTransLock";
 
 int getCurrentCustomer() {
 	return GetMonitor(cashierCustomerIndex, myIndex);
 }
 
 int main() {
-	cashierIndexLock = CreateLock("CashierIndexLock", 16);
-	cashierLineLock = CreateLock("CashierLineLock", 15);
-	lineCVs = CreateMonitor("CashierLineCV", 13, 100);
-	transactionCVs = CreateMonitor("CashierTransCV", 14, 100);
-	transactionLocks = CreateMonitor("CashierTransLock", 15, 100);
-	breakCVs = CreateMonitor("CashierBreakCV", 14, 100);
-	lineMonitorIndex = CreateMonitor("CashierLineNum", 14, 100);
-	cashierMonitorIndex = CreateMonitor("CashierClerkCount", 17, 100);
-	cashierCustomerIndex = CreateMonitor("CashierCustomerIndex", 19, 100);
-	customerPicDoneList = CreateMonitor("CustomerPicDoneList", 19, 100); /* ==picdone */
-	customerAppDoneList = CreateMonitor("CustomerAppDoneList", 19, 100); /* == appdone */
-	customerPassDoneList = CreateMonitor("CustomerPassportDoneList", 20, 100);
-	customerEarlybirdList = CreateMonitor("CustomerEarlybirdList", 21, 100); /* == earlybird */
-	customerApprovedList = CreateMonitor("CustomerCashierDoneList", 20, 100); 
-	cashierMoneys = CreateMonitor("CashierMoneyList", 16, 100); 
-	customerMoneys = CreateMonitor("CustomerMoneyList", 17, 100); 
-	customerGotPassport = CreateMonitor("CustomerGotPassportList", 23, 100); 
+	cashierIndexLock = CreateLock("CashIndexLock", 13);
+	cashierLineLock = CreateLock("CashLineLock", 12);
+	lineCVs = CreateMonitor("CashLineCV", 10, 100);
+	transactionCVs = CreateMonitor("CashTransCV", 11, 100);
+	transactionLocks = CreateMonitor("CashTransLock", 13, 100);
+	breakCVs = CreateMonitor("CashBreakCV", 11, 100);
+	lineMonitorIndex = CreateMonitor("CashLineNum", 11, 100);
+	cashierMonitorIndex = CreateMonitor("CashClerkCount", 14, 100);
+	cashierCustomerIndex = CreateMonitor("CashCustIndex", 13, 100);
+	customerPicDoneList = CreateMonitor("CustPicDoneList", 15, 100); /* ==picdone */
+	customerAppDoneList = CreateMonitor("CustAppDoneList", 15, 100); /* == appdone */
+	customerPassDoneList = CreateMonitor("CustPpDoneList", 14, 100);
+	customerEarlybirdList = CreateMonitor("CustomerEarlyList", 17, 100); /* == earlybird */
+	customerApprovedList = CreateMonitor("CustCashDoneList", 16, 100); 
+	cashierMoneys = CreateMonitor("CashMoney", 9, 100); 
+	customerMoneys = CreateMonitor("CustomerMoney", 13, 100); 
+	customerGotPassport = CreateMonitor("CustomerGotPpList", 17, 100); 
 	customerCertified = CreateMonitor("CustomerCertifiedList", 21, 100); 
-	cashierApproved = CreateMonitor("CashierApprovedList", 20, 100); 
-	cashStateIndex = CreateMonitor("CashierState", 12, 100);
+	cashierApproved = CreateMonitor("CashApprovedList", 16, 100); 
+	cashStateIndex = CreateMonitor("CashState", 9, 100);
 
-	cashierIndexLock = CreateLock("CashierIndexLock", 16);
-	cashierMonitorIndex = CreateMonitor("CashierClerkCount", 17, 100);
+	cashierIndexLock = CreateLock("CashIndexLock", 13);
+	cashierMonitorIndex = CreateMonitor("CashClerkCount", 14, 100);
 
 	Acquire(cashierIndexLock);
 	myIndex = GetMonitor(cashierMonitorIndex, 0);

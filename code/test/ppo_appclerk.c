@@ -43,7 +43,7 @@ int main() {
 	appCustomerIndex = CreateMonitor("AppCustomerIndex", 16, 100);
 	bribeMonitorIndex = CreateMonitor("AppClerkBribeLineNum", 20, 100);
 	regularMonitorIndex = CreateMonitor("AppClerkRegLineNum", 18, 100);
-	customerAppDoneList = CreateMonitor("CustomerAppDoneList", 19, 100);
+	customerAppDoneList = CreateMonitor("CustAppDoneList", 19, 100);
 	bribeLineCVs = CreateMonitor("AppClerkBribeCV", 15, 100);
 	regularLineCVs = CreateMonitor("AppClerkRegCV", 13, 100);
 	transactionCVs = CreateMonitor("AppClerkTransCV", 15, 100);

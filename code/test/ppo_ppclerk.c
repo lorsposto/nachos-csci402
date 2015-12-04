@@ -13,12 +13,12 @@ int myIndex, i, passClerkIndexLock, ppLineLock, regularLineCVs, bribeLineCVs, tr
 	bribeMonitorIndex, regularMonitorIndex, passMonitorIndex, passCustomerIndex, customer, money, customerApprovedList,
 	passStateIndex;
 
-char myBribeCV[32] = " PassClerkBribeCV";
-char myRegularCV[32] = " PassClerkRegularCV";
-char myTransactionCV[32] = " PassClerkTransactionCV";
-char myRegularCount[32] = " PassClerkRegularLineCount";
-char myBribeCount[32] = " PassClerkBribeLineCount";
-char myTransactionLock[32] = " PassClerkTransactionLock";
+char myBribeCV[22] = " PpClerkBribeCV";
+char myRegularCV[22] = " PpClerkRegCV";
+char myTransactionCV[22] = " PpClerkTransCV";
+char myRegularCount[22] = " PpClerkRegLineCount";
+char myBribeCount[22] = " PpClerkBribeLineCount";
+char myTransactionLock[22] = " PpClerkTransLock";
 
 clerkState state;
 
@@ -38,19 +38,19 @@ int main() {
 
 	bool approved = false;
 
-	passClerkIndexLock = CreateLock("PassClerkIndexLock", 18);
-	ppLineLock = CreateLock("PassClerkLineLock", 17);
-	regularLineCVs = CreateMonitor("PassClerkRegularCV", 18, 100);
-	bribeLineCVs = CreateMonitor("PassClerkBribeCV", 18, 100);
-	transactionCVs = CreateMonitor("PassClerkTransactionCV", 22, 100);
-	transactionLocks = CreateMonitor("PassClerkTransactionLock", 24, 100);
-	breakCVs = CreateMonitor("PassClerkBreakCV", 16, 100);
-	bribeMonitorIndex = CreateMonitor("PassBribeLineNum", 16, 100);
-	regularMonitorIndex = CreateMonitor("PassRegularLineNum", 18, 100);
-	passMonitorIndex = CreateMonitor("PassClerkCount", 14, 1);
-	passCustomerIndex = CreateMonitor("PassCustomerIndex", 17, 100);
-	customerApprovedList = CreateMonitor("CustomerApprovedList", 20, 100);
-	passStateIndex = CreateMonitor("PassState", 9, 100);
+	passClerkIndexLock = CreateLock("PpClerkIndexLock", 16);
+	ppLineLock = CreateLock("PpClerkLineLock", 15);
+	regularLineCVs = CreateMonitor("PpClerkRegCV", 12, 100);
+	bribeLineCVs = CreateMonitor("PpClerkBribeCV", 14, 100);
+	transactionCVs = CreateMonitor("PpClerkTransCV", 14, 100);
+	transactionLocks = CreateMonitor("PpClerkTransLock", 16, 100);
+	breakCVs = CreateMonitor("PpClerkBreakCV", 14, 100);
+	bribeMonitorIndex = CreateMonitor("PpBribeLineNum", 14, 100);
+	regularMonitorIndex = CreateMonitor("PpRegLineNum", 12, 100);
+	passMonitorIndex = CreateMonitor("PpClerkCount", 12, 1);
+	passCustomerIndex = CreateMonitor("PpCustomerIndex", 15, 100);
+	customerApprovedList = CreateMonitor("CustPpDoneList", 14, 100);
+	passStateIndex = CreateMonitor("PpState", 7, 100);
 
 	Acquire(passClerkIndexLock);
 	myIndex = GetMonitor(passMonitorIndex, 0);
@@ -63,12 +63,12 @@ int main() {
 	myBribeCount[0] = myIndex + '0';
 	myTransactionLock[0] = myIndex + '0';
 
-	SetMonitor(bribeLineCVs, myIndex, CreateMonitor(myBribeCV, 32, 1));
-	SetMonitor(regularLineCVs, myIndex, CreateMonitor(myRegularCV, 32, 1));
-	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 32, 1));
-	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
-	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
-	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
+	SetMonitor(bribeLineCVs, myIndex, CreateMonitor(myBribeCV, 22, 1));
+	SetMonitor(regularLineCVs, myIndex, CreateMonitor(myRegularCV, 22, 1));
+	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 22, 1));
+	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 22, 1));
+	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 22, 1));
+	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 22, 1));
 	SetMonitor(passStateIndex, myIndex, 0);
 
 	while(1) {

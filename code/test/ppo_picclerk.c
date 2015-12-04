@@ -12,17 +12,14 @@ typedef enum {
 int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
 	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerPicDoneList, customer, money, stateIndex;
 
-int a, b, c, d, e, f, g;
-
 clerkState state;
 
-char myBribeCV[32] = " PicClerkBribeCV";
-char myRegularCV[32] = " PicClerkRegularCV";
-char myTransactionCV[32] = " PicClerkTransactionCV";
-char myRegularCount[32] = " PicClerkRegularLineCount";
-char myBribeCount[32] = " PicClerkBribeLineCount";
-char myTransactionLock[32] = " PicClerkTransactionLock";
-
+char myBribeCV[22] = " PicClerkBribeCV";
+char myRegularCV[22] = " PicClerkRegCV";
+char myTransactionCV[22] = " PicClerkTransCV";
+char myRegularCount[22] = " PicClerkRegLineCount";
+char myBribeCount[22] = " PicClerkBribeLineCount";
+char myTransactionLock[22] = " PicClerkTransLock"; 
 
 int getBribeLineCount() {
 	return GetMonitor(bribeMonitorIndex, myIndex);
@@ -41,14 +38,14 @@ int main() {
 	bool firstTime = true;
 
 	picClerkIndexLock = CreateLock("PicClerkIndexLock", 17);
-	picLineLock = CreateLock("PicClerkLineLock", 16);
-	regularLineCVs = CreateMonitor("PicClerkRegularCV", 17, 100);
+	picLineLock = CreateLock("PicClerkLineLock", 16); 
+	regularLineCVs = CreateMonitor("PicClerkRegCV", 13, 100);
 	bribeLineCVs = CreateMonitor("PicClerkBribeCV", 15, 100);
-	transactionCVs = CreateMonitor("PicClerkTransactionCV", 21, 100);
-	transactionLocks = CreateMonitor("PicClerkTransactionLock", 23, 100);
+	transactionCVs = CreateMonitor("PicClerkTransCV", 15, 100);
+	transactionLocks = CreateMonitor("PicClerkTransLock", 17, 100);
 	breakCVs = CreateMonitor("PicClerkBreakCV", 15, 100);
 	bribeMonitorIndex = CreateMonitor("PicBribeLineNum", 15, 100);
-	regularMonitorIndex = CreateMonitor("PicRegularLineNum", 17, 100);
+	regularMonitorIndex = CreateMonitor("PicRegLineNum", 13, 100);
 	stateIndex = CreateMonitor("PicState", 8, 100);
 	picMonitorIndex = CreateMonitor("PicClerkCount", 13, 100);
 	picCustomerIndex = CreateMonitor("PicCustomerIndex", 16, 100);
@@ -65,19 +62,13 @@ int main() {
 	myBribeCount[0] = myIndex + '0';
 	myTransactionLock[0] = myIndex + '0';
 
-	a = CreateMonitor(myBribeCV, 32, 1);
-	b = CreateMonitor(myTransactionCV, 32, 1);
-	c = CreateMonitor(myTransactionCV, 32, 1);
-	d = CreateMonitor(myRegularCount, 32, 1);
-	e = CreateMonitor(myBribeCount, 32, 1);
-	f = CreateMonitor(myTransactionLock, 32, 1);
-	SetMonitor(bribeLineCVs, myIndex, a);
-	SetMonitor(regularLineCVs, myIndex, b);
-	SetMonitor(transactionCVs, myIndex, c);
-	SetMonitor(regularMonitorIndex, myIndex, d);
-	SetMonitor(bribeMonitorIndex, myIndex, e);
-	SetMonitor(transactionLocks, myIndex, f);
-	SetMonitor(stateIndex, myIndex, 0); /*set state to available*/
+	SetMonitor(bribeLineCVs, myIndex, CreateCondition(myBribeCV, 22));
+	SetMonitor(regularLineCVs, myIndex, CreateCondition(myRegularCV, 22));
+	SetMonitor(transactionCVs, myIndex, CreateCondition(myTransactionCV, 22));
+	SetMonitor(regularMonitorIndex, myIndex, 0);
+	SetMonitor(bribeMonitorIndex, myIndex, 0);
+	SetMonitor(transactionLocks, myIndex, CreateLock(myTransactionLock, 22));
+	SetMonitor(stateIndex, myIndex, 0); /*set state to available */
 
 	while(1) {
 		while (GetMonitor(stateIndex, myIndex) != 2) {

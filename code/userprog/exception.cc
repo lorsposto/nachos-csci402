@@ -1390,7 +1390,7 @@ int CreateMonitor_Syscall(int vaddr, int len, int size) {
 }
 
 void DestroyMonitor_Syscall(int monitorIndex) {
-	kernelLockLock.Acquire();
+	kernelMonitorLock.Acquire();
 
 	#ifdef NETWORK
 		PacketHeader outPktHdr;

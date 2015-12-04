@@ -1,5 +1,5 @@
 #include "syscall.h"
 
 int main() {
-	return 0;
+	Exec("../test/ppo_manager", 19);
 }

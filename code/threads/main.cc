@@ -2262,6 +2262,7 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 
 	if (askOtherServers) {
+		reply = 1;
 		std::stringstream ss;
 		ss << reply;
 		const char* intStr = ss.str().c_str();

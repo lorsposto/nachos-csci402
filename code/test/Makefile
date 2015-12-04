@@ -224,12 +224,6 @@ ppo_manager: ppo_manager.o start.o
 	$(LD) $(LDFLAGS) start.o ppo_manager.o -o ppo_manager.coff
 	../bin/coff2noff ppo_manager.coff ppo_manager
 
-ppo_cashier.o: ppo_cashier.c
-	$(CC) $(CFLAGS) -c ppo_cashier.c
-ppo_cashier: ppo_cashier.o start.o
-	$(LD) $(LDFLAGS) start.o ppo_cashier.o -o ppo_cashier.coff
-	../bin/coff2noff ppo_cashier.coff ppo_cashier	
-
 ppo_customer.o: ppo_customer.c
 	$(CC) $(CFLAGS) -c ppo_customer.c
 ppo_customer: ppo_customer.o start.o

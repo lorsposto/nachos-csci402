@@ -2257,12 +2257,11 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 	printf("Getting monitor %i.\n", monitorIndex);
 
 	kernelMonitorLock.Acquire();
-	kernelMonitorList[monitorIndex].monitor->getVal(position);
+	reply = kernelMonitorList[monitorIndex].monitor->getVal(position);
 	kernelMonitorLock.Release();
 
 
 	if (askOtherServers) {
-		reply = 1;
 		std::stringstream ss;
 		ss << reply;
 		const char* intStr = ss.str().c_str();

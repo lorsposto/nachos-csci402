@@ -12,12 +12,12 @@ typedef enum {
 int myIndex, i, appClerkIndexLock, appLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
 	bribeMonitorIndex, regularMonitorIndex, appMonitorIndex, appCustomerIndex, customerAppDoneList, customer, money, appStateIndex;
 
-char myBribeCV[32] = " AppClerkBribeCV";
-char myRegularCV[32] = " AppClerkRegularCV";
-char myTransactionCV[32] = " AppClerkTransactionCV";
-char myRegularCount[32] = " AppClerkRegularLineCount";
-char myBribeCount[32] = " AppClerkBribeLineCount";
-char myTransactionLock[32] = " AppClerkTransactionLock";
+char myBribeCV[22] = " AppClerkBribeCV";
+char myRegularCV[22] = " AppClerkRegCV";
+char myTransactionCV[22] = " AppClerkTransCV";
+char myRegularCount[22] = " AppClerkRegLineCount";
+char myBribeCount[22] = " AppClerkBribeLineCount";
+char myTransactionLock[22] = " AppClerkTransLock";
 
 clerkState state;
 
@@ -42,12 +42,12 @@ int main() {
 	appMonitorIndex = CreateMonitor("AppClerkCount", 13, 100);
 	appCustomerIndex = CreateMonitor("AppCustomerIndex", 16, 100);
 	bribeMonitorIndex = CreateMonitor("AppClerkBribeLineNum", 20, 100);
-	regularMonitorIndex = CreateMonitor("AppClerkRegularLineNum", 22, 100);
+	regularMonitorIndex = CreateMonitor("AppClerkRegLineNum", 18, 100);
 	customerAppDoneList = CreateMonitor("CustomerAppDoneList", 19, 100);
 	bribeLineCVs = CreateMonitor("AppClerkBribeCV", 15, 100);
-	regularLineCVs = CreateMonitor("AppClerkRegularCV", 17, 100);
-	transactionCVs = CreateMonitor("AppClerkTransactionCV", 21, 100);
-	transactionLocks = CreateMonitor("AppClerkTransactionLock", 23, 100);
+	regularLineCVs = CreateMonitor("AppClerkRegCV", 13, 100);
+	transactionCVs = CreateMonitor("AppClerkTransCV", 15, 100);
+	transactionLocks = CreateMonitor("AppClerkTransLock", 17, 100);
 	breakCVs = CreateMonitor("AppClerkBreakCV", 15, 100);
 	appStateIndex = CreateMonitor("AppState", 8, 100);
 

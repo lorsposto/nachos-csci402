@@ -18,6 +18,8 @@ III. Design:
 + Part 1
 	- Each PPO entity is contained within its own user program, prefixed with 'ppo_': ppo_appclerk, ppo_cashier, ppo_customer, ppo_manager, ppo_picclerk, ppo_ppclerk
 	- User program run_passport_office executes each PPO participant
+	- PPO entities index themselves and communicate through the use of monitor variables stored on the server
+	
 
 + Part 2
 	- Server Design

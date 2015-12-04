@@ -2255,8 +2255,11 @@ int GetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	printf("Getting monitor %i.\n", monitorIndex);
-	
-	reply = kernelMonitorList[monitorIndex].monitor->getVal(position);
+
+	kernelMonitorLock.Acquire();
+	kernelMonitorList[monitorIndex].monitor->getVal(position);
+	kernelMonitorLock.Release();
+
 
 	if (askOtherServers) {
 		std::stringstream ss;
@@ -2381,8 +2384,11 @@ int SetMonitor(bool askOtherServers, bool sendMsg, int monitorIndex, int positio
 
 	DEBUG('t', "Getting monitor %i.\n", monitorIndex);
 	printf("Setting monitor %i.\n", monitorIndex);
+
 	
+	kernelMonitorLock.Acquire();
 	kernelMonitorList[monitorIndex].monitor->setVal(position, value);
+	kernelMonitorLock.Release();
 
 	if (askOtherServers) {
 		reply = 1;

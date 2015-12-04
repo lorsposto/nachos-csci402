@@ -12,6 +12,8 @@ typedef enum {
 int myIndex, i, picClerkIndexLock, picLineLock, regularLineCVs, bribeLineCVs, transactionCVs, transactionLocks, breakCVs,
 	bribeMonitorIndex, regularMonitorIndex, picMonitorIndex, picCustomerIndex, customerPicDoneList, customer, money, stateIndex;
 
+int a, b, c, d, e, f, g;
+
 clerkState state;
 
 char myBribeCV[32] = " PicClerkBribeCV";
@@ -63,12 +65,18 @@ int main() {
 	myBribeCount[0] = myIndex + '0';
 	myTransactionLock[0] = myIndex + '0';
 
-	SetMonitor(bribeLineCVs, myIndex, CreateMonitor(myBribeCV, 32, 1));
-	SetMonitor(regularLineCVs, myIndex, CreateMonitor(myRegularCV, 32, 1));
-	SetMonitor(transactionCVs, myIndex, CreateMonitor(myTransactionCV, 32, 1));
-	SetMonitor(regularMonitorIndex, myIndex, CreateMonitor(myRegularCount, 32, 1));
-	SetMonitor(bribeMonitorIndex, myIndex, CreateMonitor(myBribeCount, 32, 1));
-	SetMonitor(transactionLocks, myIndex, CreateMonitor(myTransactionLock, 32, 1));
+	a = CreateMonitor(myBribeCV, 32, 1);
+	b = CreateMonitor(myTransactionCV, 32, 1);
+	c = CreateMonitor(myTransactionCV, 32, 1);
+	d = CreateMonitor(myRegularCount, 32, 1);
+	e = CreateMonitor(myBribeCount, 32, 1);
+	f = CreateMonitor(myTransactionLock, 32, 1);
+	SetMonitor(bribeLineCVs, myIndex, a);
+	SetMonitor(regularLineCVs, myIndex, b);
+	SetMonitor(transactionCVs, myIndex, c);
+	SetMonitor(regularMonitorIndex, myIndex, d);
+	SetMonitor(bribeMonitorIndex, myIndex, e);
+	SetMonitor(transactionLocks, myIndex, f);
 	SetMonitor(stateIndex, myIndex, 0); /*set state to available*/
 
 	while(1) {

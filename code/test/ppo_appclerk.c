@@ -88,6 +88,7 @@ int main() {
 						52, ConsoleOutput);
 				Signal(GetMonitor(regularLineCVs, myIndex), appLineLock);
 				SetMonitor(appStateIndex, myIndex, 1);
+			}
 			/*else {
 				SetMonitor(appStateIndex, myIndex, 2);
 				Write("ApplicationClerk ", 17, ConsoleOutput);
